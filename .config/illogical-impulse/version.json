@@ -1,0 +1,19 @@
+{
+  "version": "2.24.0",
+  "commit": "c1fcbcd5",
+  "installed_at": "2026-05-16T23:05:02+07:00",
+  "installedAt": "2026-05-16T23:05:02+07:00",
+  "source": "update",
+  "repo_path": "/home/rhythmgc/iNiR",
+  "repoPath": "/home/rhythmgc/iNiR",
+  "install_mode": "repo-copy",
+  "installMode": "repo-copy",
+  "update_strategy": "repo-setup",
+  "updateStrategy": "repo-setup",
+  "package_manager": "",
+  "packageManager": "",
+  "package_name": "",
+  "packageName": "",
+  "package_update_hint": "",
+  "packageUpdateHint": ""
+}
