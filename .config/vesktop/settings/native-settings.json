@@ -1,0 +1,11 @@
+{
+    "plugins": {},
+    "customCspRules": {
+        "res.cloudinary.com": [
+            "connect-src",
+            "img-src",
+            "style-src",
+            "font-src"
+        ]
+    }
+}

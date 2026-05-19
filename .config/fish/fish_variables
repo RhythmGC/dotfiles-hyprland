@@ -1,0 +1,14 @@
+# This file contains fish universal variable definitions.
+# VERSION: 3.0
+SETUVAR --export GLFW_IM_MODULE:ibus
+SETUVAR --export GTK_IM_MODULE:fcitx
+SETUVAR --export --path PATH:/home/rhythmgc/\x2epyenv/bin\x1e/opt/rocm/bin\x1e/home/rhythmgc/\x2elocal/bin\x1e/home/rhythmgc/\x2eopencode/bin\x1e/home/rhythmgc/\x2ebun/bin\x1e/opt/cuda/bin\x1e/usr/local/sbin\x1e/usr/local/bin\x1e/usr/bin\x1e/opt/cuda/bin\x1e/var/lib/flatpak/exports/bin\x1e/usr/lib/jvm/default/bin\x1e/usr/bin/site_perl\x1e/usr/bin/vendor_perl\x1e/usr/bin/core_perl\x1e/home/rhythmgc/\x2elocal/share/JetBrains/Toolbox/scripts
+SETUVAR --export PYENV_ROOT:/home/rhythmgc/\x2epyenv
+SETUVAR --export QT_IM_MODULE:fcitx
+SETUVAR --export SAL_USE_VCLPLUGIN:qt6
+SETUVAR --export SDL_IM_MODULE:fcitx
+SETUVAR --export XMODIFIERS:\x40im\x3dfcitx
+SETUVAR __fish_initialized:4300
+SETUVAR _fisher_jorgebucaran_2F_fisher_files:\x7e/\x2econfig/fish/functions/fisher\x2efish\x1e\x7e/\x2econfig/fish/completions/fisher\x2efish
+SETUVAR _fisher_plugins:jorgebucaran/fisher
+SETUVAR _fisher_upgraded_to_4_4:\x1d
