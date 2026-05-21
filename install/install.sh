@@ -93,7 +93,23 @@ desktop_packages=("hyprland" "hyprpaper" "hyprlock" "hypridle" "kitty" "rofi-way
 aur_core=()
 aur_shell=()
 aur_editor=()
-aur_desktop=("illogical-impulse-quickshell-git" "vesktop-bin" "matugen-bin")
+aur_desktop=("illogical-impulse-quickshell-git" "matugen-bin")
+
+# Helper function to check if a package is satisfied
+is_pkg_installed() {
+  local pkg="$1"
+  if pacman -T "$pkg" >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ "$pkg" =~ -(bin|git)$ ]]; then
+    local base_pkg="${pkg%-bin}"
+    base_pkg="${base_pkg%-git}"
+    if pacman -T "$base_pkg" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  return 1
+}
 
 # Helper function to install packages
 install_packages() {
@@ -102,6 +118,11 @@ install_packages() {
   local aur_pkgs=()
 
   for pkg in "${pkgs[@]}"; do
+    if is_pkg_installed "$pkg"; then
+      info "Package $pkg is already satisfied -- skipping"
+      continue
+    fi
+
     # Check if package is AUR package (ends with -bin, -git, or matched)
     if [[ "$pkg" =~ -(bin|git)$ || "$pkg" == "matugen-bin" || "$pkg" == "vesktop-bin" ]]; then
       aur_pkgs+=("$pkg")
@@ -135,8 +156,16 @@ ask "Install Shell & Prompt? (fish, starship) (Y/n): "
 read -r sel_shell
 ask "Install Editors? (neovim) (Y/n): "
 read -r sel_editor
-ask "Install Desktop Environment & WM? (hyprland, kitty, quickshell, vesktop, etc.) (Y/n): "
+ask "Install Desktop Environment & WM? (hyprland, kitty, quickshell, etc.) (Y/n): "
 read -r sel_desktop
+
+if command -v vesktop >/dev/null 2>&1; then
+  info "Vesktop is already installed, skipping installation prompt."
+  sel_vesktop="n"
+else
+  ask "Vesktop is not installed. Do you want to install it? (Y/n): "
+  read -r sel_vesktop
+fi
 
 to_install=()
 
@@ -151,6 +180,9 @@ if [[ ! "$sel_editor" =~ ^[Nn]$ ]]; then
 fi
 if [[ ! "$sel_desktop" =~ ^[Nn]$ ]]; then
   to_install+=("${desktop_packages[@]}" "${aur_desktop[@]}")
+fi
+if [[ ! "$sel_vesktop" =~ ^[Nn]$ ]]; then
+  to_install+=("vesktop-bin")
 fi
 
 if [ ${#to_install[@]} -gt 0 ]; then
@@ -170,13 +202,18 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   info "Setting up configurations..."
   mkdir -p "$DST_CONFIG"
 
-  # Find all configuration files/folders inside repo's .config
-  if [ ! -d "$SRC_CONFIG" ]; then
-    error "Source configuration directory not found at: $SRC_CONFIG"
-  fi
-
-  # Read dotfiles configs directly from the directory
-  mapfile -t config_items < <(find "$SRC_CONFIG" -mindepth 1 -maxdepth 1 -printf "%P\n")
+  # Define standard configuration files/folders to link
+  config_items=(
+    "hypr"
+    "fish"
+    "kitty"
+    "nvim"
+    "fastfetch"
+    "quickshell"
+    "starship.toml"
+    "vesktop/settings"
+    "illogical-impulse"
+  )
 
   backup_created=false
 
@@ -228,6 +265,20 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     success "All existing configuration backups are stored at: $BACKUP_DIR"
   fi
   success "Configurations linked successfully!"
+
+  # Restart Vesktop to apply new settings
+  if command -v vesktop >/dev/null 2>&1; then
+    info "Restarting Vesktop to apply new configurations..."
+    pkill -f vesktop || killall vesktop || true
+    sleep 1.5
+    if [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; then
+      vesktop >/dev/null 2>&1 &
+      disown
+      success "Vesktop restarted successfully!"
+    else
+      info "No display server detected. Vesktop will launch upon next desktop environment startup."
+    fi
+  fi
 fi
 
 # --- Default Shell Verification ---
