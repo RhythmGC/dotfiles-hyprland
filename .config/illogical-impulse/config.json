@@ -252,7 +252,7 @@
       "sourceLanguage": "Tiếng Việt",
       "targetLanguage": "auto"
     },
-    "ui": "en_US"
+    "ui": "auto"
   },
   "launcher": {
     "pinnedApps": [

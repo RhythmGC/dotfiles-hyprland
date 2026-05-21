@@ -24,11 +24,11 @@ LockScreen {
                 var monName = Quickshell.screens[j].name
                 var wsId = root.savedWorkspaces[monName]
                 if (wsId !== undefined) {
-                    batch += `hyprctl dispatch focusmonitor '${monName}'; hyprctl dispatch workspace ${wsId};`
+                    batch += "dispatch focusmonitor " + monName + "; dispatch workspace " + wsId + "; "
                 }
             }
             if (batch.length > 0) {
-                Quickshell.execDetached(["bash", "-c", batch])
+                Quickshell.execDetached(["hyprctl", "--batch", batch + "reload"])
             }
         }
     }
@@ -53,10 +53,10 @@ LockScreen {
                     }
                     var ws = (mData?.activeWorkspace?.id ?? 1)
                     next[mon] = ws
-                    batch += `hyprctl dispatch focusmonitor '${mon}'; hyprctl dispatch workspace ${2147483647 - ws};`
+                    batch += "dispatch focusmonitor " + mon + "; dispatch workspace " + (2147483647 - ws) + "; "
                 }
                 root.savedWorkspaces = next
-                Quickshell.execDetached(["bash", "-c", batch])
+                Quickshell.execDetached(["hyprctl", "--batch", batch + "reload"])
             } else {
                 restoreTimer.start()
             }

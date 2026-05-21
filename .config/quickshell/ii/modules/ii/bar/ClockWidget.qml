@@ -13,9 +13,8 @@ Item {
 
     RowLayout {
         id: rowLayout
-        anchors.fill: parent
+        anchors.centerIn: parent
         spacing: 4
-        clip: true
 
         StyledText {
             font.pixelSize: Appearance.font.pixelSize.large
@@ -35,8 +34,6 @@ Item {
             font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer1
             text: DateTime.longDate
-            elide: Text.ElideRight
-            Layout.fillWidth: true
         }
     }
 

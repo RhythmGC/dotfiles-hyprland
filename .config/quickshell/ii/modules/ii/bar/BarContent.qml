@@ -136,7 +136,6 @@ Item { // Bar content region
             Workspaces {
                 id: workspacesWidget
                 Layout.fillHeight: true
-                Layout.minimumWidth: implicitWidth
                 MouseArea {
                     // Right-click to toggle overview
                     anchors.fill: parent

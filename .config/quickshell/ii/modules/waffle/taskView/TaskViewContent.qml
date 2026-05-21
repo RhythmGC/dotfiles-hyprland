@@ -186,7 +186,7 @@ Rectangle {
                                 } else {
                                     root.draggingWindow = false;
                                     if (root.hoveredWorkspace !== null && root.hoveredWorkspace.workspace !== windowItem.hyprlandClient.workspace.id) {
-                                        Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${root.hoveredWorkspace.workspace}, follow = false, window = "address:${windowItem.hyprlandClient.address}" })`)
+                                        Hyprland.dispatch(`movetoworkspacesilent ${root.hoveredWorkspace.workspace}, address:${windowItem.hyprlandClient.address}`);
                                     } else {
                                         windowItem.openedX = 0;
                                         windowItem.openedY = 0;

@@ -88,9 +88,9 @@ Item {
     WheelHandler {
         onWheel: (event) => {
             if (event.angleDelta.y < 0)
-                Hyprland.dispatch("workspace r+1");
+                Hyprland.dispatch(`workspace r+1`);
             else if (event.angleDelta.y > 0)
-                Hyprland.dispatch("workspace r-1");
+                Hyprland.dispatch(`workspace r-1`);
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
@@ -100,7 +100,7 @@ Item {
         acceptedButtons: Qt.BackButton
         onPressed: (event) => {
             if (event.button === Qt.BackButton) {
-                Hyprland.dispatch("togglespecialworkspace special");
+                Hyprland.dispatch(`togglespecialworkspace`);
             } 
         }
     }
@@ -194,25 +194,19 @@ Item {
         Repeater {
             model: root.workspacesShown
 
-            Rectangle {
+            Button {
                 id: button
                 property int workspaceValue: workspaceGroup * root.workspacesShown + index + 1
-                implicitHeight: vertical ? root.workspaceButtonWidth : Appearance.sizes.barHeight
-                implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : root.workspaceButtonWidth
-                width: vertical ? undefined : root.workspaceButtonWidth
-                height: vertical ? root.workspaceButtonWidth : undefined
-                color: "transparent"
+                implicitHeight: vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.barHeight
+                implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.verticalBarWidth
+                onPressed: Hyprland.dispatch(`workspace ${workspaceValue}`)
+                width: vertical ? undefined : workspaceButtonWidth
+                height: vertical ? workspaceButtonWidth : undefined
 
-                MouseArea {
-                    anchors.fill: parent
-                    onPressed: Hyprland.dispatch(`workspace ${button.workspaceValue}`)
-                }
-
-                Item {
+                background: Item {
                     id: workspaceButtonBackground
-                    anchors.centerIn: parent
-                    width: workspaceButtonWidth
-                    height: workspaceButtonWidth
+                    implicitWidth: workspaceButtonWidth
+                    implicitHeight: workspaceButtonWidth
                     property var biggestWindow: HyprlandData.biggestWindowForWorkspace(button.workspaceValue)
                     property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.class), "image-missing")
 
@@ -315,6 +309,8 @@ Item {
                         }
                     }
                 }
+                
+
             }
 
         }

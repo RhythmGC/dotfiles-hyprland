@@ -216,9 +216,9 @@ Singleton {
                 property JsonObject parallax: JsonObject {
                     property bool vertical: false
                     property bool autoVertical: false
-                    property bool enableWorkspace: true
-                    property real workspaceZoom: 1.0 // Relative to wallpaper size
-                    property bool enableSidebar: true
+                    property bool enableWorkspace: false
+                    property real workspaceZoom: 1.07 // Relative to wallpaper size
+                    property bool enableSidebar: false
                     property real widgetsFactor: 1.2
                 }
             }
@@ -541,35 +541,7 @@ Singleton {
                     property bool showVolume: true
                     property bool showBrightness: true
                 }
-
-                property JsonObject widgets: JsonObject {
-                    property bool enable: true
-                    property list<string> widgetOrder: ["clock", "notes", "media", "wallpaper", "context", "launch", "status"]
-                    property int spacing: 8
-                    property bool clock: true
-                    property bool notes: true
-                    property bool media: true
-                    property bool context: true
-                    property bool launch: true
-                    property bool status: false
-                    property bool crypto: false
-                    property bool wallpaper: true
-                    property JsonObject statusRings: JsonObject {
-                        property bool showCpu: true
-                        property bool showRam: true
-                        property bool showDisk: true
-                        property bool showTemp: true
-                        property bool showBattery: true
-                    }
-                    property JsonObject glance: JsonObject {
-                        property bool showGameMode: true
-                        property bool showDnd: true
-                        property bool showVolume: true
-                    }
-                }
             }
-
-            property var calendar_notes: ({})
 
             property JsonObject screenRecord: JsonObject {
                 property string savePath: Directories.videos.replace("file://","") // strip "file://"
