@@ -9,7 +9,10 @@ import qs.services
 
 Item {
     id: root
-    implicitHeight: 64
+    implicitHeight: showTemp || showBattery ? 64 : 0
+
+    readonly property bool showTemp: ResourceUsage.cpuTemp > 0 && (Config.options?.sidebar?.widgets?.statusRings?.showTemp ?? true)
+    readonly property bool showBattery: Battery.available && (Config.options?.sidebar?.widgets?.statusRings?.showBattery ?? true)
 
     // Component.onCompleted: ResourceUsage.ensureRunning()
     // onVisibleChanged: if (visible) ResourceUsage.ensureRunning()
@@ -21,46 +24,13 @@ Item {
         spacing: 4
 
         Ring {
-            icon: "memory"
-            value: ResourceUsage.cpuUsage
-            label: Math.round(ResourceUsage.cpuUsage * 100) + "%"
-            ringColor: ResourceUsage.cpuUsage >= 0.9 ? Appearance.colors.colError :
-                   ResourceUsage.cpuUsage >= 0.7 ? Appearance.colors.colTertiary :
-                   Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.colors.colPrimary
-            tip: "CPU"
-            visible: Config.options?.sidebar?.widgets?.statusRings?.showCpu ?? true
-        }
-
-        Ring {
-            icon: "memory_alt"
-            value: ResourceUsage.memoryUsedPercentage
-            label: Math.round(ResourceUsage.memoryUsedPercentage * 100) + "%"
-            ringColor: ResourceUsage.memoryUsedPercentage >= 0.9 ? Appearance.colors.colError :
-                   ResourceUsage.memoryUsedPercentage >= 0.7 ? Appearance.colors.colTertiary :
-                   Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.colors.colPrimary
-            tip: "RAM"
-            visible: Config.options?.sidebar?.widgets?.statusRings?.showRam ?? true
-        }
-
-        Ring {
-            icon: "hard_drive"
-            value: ResourceUsage.diskUsedPercentage
-            label: Math.round(ResourceUsage.diskUsedPercentage * 100) + "%"
-            ringColor: ResourceUsage.diskUsedPercentage >= 0.9 ? Appearance.colors.colError :
-                   ResourceUsage.diskUsedPercentage >= 0.8 ? Appearance.colors.colTertiary :
-                   Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.colors.colPrimary
-            tip: "Disk"
-            visible: Config.options?.sidebar?.widgets?.statusRings?.showDisk ?? true
-        }
-
-        Ring {
             icon: "thermostat"
             value: Math.min(1, ResourceUsage.maxTemp / 100)
             label: ResourceUsage.maxTemp + "°"
             ringColor: ResourceUsage.maxTemp >= 80 ? Appearance.colors.colError :
                    ResourceUsage.maxTemp >= 60 ? Appearance.colors.colTertiary :
                    Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.colors.colPrimary
-            visible: ResourceUsage.cpuTemp > 0 && (Config.options?.sidebar?.widgets?.statusRings?.showTemp ?? true)
+            visible: root.showTemp
             tip: Translation.tr("Temperature")
         }
 
@@ -72,7 +42,7 @@ Item {
                    Battery.isCharging ? (Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.colors.colPrimary) :
                    Battery.percentage < 0.3 ? Appearance.colors.colTertiary :
                    Appearance.angelEverywhere ? Appearance.angel.colPrimary : Appearance.colors.colPrimary
-            visible: Battery.available && (Config.options?.sidebar?.widgets?.statusRings?.showBattery ?? true)
+            visible: root.showBattery
             tip: Battery.isCharging ? Translation.tr("Charging") : Translation.tr("Battery")
         }
     }

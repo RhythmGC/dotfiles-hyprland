@@ -72,6 +72,9 @@ Singleton {
                     property bool collapsed: false
                     property int tab: 0
                 }
+                property JsonObject notes: JsonObject {
+                    property list<var> items: []
+                }
             }
 
             property JsonObject booru: JsonObject {

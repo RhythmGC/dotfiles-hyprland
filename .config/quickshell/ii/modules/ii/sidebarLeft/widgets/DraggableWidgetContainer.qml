@@ -186,7 +186,7 @@ Item {
                 Layout.rightMargin: needsMargin ? 12 : 0
                 visible: Layout.preferredHeight > 0
 
-                readonly property bool needsMargin: ["context", "note", "media", "crypto", "wallpaper"].includes(modelData)
+                readonly property bool needsMargin: ["context", "notes", "media", "crypto", "wallpaper"].includes(modelData)
                 readonly property bool isBeingDragged: root.dragIndex === index
                 readonly property bool isDropTarget: root.hoverIndex === index && root.dragIndex !== index && root.dragIndex >= 0
                 readonly property real displacementY: root.getDisplacementY(index)
