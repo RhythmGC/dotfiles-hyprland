@@ -93,7 +93,7 @@ desktop_packages=("hyprland" "hyprpaper" "hyprlock" "hypridle" "kitty" "rofi-way
 aur_core=()
 aur_shell=()
 aur_editor=()
-aur_desktop=("quickshell-git" "vesktop-bin" "matugen-bin")
+aur_desktop=("illogical-impulse-quickshell-git" "vesktop-bin" "matugen-bin")
 
 # Helper function to install packages
 install_packages() {
