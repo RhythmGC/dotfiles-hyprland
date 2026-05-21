@@ -19,7 +19,7 @@ import qs.modules.ii.sidebarRight.wifiNetworks
 
 Item {
     id: root
-    property int sidebarWidth: Appearance.sizes.sidebarWidth
+    property int sidebarWidth: Math.min(Appearance.sizes.sidebarWidth, Math.max(320, (root.QsWindow.window?.screen?.width ?? Appearance.sizes.sidebarWidth) - Appearance.sizes.hyprlandGapsOut * 2))
     property int sidebarPadding: 10
     property string settingsQmlPath: Quickshell.shellPath("settings.qml")
     property bool showAudioOutputDialog: false
