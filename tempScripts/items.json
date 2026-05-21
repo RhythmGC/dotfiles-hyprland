@@ -1,0 +1,17 @@
+[
+  "hypr",
+  "fish/config.fish",
+  "fish/auto-Hypr.fish",
+  "kitty",
+  "nvim",
+  "fastfetch",
+  "quickshell",
+  "starship.toml",
+  "vesktop/settings",
+  "illogical-impulse",
+  "matugen",
+  "wlogout/style.css",
+  "fontconfig/fonts.conf",
+  "btop",
+  "cava"
+]
