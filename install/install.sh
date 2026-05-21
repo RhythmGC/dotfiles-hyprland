@@ -84,7 +84,7 @@ fi
 
 # --- Package Lists ---
 # Standard Official Packages
-core_packages=("jq" "rsync" "curl" "wget" "fastfetch" "fd" "ripgrep" "unzip")
+core_packages=("jq" "rsync" "curl" "wget" "fastfetch" "fd" "ripgrep" "unzip" "fnm" "pyenv")
 shell_packages=("fish" "starship")
 editor_packages=("neovim")
 desktop_packages=("hyprland" "hyprpaper" "hyprlock" "hypridle" "kitty" "rofi-wayland" "waybar" "polkit-kde-agent")
@@ -150,7 +150,7 @@ install_packages() {
 
 # --- Category Selection ---
 echo -e "\n${BOLD}=== Package Installation Categories ===${NC}"
-ask "Install Core Utilities? (git, jq, rsync, curl, fastfetch, etc.) (Y/n): "
+ask "Install Core Utilities? (git, jq, rsync, curl, fastfetch, fnm, pyenv, bun etc.) (Y/n): "
 read -r sel_core
 ask "Install Shell & Prompt? (fish, starship) (Y/n): "
 read -r sel_shell
