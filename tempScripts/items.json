@@ -8,5 +8,6 @@
   "quickshell",
   "starship.toml",
   "vesktop/settings",
-  "matugen"
+  "matugen",
+  "illogical-impulse/config.json"
 ]
