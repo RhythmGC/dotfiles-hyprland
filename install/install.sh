@@ -264,7 +264,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   if [ "$backup_created" = true ]; then
     success "All existing configuration backups are stored at: $BACKUP_DIR"
   fi
-  success "Configurations linked successfully!"
+  success "Configurations linked successfully!"1
 
   # Restart Vesktop to apply new settings
   if command -v vesktop >/dev/null 2>&1; then
