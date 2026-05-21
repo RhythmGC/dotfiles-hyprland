@@ -194,19 +194,25 @@ Item {
         Repeater {
             model: root.workspacesShown
 
-            Button {
+            Rectangle {
                 id: button
                 property int workspaceValue: workspaceGroup * root.workspacesShown + index + 1
-                implicitHeight: vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.barHeight
-                implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : Appearance.sizes.verticalBarWidth
-                onPressed: Hyprland.dispatch(`workspace ${workspaceValue}`)
+                implicitHeight: vertical ? root.workspaceButtonWidth : Appearance.sizes.barHeight
+                implicitWidth: vertical ? Appearance.sizes.verticalBarWidth : root.workspaceButtonWidth
                 width: vertical ? undefined : root.workspaceButtonWidth
                 height: vertical ? root.workspaceButtonWidth : undefined
+                color: "transparent"
 
-                background: Item {
+                MouseArea {
+                    anchors.fill: parent
+                    onPressed: Hyprland.dispatch(`workspace ${button.workspaceValue}`)
+                }
+
+                Item {
                     id: workspaceButtonBackground
-                    implicitWidth: workspaceButtonWidth
-                    implicitHeight: workspaceButtonWidth
+                    anchors.centerIn: parent
+                    width: workspaceButtonWidth
+                    height: workspaceButtonWidth
                     property var biggestWindow: HyprlandData.biggestWindowForWorkspace(button.workspaceValue)
                     property var mainAppIconSource: Quickshell.iconPath(AppSearch.guessIcon(biggestWindow?.class), "image-missing")
 
@@ -309,8 +315,6 @@ Item {
                         }
                     }
                 }
-                
-
             }
 
         }
