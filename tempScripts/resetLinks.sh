@@ -18,7 +18,7 @@ if [ ! -f "$ITEMS_FILE" ]; then
 fi
 
 unlink_item() {
-  local item="$1"
+  local item="${1%/}"
   local dst="$DST_CONFIG/$item"
 
   echo "[item] $item"

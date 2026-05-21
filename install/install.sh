@@ -222,6 +222,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   backup_created=false
 
   for item in "${config_items[@]}"; do
+    item="${item%/}"
     local_src="$SRC_CONFIG/$item"
     local_dst="$DST_CONFIG/$item"
 

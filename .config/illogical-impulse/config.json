@@ -110,17 +110,17 @@
                     "showDate": true,
                     "vertical": true
                 },
-                "enable": true,
-                "placementStrategy": "leastBusy",
+                "enable": false,
+                "placementStrategy": "mostBusy",
                 "quote": {
                     "enable": false,
                     "text": ""
                 },
-                "showOnlyWhenLocked": false,
+                "showOnlyWhenLocked": true,
                 "style": "digital",
                 "styleLocked": "digital",
-                "x": 755,
-                "y": 485
+                "x": 363.5,
+                "y": 421
             },
             "weather": {
                 "enable": false,
@@ -194,7 +194,7 @@
     },
     "battery": {
         "automaticSuspend": true,
-        "critical": 10,
+        "critical": 5,
         "full": 101,
         "low": 20,
         "suspend": 3
@@ -215,7 +215,7 @@
     },
     "conflictKiller": {
         "autoKillNotificationDaemons": false,
-        "autoKillTrays": false
+        "autoKillTrays": true
     },
     "crosshair": {
         "code": "0;P;d;1;0l;10;0o;2;1b;0"

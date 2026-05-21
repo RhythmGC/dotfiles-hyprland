@@ -34,7 +34,7 @@ backup_item() {
 }
 
 link_item() {
-  local item="$1"
+  local item="${1%/}"
   local src="$SRC_CONFIG/$item"
   local dst="$DST_CONFIG/$item"
 
