@@ -25,14 +25,14 @@ ask()     { echo -ne "${CYAN}${BOLD}[?]${NC} $1 "; }
 # --- Banner ---
 clear
 echo -e "${MAGENTA}${BOLD}"
-echo "  ██████╗  ██████╗ ████████╗███████╗██╗██╗     ███████╗███████╗"
-echo "  ██╔══██╗██╔═══██╗╚══██╔══╝██╔════╝██║██║     ██╔════╝██╔════╝"
-echo "  ██║  ██║██║   ██║   ██║   █████╗  ██║██║     █████╗  ███████╗"
-echo "  ██║  ██║██║   ██║   ██║   ██╔══╝  ██║██║     ██╔══╝  ╚════██║"
-echo "  ██████╔╝╚██████╔╝   ██║   ██║     ██║███████╗███████╗███████║"
-echo "  ╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝╚══════╝╚══════╝╚══════╝"
-echo -e "${CYAN}             Arch Linux Installer & Config Linker${NC}"
-echo -e "${BOLD}------------------------------------------------------------${NC}\n"
+echo "  ██████╗ ██╗  ██╗██╗   ██╗████████╗██╗  ██╗███╗   ███╗ ██████╗  ██████╗"
+echo "  ██╔══██╗██║  ██║╚██╗ ██╔╝╚══██╔══╝██║  ██║████╗ ████║██╔════╝ ██╔════╝"
+echo "  ██████╔╝███████║ ╚████╔╝    ██║   ███████║██╔████╔██║██║  ███╗██║     "
+echo "  ██╔══██╗██╔══██║  ╚██╔╝     ██║   ██╔══██║██║╚██╔╝██║██║   ██║██║     "
+echo "  ██║  ██║██║  ██║   ██║      ██║   ██║  ██║██║ ╚═╝ ██║╚██████╔╝╚██████╗"
+echo "  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝"
+echo -e "${CYAN}                 Arch Linux Installer & Config Linker${NC}"
+echo -e "${BOLD}--------------------------------------------------------------------------${NC}\n"
 
 # --- Arch Linux Guard ---
 if [ ! -f /etc/arch-release ]; then
@@ -202,18 +202,22 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   info "Setting up configurations..."
   mkdir -p "$DST_CONFIG"
 
-  # Define standard configuration files/folders to link
-  config_items=(
-    "hypr"
-    "fish"
-    "kitty"
-    "nvim"
-    "fastfetch"
-    "quickshell"
-    "starship.toml"
-    "vesktop/settings"
-    "illogical-impulse"
-  )
+  # Load configuration files/folders to link from items.json
+  json_file="$DOTFILES_DIR/tempScripts/items.json"
+  if [ ! -f "$json_file" ]; then
+    error "Configuration items file not found: $json_file"
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    if command -v pacman >/dev/null 2>&1; then
+      info "Installing jq to parse configuration items..."
+      sudo pacman -S --needed --noconfirm jq
+    else
+      error "jq is not installed and package manager (pacman) was not found. Please install jq manually."
+    fi
+  fi
+
+  mapfile -t config_items < <(jq -r '.[]' "$json_file")
 
   backup_created=false
 
