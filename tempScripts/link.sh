@@ -51,19 +51,14 @@ link_item() {
   mkdir -p "$(dirname "$dst")"
 
   if [ -L "$dst" ]; then
-    if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      echo "[skip] Đã link đúng: $dst -> $src"
-      return
-    fi
-
     rm "$dst"
     echo "[removed old symlink] $dst"
   elif [ -e "$dst" ]; then
     backup_item "$dst" "$item"
   fi
 
-  ln -s "$src" "$dst"
-  echo "[linked] $dst -> $src"
+  cp -a "$src" "$dst"
+  echo "[copied] $dst <- $src"
 }
 
 while IFS= read -r item; do
@@ -72,5 +67,5 @@ while IFS= read -r item; do
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
 echo
-echo "Xong tạo symlink."
+echo "Xong copy config."
 echo "Backup nếu có nằm ở: $BACKUP_DIR"

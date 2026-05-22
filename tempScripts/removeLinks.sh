@@ -25,9 +25,10 @@ unlink_item() {
 
   if [ -L "$dst" ]; then
     rm "$dst"
-    echo "[unlinked] $dst"
+    echo "[unlinked symlink] $dst"
   elif [ -e "$dst" ]; then
-    echo "[skip] Không phải symlink, giữ nguyên: $dst"
+    rm -rf "$dst"
+    echo "[removed physical copy] $dst"
   else
     echo "[skip] Không tồn tại: $dst"
   fi
@@ -38,5 +39,5 @@ while IFS= read -r item; do
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
 echo
-echo "Xong tắt symlink."
+echo "Xong gỡ bỏ/reset cấu hình."
 

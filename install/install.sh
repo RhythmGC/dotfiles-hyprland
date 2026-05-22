@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Arch Linux Dotfiles Installer
-# Designed to install packages and safely link configurations.
+# Designed to install packages and safely copy configurations.
 
 set -euo pipefail
 
@@ -31,7 +31,7 @@ echo "  ██████╔╝███████║ ╚████╔╝  
 echo "  ██╔══██╗██╔══██║  ╚██╔╝     ██║   ██╔══██║██║╚██╔╝██║██║   ██║██║     "
 echo "  ██║  ██║██║  ██║   ██║      ██║   ██║  ██║██║ ╚═╝ ██║╚██████╔╝╚██████╗"
 echo "  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝  ╚═════╝"
-echo -e "${CYAN}                 Arch Linux Installer & Config Linker${NC}"
+echo -e "${CYAN}                 Arch Linux Installer & Config Copier${NC}"
 echo -e "${BOLD}--------------------------------------------------------------------------${NC}\n"
 
 # --- Arch Linux Guard ---
@@ -192,10 +192,9 @@ if [ ${#to_install[@]} -gt 0 ]; then
 else
   info "No packages selected for installation."
 fi
-
-# --- Configuration Symlinking ---
-echo -e "\n${BOLD}=== Configuration Setup (Symlinking) ===${NC}"
-ask "Do you want to symlink your configurations to ~/.config/? (Y/n): "
+# --- Configuration Copying ---
+echo -e "\n${BOLD}=== Configuration Setup (Copying) ===${NC}"
+ask "Do you want to copy your configurations to ~/.config/? (Y/n): "
 read -r setup_config
 
 if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
@@ -235,14 +234,12 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
 
     # Check if target destination already exists
     if [ -e "$local_dst" ] || [ -L "$local_dst" ]; then
-      # If it's already a symlink pointing to our dotfiles, skip it
-      if [ -L "$local_dst" ] && [ "$(readlink -f "$local_dst")" = "$(readlink -f "$local_src")" ]; then
-        success "Already linked correctly: $item"
-        continue
-      fi
-
-      # Otherwise, back it up if it's a real file/directory
-      if [ ! -L "$local_dst" ]; then
+      # If it's a symlink, remove it (since we want a real copy now)
+      if [ -L "$local_dst" ]; then
+        rm "$local_dst"
+        info "Removed existing symlink: ~/.config/$item"
+      else
+        # Otherwise, back it up if it's a real file/directory
         if [ "$backup_created" = false ]; then
           mkdir -p "$BACKUP_DIR"
           info "Creating backup directory for existing configs: $BACKUP_DIR"
@@ -251,25 +248,21 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
         mkdir -p "$BACKUP_DIR/$(dirname "$item")"
         mv "$local_dst" "$BACKUP_DIR/$item"
         success "Backed up existing config: ~/.config/$item -> backup/$item"
-      else
-        # If it's an old/broken symlink, just remove it
-        rm "$local_dst"
-        info "Removed existing old symlink: ~/.config/$item"
       fi
     fi
 
     # Create parent folder if nested
     mkdir -p "$(dirname "$local_dst")"
 
-    # Create the symlink
-    ln -s "$local_src" "$local_dst"
-    success "Linked: ~/.config/$item -> $local_src"
+    # Copy the item
+    cp -a "$local_src" "$local_dst"
+    success "Copied: ~/.config/$item <- $local_src"
   done
 
   if [ "$backup_created" = true ]; then
     success "All existing configuration backups are stored at: $BACKUP_DIR"
   fi
-  success "Configurations linked successfully!"1
+  success "Configurations copied successfully!"
 
   # Restart Vesktop to apply new settings
   if command -v vesktop >/dev/null 2>&1; then
