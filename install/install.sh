@@ -16,11 +16,14 @@ BOLD='\033[1m'
 NC='\033[0;37m' # No Color
 
 # --- Logging Helpers ---
-info()    { echo -e "${BLUE}${BOLD}[INFO]${NC} $1"; }
+info() { echo -e "${BLUE}${BOLD}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}${BOLD}[SUCCESS]${NC} $1"; }
-warn()    { echo -e "${YELLOW}${BOLD}[WARNING]${NC} $1"; }
-error()   { echo -e "${RED}${BOLD}[ERROR]${NC} $1"; exit 1; }
-ask()     { echo -ne "${CYAN}${BOLD}[?]${NC} $1 "; }
+warn() { echo -e "${YELLOW}${BOLD}[WARNING]${NC} $1"; }
+error() {
+  echo -e "${RED}${BOLD}[ERROR]${NC} $1"
+  exit 1
+}
+ask() { echo -ne "${CYAN}${BOLD}[?]${NC} $1 "; }
 
 # --- Banner ---
 clear
@@ -150,8 +153,10 @@ install_packages() {
 
 # --- Category Selection ---
 echo -e "\n${BOLD}=== Package Installation Categories ===${NC}"
-ask "Install Core Utilities? (git, jq, rsync, curl, fastfetch, fnm, pyenv, bun etc.) (Y/n): "
+ask "Install Core Utilities? (git, jq, rsync, curl, fastfetch, fnm, pyenv etc.) (Y/n): "
 read -r sel_core
+ask "Install Extra Utilities? (bun, etc.) (Y/n): "
+read -r sel_extra
 ask "Install Shell & Prompt? (fish, starship) (Y/n): "
 read -r sel_shell
 ask "Install Editors? (neovim) (Y/n): "
@@ -188,6 +193,9 @@ fi
 if [ ${#to_install[@]} -gt 0 ]; then
   info "Starting package installation..."
   install_packages "${to_install[@]}"
+  if [[ ! "$sel_extra" =~ ^[Nn]$ ]]; then
+    curl -fsSL https://bun.sh/install | bash
+  fi
   success "Package installation complete!"
 else
   info "No packages selected for installation."
