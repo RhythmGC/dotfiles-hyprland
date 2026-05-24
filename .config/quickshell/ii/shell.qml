@@ -67,6 +67,10 @@ ShellRoot {
         }
     }
 
+    IpcHandler {
+        target: "TEST_ALIVE"
+    }
+
     GlobalShortcut {
         name: "panelFamilyCycle"
         description: "Cycles panel family"

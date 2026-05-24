@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Arch Linux Dotfiles Installer
 # Designed to install packages and safely copy configurations.
 
