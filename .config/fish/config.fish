@@ -80,13 +80,13 @@ set -Ux SAL_USE_VCLPLUGIN qt6
 
 set -Ux PYENV_ROOT $HOME/.pyenv
 set -Ux PATH $PYENV_ROOT/bin $PATH
-status --is-interactive; and pyenv init - | source
+# status --is-interactive; and pyenv init - | source
 
 set -x PATH /opt/cuda/bin $PATH
 set -x LD_LIBRARY_PATH /opt/cuda/lib64 $LD_LIBRARY_PATH
 
 if status is-login
-    set -Ux GTK_IM_MODULE fcitx
+    # set -Ux GTK_IM_MODULE fcitx
     set -Ux QT_IM_MODULE fcitx
     set -Ux XMODIFIERS @im=fcitx
     set -Ux SDL_IM_MODULE fcitx
@@ -102,3 +102,6 @@ set --export PATH $BUN_INSTALL/bin $PATH
 
 # uv
 fish_add_path "/home/rhythmgc/.local/bin"
+
+# Pi
+fish_add_path "/home/rhythmgc/.local/share/fnm/node-versions/v24.16.0/installation/bin"
