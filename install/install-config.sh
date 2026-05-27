@@ -153,7 +153,7 @@ install_packages() {
 echo -e "\n${BOLD}=== Package Installation Categories ===${NC}"
 ask "Install Core Utilities? (git, jq, rsync, curl, fastfetch, fnm, pyenv etc.) (Y/n): "
 read -r sel_core
-ask "Install Extra Utilities? (bun, etc.) (Y/n): "
+ask "Install Extra Utilities? (bun, pnpm, etc.) (Y/n): "
 read -r sel_extra
 ask "Install Shell & Prompt? (fish, starship) (Y/n): "
 read -r sel_shell
@@ -193,6 +193,7 @@ if [ ${#to_install[@]} -gt 0 ]; then
   install_packages "${to_install[@]}"
   if [[ ! "$sel_extra" =~ ^[Nn]$ ]]; then
     curl -fsSL https://bun.sh/install | bash
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
   fi
   success "Package installation complete!"
 else

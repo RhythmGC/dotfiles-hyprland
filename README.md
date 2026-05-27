@@ -1,10 +1,10 @@
-# 🌌 RhythmGC's Dotfiles
+# RhythmGC's Dotfiles
 
 Welcome to my personal, premium **Arch Linux** dotfiles repository. This setup is crafted for maximum productivity, sleek aesthetics, and visual comfort, featuring a fluid tiling window manager, modern shells, highly optimized editors, and material-you styling.
 
 ---
 
-## 🎨 System Configuration Stack
+## System Configuration Stack
 
 This repository centralizes and tracks configurations for the following stack:
 
@@ -21,7 +21,7 @@ This repository centralizes and tracks configurations for the following stack:
 
 ---
 
-## 📂 Repository Layout
+## Repository Layout
 
 ```text
 dotfiles/
@@ -38,9 +38,9 @@ dotfiles/
 │
 ├── install/               # Portable Bootstrapping & Setup (Safe for all systems)
 │   ├── install.sh         # Interactive package installer & dynamic config linker
-│   └── README.md          # 📖 English Installer Guide & System Prerequisites
+│   └── README.md          # English Installer Guide & System Prerequisites
 │
-└── working/               # 🔒 Untracked Local Workspace (Ignored by Git)
+└── working/               # Untracked Local Workspace (Ignored by Git)
     ├── items.json         # Local list of linked config directories
     ├── link.sh            # Local symlink deployment script
     ├── resetLinks.sh      # Local symlink decoupling utility
@@ -50,7 +50,7 @@ dotfiles/
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
 Ready to install this desktop environment on a new machine? The portable `install/` module handles package installation and config linking automatically.
 
@@ -67,11 +67,11 @@ cd ~/dotfiles
 ./install/install.sh
 ```
 
-For custom AUR package instructions, system dependencies, and details on safety backups, read the [📖 Comprehensive Installer Guide](file:///home/rhythmgc/dotfiles/install/README.md).
+For custom AUR package instructions, system dependencies, and details on safety backups, read the [Comprehensive Installer Guide](file:///home/rhythmgc/dotfiles/install/README.md).
 
 ---
 
-## 🎨 Visual Aesthetics & Styling
+## Visual Aesthetics & Styling
 
 This system utilizes **Matugen** to read colors from your active desktop wallpaper and dynamically compile theme definitions. These themes are subsequently applied to:
 
@@ -81,8 +81,10 @@ This system utilizes **Matugen** to read colors from your active desktop wallpap
 
 ---
 
-## 📜 License & Acknowledgment
+## License & Acknowledgment
 
 All configurations and scripts are open-source. Feel free to fork, modify, and integrate elements of these dotfiles into your own setup.
 
-🌌 *Elevate your Linux desktop experience!*
+This dotfiles setup is currently based on [End-4's dots-hyprland](https://github.com/end-4/dots-hyprland). If you find this setup useful, consider visiting the original repository and giving End-4 a star.
+
+*Elevate your Linux desktop experience!*
