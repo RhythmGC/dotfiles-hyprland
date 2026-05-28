@@ -199,6 +199,19 @@ if [ ${#to_install[@]} -gt 0 ]; then
 else
   info "No packages selected for installation."
 fi
+
+# --- Ask for using my SDDM THEME ---
+ask "Do you want to use my custom SDDM theme (I just support for Yuuka Hayase right now, you want to custom your theme then clone my repo https://github.com/RhythmGC/BlueArchive-SDDM-theme.git and follow my instruct to set your custom theme)? (Y/n): "
+read -r use_sddm_theme
+
+# --- Install SDDM Theme if user agrees ---
+if [[ ! "$use_sddm_theme" =~ ^[Nn]$ ]]; then
+  git clone https://github.com/RhythmGC/BlueArchive-SDDM-theme.git
+  cd BlueArchive-SDDM-theme
+  chmod +x ./setup.sh
+  ./setup.sh
+fi
+
 # --- Configuration Copying ---
 echo -e "\n${BOLD}=== Configuration Setup (Copying) ===${NC}"
 ask "Do you want to copy your configurations to ~/.config/? (Y/n): "
