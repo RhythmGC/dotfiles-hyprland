@@ -254,7 +254,7 @@
             "sourceLanguage": "auto",
             "targetLanguage": "auto"
         },
-        "ui": "auto"
+        "ui": "en_US"
     },
     "launcher": {
         "pinnedApps": [
