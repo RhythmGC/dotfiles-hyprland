@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-05-28T01:22:19Z | Files: 500 | Described: 0/500
-<!-- gsd:codebase-meta {"generatedAt":"2026-05-28T01:22:19Z","fingerprint":"82abc6843c4e435092c467fbaea38267d8b37d2d","fileCount":500,"truncated":true} -->
+Generated: 2026-05-28T09:50:43Z | Files: 500 | Described: 0/500
+<!-- gsd:codebase-meta {"generatedAt":"2026-05-28T09:50:43Z","fingerprint":"82abc6843c4e435092c467fbaea38267d8b37d2d","fileCount":500,"truncated":true} -->
 Note: Truncated to first 500 files. Run with higher --max-files to include all.
 
 ### .config/fastfetch/
