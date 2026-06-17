@@ -15,3 +15,6 @@
 **/Network Persistent State
 **/Crashpad
 **/.opencode
+.gsd/
+.bg-shell/
+
