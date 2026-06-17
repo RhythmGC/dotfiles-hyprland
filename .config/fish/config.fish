@@ -100,9 +100,8 @@ fish_add_path /home/rhythmgc/.opencode/bin
 set --export BUN_INSTALL "$HOME/.bun"
 set --export PATH $BUN_INSTALL/bin $PATH
 
-# pnpm
-set -gx PNPM_HOME "/home/rhythmgc/.local/share/pnpm"
-if not string match -q -- "$PNPM_HOME/bin" $PATH
-  set -gx PATH "$PNPM_HOME/bin" $PATH
-end
-# pnpm end
+# uv
+fish_add_path "/home/rhythmgc/.local/bin"
+
+# Pi
+fish_add_path "/home/rhythmgc/.local/share/fnm/node-versions/v24.16.0/installation/bin"

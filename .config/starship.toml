@@ -29,7 +29,7 @@ disabled = true
 [git_branch]
 style = "bg: 252"
 symbol = "󰘬"
-truncation_length = 30
+truncation_length = 12
 truncation_symbol = ""
 format = " 󰜥 [](bold fg:252)[$symbol $branch(:$remote_branch)](fg:235 bg:252)[ ](bold fg:252)"
 

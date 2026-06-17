@@ -21,7 +21,7 @@ jq --arg img "$CHAR_IMG" --arg char "$CHAR_NAME" --arg color "$CHAR_COLOR" '
   .logo.source = $img |
   .logo.type = "kitty-direct" |
   .logo.height = 13 |
-  .logo.width = 27 |
+  .logo.width = 26 |
   .modules += [
     {
       "type": "custom",
