@@ -283,7 +283,7 @@
                 "wezterm": true,
                 "yazi": true
             },
-            "useBackdropForColors": false,
+            "useBackdropForColors": true,
             "vscodeEditors": {
                 "aide": true,
                 "antigravity": true,
