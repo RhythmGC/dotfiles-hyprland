@@ -185,7 +185,7 @@ service_link_summary() {
     local wants_dir
     for wants_dir in "$systemd_user_dir"/*.wants; do
         [[ -d "$wants_dir" ]] || continue
-        [[ -e "$wants_dir/inir.service" || -L "$wants_dir/inir.service" ]] || continue
+        [[ -e "$wants_dir/ba.service" || -L "$wants_dir/ba.service" ]] || continue
         [[ "$(basename "$wants_dir")" == "graphical-session.target.wants" ]] && continue
         links+=("$(basename "${wants_dir%.wants}")")
     done
@@ -249,7 +249,7 @@ Usage: ${INIR_NAME} service <install|uninstall|enable|disable|start|stop|restart
 
 What it does:
   install     Write the user unit file from the current launcher path
-  enable      Wire inir.service to the detected compositor service
+  enable      Wire ba.service to the detected compositor service
   disable     Remove compositor wants links
   start       Start the user service
   stop        Stop the user service
@@ -259,7 +259,7 @@ What it does:
 
 Current service state:
   wiring: $service_state
-  unit: ${systemd_user_dir}/inir.service
+  unit: ${systemd_user_dir}/ba.service
 
 This never falls back to graphical-session.target, because that would be
 stupid and start iNiR under desktops that should not touch it.
@@ -972,10 +972,10 @@ _inir_doctor_perf() {
     fi
     printf '\n'
 
-    printf '=== inir.service cgroup ===\n'
+    printf '=== ba.service cgroup ===\n'
     local unit_info unit_cgroup unit_main_pid unit_memory cgroup_rows=""
     local saw_awww=false saw_wlcopy=false saw_possible_app=false
-    unit_info="$(systemctl --user show -p MainPID -p ControlGroup -p MemoryCurrent inir.service 2>/dev/null || true)"
+    unit_info="$(systemctl --user show -p MainPID -p ControlGroup -p MemoryCurrent ba.service 2>/dev/null || true)"
     unit_main_pid="$(printf '%s\n' "$unit_info" | awk -F= '$1=="MainPID"{print $2}')"
     unit_cgroup="$(printf '%s\n' "$unit_info" | awk -F= '$1=="ControlGroup"{print $2}')"
     unit_memory="$(printf '%s\n' "$unit_info" | awk -F= '$1=="MemoryCurrent"{print $2}')"
@@ -990,7 +990,7 @@ _inir_doctor_perf() {
         if [[ -n "$unit_cgroup" ]]; then
             [[ "$proc_cgroup" == *"$unit_cgroup"* ]] || continue
         else
-            [[ "$proc_cgroup" == */inir.service* ]] || continue
+            [[ "$proc_cgroup" == */ba.service* ]] || continue
         fi
         proc_comm="$(cat "$proc_dir/comm" 2>/dev/null || true)"
         proc_cmd="$(tr '\0' ' ' < "$proc_dir/cmdline" 2>/dev/null || true)"
@@ -1036,11 +1036,11 @@ _inir_doctor_perf() {
             printf '  %-7s %-7s %-7s %-18s %-42s %s\n' "$row_pid" "$row_ppid" "$row_rss" "$row_comm" "$row_note" "$row_cmd"
         done
     else
-        printf '  (no processes found under inir.service)\n'
+        printf '  (no processes found under ba.service)\n'
     fi
-    $saw_awww && recommendations+=("awww-daemon is inside inir.service, so cgroup tools count wallpaper daemon memory/CPU as iNiR.")
-    $saw_wlcopy && recommendations+=("wl-copy is inside inir.service; clipboard helpers may appear as iNiR resource usage.")
-    $saw_possible_app && recommendations+=("Non-shell processes are inside inir.service. Check #167 before trusting cgroup-level app totals.")
+    $saw_awww && recommendations+=("awww-daemon is inside ba.service, so cgroup tools count wallpaper daemon memory/CPU as iNiR.")
+    $saw_wlcopy && recommendations+=("wl-copy is inside ba.service; clipboard helpers may appear as iNiR resource usage.")
+    $saw_possible_app && recommendations+=("Non-shell processes are inside ba.service. Check #167 before trusting cgroup-level app totals.")
     printf '\n'
 
     if [[ -f "$cfg_path" ]] && command -v jq >/dev/null 2>&1; then
@@ -1321,7 +1321,7 @@ apply_shell_scale() {
 
 wait_for_wayland_socket() {
     # Block until a Wayland compositor socket appears in XDG_RUNTIME_DIR.
-    # At session boot, systemd may start inir.service before the compositor
+    # At session boot, systemd may start ba.service before the compositor
     # (Niri/Hyprland) has created its socket.  Without WAYLAND_DISPLAY, Qt
     # falls back to XCB and crashes (SIGABRT — no X11 server on Wayland-only).
     # Polling here is cheaper than crash-restart loops and gives instant start
@@ -1444,7 +1444,7 @@ apply_qt_runtime_env() {
     apply_gpu_policy
 
     # Ensure WAYLAND_DISPLAY is set — required for Qt to select the wayland
-    # platform backend.  When systemd starts inir.service at boot, the
+    # platform backend.  When systemd starts ba.service at boot, the
     # compositor may not have exported WAYLAND_DISPLAY into the user manager
     # environment yet.  Without it Qt falls back to XCB, which crashes on a
     # headless Wayland session (no X11 display) and delays shell startup long
@@ -1462,8 +1462,8 @@ apply_qt_runtime_env() {
     # NIRI_SOCKET — NiriService.qml reads this via Quickshell.env("NIRI_SOCKET")
     # as a readonly property at instantiation time, so it must be present in the
     # process environment before QS starts.
-    # At session boot, inir.service races with Niri's own import-environment call:
-    # graphical-session.target activates → systemd starts inir.service immediately,
+    # At session boot, ba.service races with Niri's own import-environment call:
+    # graphical-session.target activates → systemd starts ba.service immediately,
     # but Niri only propagates NIRI_SOCKET to the user manager a moment later.
     # Result: QS reads an empty string → NiriService never connects → workspaces,
     # window management, and all Niri IPC broken until inir restart.
@@ -1517,7 +1517,7 @@ apply_qt_runtime_env() {
 
     # Import missing graphical-session variables from the systemd user manager.
     #
-    # When inir.service races compositor startup (graphical-session.target),
+    # When ba.service races compositor startup (graphical-session.target),
     # the process environment is minimal (PATH=/usr/local/bin:/usr/bin, no
     # XDG_SESSION_TYPE, no DISPLAY, no XCURSOR_*, etc.).  By the time
     # wait_for_wayland_socket() returns, the compositor (niri/hyprland) has
@@ -1700,7 +1700,7 @@ is_inir_service_enabled() {
     fi
 
     # The unit has no [Install] section — enablement is managed by a wants link
-    # under the compositor service (e.g. niri.service.wants/inir.service).
+    # under the compositor service (e.g. niri.service.wants/ba.service).
     # Only count links under compositor-specific dirs, not graphical-session.target
     # (which fires under any DE including KDE/GNOME).
     local wants_dir
@@ -1708,7 +1708,7 @@ is_inir_service_enabled() {
         [[ -d "$wants_dir" ]] || continue
         # Skip graphical-session.target.wants — it's not compositor-specific
         [[ "$(basename "$wants_dir")" == "graphical-session.target.wants" ]] && continue
-        if [[ -e "$wants_dir/inir.service" || -L "$wants_dir/inir.service" ]]; then
+        if [[ -e "$wants_dir/ba.service" || -L "$wants_dir/ba.service" ]]; then
             return 0
         fi
     done
@@ -1865,8 +1865,8 @@ start_inir_service_if_enabled() {
     if is_inir_service_enabled; then
         ensure_service_unit_available
         ensure_systemd_graphical_env
-        systemctl --user reset-failed inir.service >/dev/null 2>&1 || true
-        systemctl --user start inir.service >/dev/null 2>&1 || true
+        systemctl --user reset-failed ba.service >/dev/null 2>&1 || true
+        systemctl --user start ba.service >/dev/null 2>&1 || true
         return 0
     fi
 
@@ -1878,8 +1878,8 @@ start_background() {
     if is_inir_service_enabled; then
         ensure_service_unit_available
         ensure_systemd_graphical_env
-        systemctl --user reset-failed inir.service >/dev/null 2>&1 || true
-        systemctl --user start inir.service >/dev/null 2>&1 || true
+        systemctl --user reset-failed ba.service >/dev/null 2>&1 || true
+        systemctl --user start ba.service >/dev/null 2>&1 || true
         return 0
     fi
 
@@ -1892,7 +1892,7 @@ kill_wrapper() {
 }
 
 # Clean up stale Quickshell runtime entries and orphaned qs processes.
-# Called by ExecStopPost in inir.service after crashes where KillMode=process
+# Called by ExecStopPost in ba.service after crashes where KillMode=process
 # only terminated the main PID, leaving child processes and runtime artifacts.
 cleanup_orphans() {
     local qs_runtime_dir="/run/user/$(id -u)/quickshell"
@@ -1961,7 +1961,7 @@ cleanup_orphans() {
     # Phase 4: Kill orphaned quickshell/qs processes not owned by the live service.
     # Only target qs processes, never user apps.
     local alive_pids service_main_pid=""
-    service_main_pid="$(systemctl --user show -p MainPID inir.service 2>/dev/null | cut -d= -f2 || true)"
+    service_main_pid="$(systemctl --user show -p MainPID ba.service 2>/dev/null | cut -d= -f2 || true)"
     alive_pids="$(pgrep -x 'quickshell|qs' 2>/dev/null || true)"
     if [[ -n "$alive_pids" ]]; then
         while IFS= read -r pid; do
@@ -1977,7 +1977,7 @@ cleanup_orphans() {
         done <<< "$alive_pids"
     fi
 
-    # Phase 5: Kill orphaned inir helper daemons still in inir.service cgroup.
+    # Phase 5: Kill orphaned inir helper daemons still in ba.service cgroup.
     # KillMode=process only kills the main QS pid; keyboard daemon, nmcli monitor,
     # and awww-daemon (when not in their own transient scope) get reparented to the
     # user manager but stay in the cgroup, accumulating across restarts.
@@ -1991,7 +1991,7 @@ cleanup_orphans() {
             [[ "$_ppid" == "$service_main_pid" ]] && continue
         fi
         _cgroup="$(cat /proc/$_pid/cgroup 2>/dev/null || true)"
-        [[ "$_cgroup" == *"inir.service"* ]] || continue
+        [[ "$_cgroup" == *"ba.service"* ]] || continue
         kill "$_pid" 2>/dev/null || true
     done < <(pgrep -f 'keyboard_lock_state_daemon\.py|nmcli monitor' 2>/dev/null || true)
 }
@@ -2483,7 +2483,7 @@ is_inir_service_active() {
         return 1
     fi
 
-    systemctl --user is-active --quiet inir.service >/dev/null 2>&1
+    systemctl --user is-active --quiet ba.service >/dev/null 2>&1
 }
 
 is_current_process_inir_service() {
@@ -2492,7 +2492,7 @@ is_current_process_inir_service() {
 
 stop_inir_service_if_active() {
     if is_inir_service_active; then
-        systemctl --user stop inir.service >/dev/null 2>&1 || true
+        systemctl --user stop ba.service >/dev/null 2>&1 || true
         return 0
     fi
 
@@ -2511,12 +2511,12 @@ report_inir_service_failure() {
         return 1
     fi
 
-    printf '\n\033[31m── inir.service status ──\033[0m\n' >&2
-    systemctl --user status inir.service --no-pager 2>&1 | sed -n '1,18p' >&2 || true
+    printf '\n\033[31m── ba.service status ──\033[0m\n' >&2
+    systemctl --user status ba.service --no-pager 2>&1 | sed -n '1,18p' >&2 || true
 
     if command -v journalctl >/dev/null 2>&1; then
-        printf '\n\033[31m── recent inir.service logs ──\033[0m\n' >&2
-        journalctl --user-unit inir.service -n "$lines" --no-pager 2>&1 >&2 || true
+        printf '\n\033[31m── recent ba.service logs ──\033[0m\n' >&2
+        journalctl --user-unit ba.service -n "$lines" --no-pager 2>&1 >&2 || true
     fi
 
     return 0
@@ -2528,8 +2528,8 @@ restart_inir_service_or_fail() {
 
     ensure_service_unit_available
     ensure_systemd_graphical_env
-    systemctl --user reset-failed inir.service >/dev/null 2>&1 || true
-    systemctl --user restart inir.service >/dev/null 2>&1 || true
+    systemctl --user reset-failed ba.service >/dev/null 2>&1 || true
+    systemctl --user restart ba.service >/dev/null 2>&1 || true
 
     if ! wait_for_start "$dir"; then
         echo "Timed out waiting for iNiR to start" >&2
@@ -2537,7 +2537,7 @@ restart_inir_service_or_fail() {
         exit 1
     fi
 
-    if ! systemctl --user is-active --quiet inir.service >/dev/null 2>&1; then
+    if ! systemctl --user is-active --quiet ba.service >/dev/null 2>&1; then
         echo "iNiR service failed to start" >&2
         report_inir_service_failure
         exit 1
@@ -2555,7 +2555,7 @@ install_user_service() {
 
     require_command systemctl
     setup_dir="$(resolve_setup_dir)"
-    asset_path="$setup_dir/assets/systemd/inir.service"
+    asset_path="$setup_dir/assets/systemd/ba.service"
     launcher_path="$(resolve_launcher_path)"
 
     if [[ ! -f "$asset_path" ]]; then
@@ -2565,15 +2565,15 @@ install_user_service() {
 
     mkdir -p "$systemd_user_dir"
     mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}"
-    tmp_file="${XDG_CACHE_HOME:-$HOME/.cache}/inir.service.$$"
+    tmp_file="${XDG_CACHE_HOME:-$HOME/.cache}/ba.service.$$"
     local escaped_launcher="${launcher_path//&/\\&}"
     sed -e "s|^ExecStart=.*|ExecStart=${escaped_launcher} run --session|" \
         -e "s|^ExecStopPost=-.*|ExecStopPost=-${escaped_launcher} cleanup-orphans|" \
         "$asset_path" > "$tmp_file"
-    if [[ -L "$systemd_user_dir/inir.service" ]]; then
-        local service_dropin_dir="$systemd_user_dir/inir.service.d"
+    if [[ -L "$systemd_user_dir/ba.service" ]]; then
+        local service_dropin_dir="$systemd_user_dir/ba.service.d"
         local service_override="$service_dropin_dir/override.conf"
-        local override_tmp="${XDG_CACHE_HOME:-$HOME/.cache}/inir.service.override.$$"
+        local override_tmp="${XDG_CACHE_HOME:-$HOME/.cache}/ba.service.override.$$"
         mkdir -p "$service_dropin_dir"
         cat > "$override_tmp" <<EOF
 # Managed locally: keep the repo unit template portable while running the
@@ -2587,7 +2587,7 @@ EOF
         cp -f "$override_tmp" "$service_override"
         rm -f "$override_tmp"
     else
-        cp -f "$tmp_file" "$systemd_user_dir/inir.service"
+        cp -f "$tmp_file" "$systemd_user_dir/ba.service"
     fi
     rm -f "$tmp_file"
 
@@ -2597,11 +2597,11 @@ EOF
     cleanup_stale_wants_links
 
     systemctl --user daemon-reload
-    printf '%s\n' "$systemd_user_dir/inir.service"
+    printf '%s\n' "$systemd_user_dir/ba.service"
 }
 
 cleanup_stale_wants_links() {
-    # Remove inir.service wants links from targets it should NOT be wired to.
+    # Remove ba.service wants links from targets it should NOT be wired to.
     # Previous versions used WantedBy=graphical-session.target which caused
     # inir to start under any DE.  Remove that, and only keep the link if it
     # lives under the detected compositor service.
@@ -2613,7 +2613,7 @@ cleanup_stale_wants_links() {
     local wants_dir
     for wants_dir in "$systemd_user_dir"/*.wants; do
         [[ -d "$wants_dir" ]] || continue
-        local link="$wants_dir/inir.service"
+        local link="$wants_dir/ba.service"
         [[ -e "$link" || -L "$link" ]] || continue
         # Keep the link if it's under the correct compositor
         if [[ -n "$correct_wants_dir" ]] && \
@@ -2625,7 +2625,7 @@ cleanup_stale_wants_links() {
 }
 
 enable_inir_service() {
-    # Wire inir.service to the compositor's wants directory so it starts
+    # Wire ba.service to the compositor's wants directory so it starts
     # only when that specific compositor starts — not under KDE/GNOME/etc.
     require_command systemctl
     ensure_service_unit_available
@@ -2642,23 +2642,23 @@ enable_inir_service() {
     local wants_dir="$systemd_user_dir/${target}.wants"
 
     mkdir -p "$wants_dir"
-    ln -sf "$systemd_user_dir/inir.service" "$wants_dir/inir.service"
+    ln -sf "$systemd_user_dir/ba.service" "$wants_dir/ba.service"
     systemctl --user daemon-reload
 
-    printf 'Enabled inir.service (wired to %s)\n' "$target"
+    printf 'Enabled ba.service (wired to %s)\n' "$target"
 }
 
 disable_inir_service() {
-    # Remove all wants links for inir.service and stop the service.
+    # Remove all wants links for ba.service and stop the service.
     require_command systemctl
 
-    systemctl --user stop inir.service 2>/dev/null || true
+    systemctl --user stop ba.service 2>/dev/null || true
 
     local found=false
     local wants_dir
     for wants_dir in "$systemd_user_dir"/*.wants; do
         [[ -d "$wants_dir" ]] || continue
-        local link="$wants_dir/inir.service"
+        local link="$wants_dir/ba.service"
         if [[ -e "$link" || -L "$link" ]]; then
             rm -f "$link"
             found=true
@@ -2668,9 +2668,9 @@ disable_inir_service() {
     systemctl --user daemon-reload
 
     if [[ "$found" == true ]]; then
-        echo "Disabled inir.service"
+        echo "Disabled ba.service"
     else
-        echo "inir.service was not enabled"
+        echo "ba.service was not enabled"
     fi
 }
 
@@ -2682,9 +2682,9 @@ ensure_service_unit_available() {
     # Warn if effective KillMode isn't process — child apps (e.g. mpv) would be
     # killed on shell restart until the user runs 'inir service install'.
     local effective_killmode
-    effective_killmode=$(systemctl --user show -p KillMode inir.service 2>/dev/null | cut -d= -f2)
+    effective_killmode=$(systemctl --user show -p KillMode ba.service 2>/dev/null | cut -d= -f2)
     if [ -n "$effective_killmode" ] && [ "$effective_killmode" != "process" ]; then
-        echo "WARNING: inir.service KillMode is '$effective_killmode' (expected 'process') — run 'inir service install' to fix" >&2
+        echo "WARNING: ba.service KillMode is '$effective_killmode' (expected 'process') — run 'inir service install' to fix" >&2
     fi
 }
 
@@ -2699,9 +2699,9 @@ run_service_command() {
         uninstall|remove)
             disable_inir_service 2>/dev/null || true
             require_command systemctl
-            rm -f "$systemd_user_dir/inir.service"
+            rm -f "$systemd_user_dir/ba.service"
             systemctl --user daemon-reload
-            echo "Uninstalled inir.service"
+            echo "Uninstalled ba.service"
             ;;
         enable)
             enable_inir_service
@@ -2711,17 +2711,17 @@ run_service_command() {
             ;;
         start)
             ensure_service_unit_available
-            exec systemctl --user start inir.service
+            exec systemctl --user start ba.service
             ;;
         stop)
-            exec systemctl --user stop inir.service
+            exec systemctl --user stop ba.service
             ;;
         restart)
             ensure_service_unit_available
-            exec systemctl --user restart inir.service
+            exec systemctl --user restart ba.service
             ;;
         status)
-            exec systemctl --user status inir.service "$@"
+            exec systemctl --user status ba.service "$@"
             ;;
         logs)
             require_command journalctl
@@ -2732,7 +2732,7 @@ run_service_command() {
                 [[ -z "$cfg_path" ]] && cfg_path="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ba"
                 exec qs -p "$cfg_path" log --rules "*=true" "$@"
             fi
-            exec journalctl --user-unit inir.service "$@"
+            exec journalctl --user-unit ba.service "$@"
             ;;
         -h|--help|"")
             service_usage
@@ -3157,7 +3157,7 @@ case "$command_name" in
         fi
         if [[ "$foreground" == true ]] && is_inir_service_active; then
             if ! is_current_process_inir_service; then
-                echo "iNiR is managed by inir.service. Stop it first before running manually." >&2
+                echo "iNiR is managed by ba.service. Stop it first before running manually." >&2
                 exit 1
             fi
         fi

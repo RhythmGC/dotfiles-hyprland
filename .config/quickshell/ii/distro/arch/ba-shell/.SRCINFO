@@ -1,8 +1,8 @@
-pkgbase = inir-shell
-	pkgdesc = iNiR shell payload, launcher, and user service
+pkgbase = ba-shell
+	pkgdesc = BlueArchiveOS shell payload, launcher, and user service
 	pkgver = 2.27.0
 	pkgrel = 1
-	url = https://github.com/snowarch/iNiR
+	url = https://github.com/snowarch/BlueArchiveOS
 	arch = any
 	license = MIT
 	depends = bash
@@ -89,11 +89,11 @@ pkgbase = inir-shell
 	optdepends = ydotool: virtual keyboard and clipboard paste helper
 	optdepends = yt-dlp: YouTube media backend
 	optdepends = millennium-bin: Steam theming via Millennium (requires steam)
-	conflicts = inir-shell-git
+	conflicts = ba-shell-git
 	conflicts = noctalia-qs
 	conflicts = noctalia-shell
 	conflicts = cachyos-niri-noctalia
-	source = inir-2.27.0.tar.gz::https://github.com/snowarch/iNiR/archive/refs/tags/v2.27.0.tar.gz
+	source = ba-2.27.0.tar.gz::https://github.com/snowarch/BlueArchiveOS/archive/refs/tags/v2.27.0.tar.gz
 	sha256sums = SKIP
 
-pkgname = inir-shell
+pkgname = ba-shell

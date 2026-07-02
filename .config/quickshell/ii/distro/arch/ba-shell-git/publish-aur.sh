@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# AUR publication helper for inir-shell-git
+# AUR publication helper for ba-shell-git
 # Run this after: (1) pushing to GitHub, (2) registering AUR account, (3) adding SSH key
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_DIR="${SCRIPT_DIR}"
-AUR_PKG="inir-shell-git"
+AUR_PKG="ba-shell-git"
 WORK_DIR="${TMPDIR:-/tmp}/aur-${AUR_PKG}"
 
-echo "=== iNiR AUR Publication Helper ==="
+echo "=== BlueArchiveOS AUR Publication Helper ==="
 echo ""
 
 # Step 1: Verify SSH access
@@ -28,7 +28,7 @@ echo "  SSH access OK"
 
 # Step 2: Verify GitHub has LICENSE
 echo "[2/5] Verifying LICENSE exists on GitHub..."
-if ! curl -sf "https://raw.githubusercontent.com/snowarch/iNiR/dev/LICENSE" >/dev/null 2>&1; then
+if ! curl -sf "https://raw.githubusercontent.com/snowarch/BlueArchiveOS/dev/LICENSE" >/dev/null 2>&1; then
     echo "ERROR: LICENSE not found on GitHub."
     echo "  Push your local commits first: git push origin dev"
     exit 1
@@ -49,20 +49,20 @@ git clone "ssh://aur@aur.archlinux.org/${AUR_PKG}.git" "${WORK_DIR}" 2>/dev/null
 # Step 4: Copy package files
 echo "[4/5] Copying package files..."
 cp "${PKG_DIR}/PKGBUILD" "${WORK_DIR}/PKGBUILD"
-cp "${PKG_DIR}/inir-shell-git.install" "${WORK_DIR}/inir-shell-git.install"
+cp "${PKG_DIR}/ba-shell-git.install" "${WORK_DIR}/ba-shell-git.install"
 
 # Regenerate .SRCINFO from the PKGBUILD
 cd "${WORK_DIR}"
 makepkg --printsrcinfo > .SRCINFO
 
 echo "  Files in AUR repo:"
-ls -la "${WORK_DIR}"/{PKGBUILD,.SRCINFO,inir-shell-git.install}
+ls -la "${WORK_DIR}"/{PKGBUILD,.SRCINFO,ba-shell-git.install}
 
 # Step 5: Commit and push
 echo "[5/5] Committing and pushing to AUR..."
 cd "${WORK_DIR}"
-git add PKGBUILD .SRCINFO inir-shell-git.install
-git commit -m "Initial upload: inir-shell-git $(grep pkgver= PKGBUILD | head -1 | cut -d= -f2)"
+git add PKGBUILD .SRCINFO ba-shell-git.install
+git commit -m "Initial upload: ba-shell-git $(grep pkgver= PKGBUILD | head -1 | cut -d= -f2)"
 
 echo ""
 echo "Ready to push. Review the commit:"

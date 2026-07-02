@@ -1,13 +1,13 @@
 # Maintainer: snowarch
 
-pkgname=inir-meta
+pkgname=ba-meta
 pkgver=2.27.0
 pkgrel=1
-pkgdesc='Full iNiR desktop experience meta-package'
+pkgdesc='Full BlueArchiveOS desktop experience meta-package'
 arch=(any)
-url='https://github.com/snowarch/iNiR'
+url='https://github.com/snowarch/BlueArchiveOS'
 license=('MIT')
-source=("LICENSE::https://raw.githubusercontent.com/snowarch/iNiR/main/LICENSE")
+source=("LICENSE::https://raw.githubusercontent.com/snowarch/BlueArchiveOS/main/LICENSE")
 sha256sums=('SKIP')
 depends=(
   adw-gtk-theme
@@ -26,7 +26,7 @@ depends=(
   gum
   hyprpicker
   imagemagick
-  inir-shell
+  ba-shell
   kconfig
   kdialog
   kitty

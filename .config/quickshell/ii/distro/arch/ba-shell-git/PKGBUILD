@@ -1,11 +1,11 @@
 # Maintainer: snowarch
 
-pkgname=inir-shell-git
+pkgname=ba-shell-git
 pkgver=2.21.0.r0.g0000000
 pkgrel=1
-pkgdesc='iNiR shell payload, launcher, and user service (git)'
+pkgdesc='BlueArchiveOS shell payload, launcher, and user service (git)'
 arch=(any)
-url='https://github.com/snowarch/iNiR'
+url='https://github.com/snowarch/BlueArchiveOS'
 license=('MIT')
 depends=(
   bash
@@ -94,24 +94,24 @@ optdepends=(
   'millennium-bin: Steam theming via Millennium (requires steam)'
 )
 makedepends=(git)
-install=inir-shell-git.install
-provides=('inir-shell')
-conflicts=('inir-shell' 'noctalia-qs' 'noctalia-shell' 'cachyos-niri-noctalia')
+install=ba-shell-git.install
+provides=('ba-shell')
+conflicts=('ba-shell' 'noctalia-qs' 'noctalia-shell' 'cachyos-niri-noctalia')
 source=(
-  'inir::git+https://github.com/snowarch/iNiR.git'
+  'ba::git+https://github.com/snowarch/BlueArchiveOS.git'
 )
 sha256sums=('SKIP')
 
 pkgver() {
-  cd "${srcdir}/inir"
+  cd "${srcdir}/ba"
   local base
   base="$(tr -d '[:space:]' < VERSION)"
   printf '%s.r%s.g%s' "$base" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 package() {
-  local srcroot="${srcdir}/inir"
-  local shellroot="${pkgdir}/usr/share/quickshell/inir"
+  local srcroot="${srcdir}/ba"
+  local shellroot="${pkgdir}/usr/share/quickshell/ba"
   local docroot="${pkgdir}/usr/share/doc/${pkgname}"
   local timestamp
   local commit
@@ -140,10 +140,10 @@ package() {
 
   find "$shellroot/scripts" -type f \( -name '*.sh' -o -name '*.fish' -o -name '*.py' \) -exec chmod +x {} +
 
-  install -Dm755 "$srcroot/scripts/inir" "$pkgdir/usr/bin/inir"
-  install -Dm644 "$srcroot/assets/systemd/inir.service" "$pkgdir/usr/lib/systemd/user/inir.service"
-  install -Dm644 "$srcroot/assets/applications/inir.desktop" "$pkgdir/usr/share/applications/inir.desktop"
-  install -Dm644 "$srcroot/assets/icons/desktop-symbolic.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/inir.svg"
+  install -Dm755 "$srcroot/scripts/ba" "$pkgdir/usr/bin/ba"
+  install -Dm644 "$srcroot/assets/systemd/ba.service" "$pkgdir/usr/lib/systemd/user/ba.service"
+  install -Dm644 "$srcroot/assets/applications/ba.desktop" "$pkgdir/usr/share/applications/ba.desktop"
+  install -Dm644 "$srcroot/assets/icons/desktop-symbolic.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/ba.svg"
   install -Dm644 "$srcroot/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 "$srcroot/README.md" "$docroot/README.md"
   install -Dm644 "$srcroot/docs/SETUP.md" "$docroot/SETUP.md"
@@ -164,10 +164,10 @@ package() {
   "updateStrategy": "package-manager",
   "package_manager": "pacman",
   "packageManager": "pacman",
-  "package_name": "inir-shell-git",
-  "packageName": "inir-shell-git",
-  "package_update_hint": "sudo pacman -Syu inir-shell-git",
-  "packageUpdateHint": "sudo pacman -Syu inir-shell-git"
+  "package_name": "ba-shell-git",
+  "packageName": "ba-shell-git",
+  "package_update_hint": "sudo pacman -Syu ba-shell-git",
+  "packageUpdateHint": "sudo pacman -Syu ba-shell-git"
 }
 EOF
 }

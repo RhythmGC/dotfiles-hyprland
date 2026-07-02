@@ -200,9 +200,9 @@ sync_launcher_from_repo() {
 }
 
 sync_user_inir_service_from_repo_if_present() {
-    local service_asset="${REPO_ROOT}/assets/systemd/inir.service"
+    local service_asset="${REPO_ROOT}/assets/systemd/ba.service"
     local service_target_dir="${XDG_CONFIG_HOME}/systemd/user"
-    local service_target="${service_target_dir}/inir.service"
+    local service_target="${service_target_dir}/ba.service"
     local launcher_target="${XDG_BIN_HOME}/inir"
     local tmp_file
     local changed=false
@@ -212,16 +212,16 @@ sync_user_inir_service_from_repo_if_present() {
 
     mkdir -p "$service_target_dir"
     mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}"
-    tmp_file="${XDG_CACHE_HOME:-$HOME/.cache}/inir.service.$$"
+    tmp_file="${XDG_CACHE_HOME:-$HOME/.cache}/ba.service.$$"
 
     sed -e "s|^ExecStart=.*|ExecStart=${launcher_target//&/\\&} run --session|" \
         -e "s|^ExecStopPost=-.*|ExecStopPost=-${launcher_target//&/\\&} cleanup-orphans|" \
         "$service_asset" > "$tmp_file"
 
     if [[ -L "$service_target" ]]; then
-        local service_dropin_dir="${service_target_dir}/inir.service.d"
+        local service_dropin_dir="${service_target_dir}/ba.service.d"
         local service_override="${service_dropin_dir}/override.conf"
-        local override_tmp="${XDG_CACHE_HOME:-$HOME/.cache}/inir.service.override.$$"
+        local override_tmp="${XDG_CACHE_HOME:-$HOME/.cache}/ba.service.override.$$"
         mkdir -p "$service_dropin_dir"
         cat > "$override_tmp" <<EOF
 # Managed locally: keep the repo unit template portable while running the
@@ -260,7 +260,7 @@ ensure_user_inir_service_enabled() {
         return 1
     fi
 
-    local service_path="${XDG_CONFIG_HOME}/systemd/user/inir.service"
+    local service_path="${XDG_CONFIG_HOME}/systemd/user/ba.service"
     if [[ ! -f "$service_path" ]]; then
         return 1
     fi
@@ -279,9 +279,9 @@ ensure_user_inir_service_enabled() {
     fi
 
     local wants_dir="${XDG_CONFIG_HOME}/systemd/user/${target}.wants"
-    if [[ ! -e "$wants_dir/inir.service" ]]; then
+    if [[ ! -e "$wants_dir/ba.service" ]]; then
         mkdir -p "$wants_dir"
-        ln -sf "$service_path" "$wants_dir/inir.service"
+        ln -sf "$service_path" "$wants_dir/ba.service"
     fi
 
     systemctl --user daemon-reload >/dev/null 2>&1 || true
@@ -304,7 +304,7 @@ setup_service_link_summary() {
     local wants_dir
     for wants_dir in "${XDG_CONFIG_HOME}/systemd/user"/*.wants; do
         [[ -d "$wants_dir" ]] || continue
-        [[ -e "$wants_dir/inir.service" || -L "$wants_dir/inir.service" ]] || continue
+        [[ -e "$wants_dir/ba.service" || -L "$wants_dir/ba.service" ]] || continue
         links+=("$(basename "${wants_dir%.wants}")")
     done
 
@@ -651,7 +651,7 @@ show_status_boot_timing() {
     local service_start_ms=0 qs_start_ms=0
     if command -v systemctl >/dev/null 2>&1; then
         local exec_start
-        exec_start=$(systemctl --user show inir.service -p ExecMainStartTimestamp --value 2>/dev/null)
+        exec_start=$(systemctl --user show ba.service -p ExecMainStartTimestamp --value 2>/dev/null)
         if [[ -n "$exec_start" && "$exec_start" != "n/a" ]]; then
             # systemctl prints "Tue 2026-05-19 11:38:37 -03"; date -d understands it.
             service_start_ms=$(date -d "$exec_start" +%s%3N 2>/dev/null || echo 0)
@@ -932,7 +932,7 @@ show_status() {
         tui_check_warn "Launcher not available in PATH"
     fi
 
-    local service_path="${XDG_CONFIG_HOME}/systemd/user/inir.service"
+    local service_path="${XDG_CONFIG_HOME}/systemd/user/ba.service"
     local service_links
     service_links="$(setup_service_link_summary)"
     if [[ -f "$service_path" ]]; then
@@ -1133,7 +1133,7 @@ show_info() {
     local snapshot_count=$(list_snapshots 2>/dev/null | wc -l)
     tui_check_ok "$snapshot_count snapshot(s) available"
 
-    local service_path="${XDG_CONFIG_HOME}/systemd/user/inir.service"
+    local service_path="${XDG_CONFIG_HOME}/systemd/user/ba.service"
     if [[ -f "$service_path" ]]; then
         tui_check_ok "User service file present"
     else
@@ -2034,7 +2034,7 @@ run_update_simulated() {
     _step_phase_header 4 "Finalizing"
     tui_info "Refreshing systemd unit..."
     sleep 1
-    tui_check_ok "inir.service reloaded"
+    tui_check_ok "ba.service reloaded"
     tui_check_ok "Launcher path verified"
     tui_success "Service file refreshed"
 
@@ -2152,8 +2152,8 @@ run_update() {
         # Only start inir if we're running under a supported compositor.
         # WAYLAND_DISPLAY alone is not enough — KDE/GNOME set it too.
         if [[ -n "${NIRI_SOCKET:-}" ]] || pgrep -x niri &>/dev/null || pgrep -x Hyprland &>/dev/null; then
-            systemctl --user reset-failed inir.service >/dev/null 2>&1 || true
-            systemctl --user start inir.service >/dev/null 2>&1 || true
+            systemctl --user reset-failed ba.service >/dev/null 2>&1 || true
+            systemctl --user start ba.service >/dev/null 2>&1 || true
         fi
 
         # Even on package-managed installs, refresh the shipped ii-pixel theme from
@@ -2505,7 +2505,7 @@ run_update() {
         _service_refresh_status=$?
     fi
     if [[ $_service_refresh_status -eq 0 ]]; then
-        tui_success "Updated existing user inir.service"
+        tui_success "Updated existing user ba.service"
     fi
 
     ensure_user_inir_service_enabled >/dev/null 2>&1 || true
@@ -2670,8 +2670,8 @@ run_update() {
     # Restart shell (only if we have access to the session)
     if [[ -n "$NIRI_SOCKET" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
         _step_phase_start 7 "Restarting shell"
-        if command -v systemctl >/dev/null 2>&1 && systemctl --user cat inir.service >/dev/null 2>&1; then
-            nohup systemctl --user restart inir.service >/dev/null 2>&1 &
+        if command -v systemctl >/dev/null 2>&1 && systemctl --user cat ba.service >/dev/null 2>&1; then
+            nohup systemctl --user restart ba.service >/dev/null 2>&1 &
             disown
         elif [[ -x "${II_TARGET}/scripts/inir" ]]; then
             nohup bash "${II_TARGET}/scripts/inir" restart -c "${II_TARGET}" >/dev/null 2>&1 &

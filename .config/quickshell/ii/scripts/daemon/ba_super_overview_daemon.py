@@ -29,15 +29,15 @@ super_down_global = False
 interaction_since_super_down = False
 tap_handled = False
 
-# Cache of inir's environment so we don't hit /proc on every tap.
+# Cache of ba's environment so we don't hit /proc on every tap.
 INIR_ENV_CACHE = {}
 INIR_ENV_PID = None
 
 
-def _find_inir_pid():
+def _find_ba_pid():
     """Locate the PID of the running iNiR quickshell process by inspecting /proc.
 
-    Matches both legacy ``qs -c inir`` invocations and the current
+    Matches both legacy ``qs -c ba`` invocations and the current
     path-based ``qs -p <path>`` / ``qs -n -p <path>`` form.
     """
     proc_root = "/proc"
@@ -59,21 +59,21 @@ def _find_inir_pid():
         exe = os.path.basename(args[0])
         if exe != "qs":
             continue
-        # Legacy: qs -c inir
-        if len(args) >= 3 and args[1] == "-c" and args[2] == "inir":
+        # Legacy: qs -c ba
+        if len(args) >= 3 and args[1] == "-c" and args[2] == "ba":
             return pid
         # Path-based: qs ... -p <path>/shell.qml  or  qs ... -p <path>
-        # where <path> ends with /inir or contains /inir/
+        # where <path> ends with /ba or contains /ba/
         for i, arg in enumerate(args[1:], 1):
             if arg == "-p" and i + 1 < len(args):
                 p = args[i + 1]
-                if p.rstrip("/").endswith("/inir") or "/inir/" in p:
+                if p.rstrip("/").endswith("/ba") or "/ba/" in p:
                     return pid
                 break
     return None
 
 
-def get_inir_env():
+def get_ba_env():
     """Get relevant environment variables from the running iNiR quickshell
     session to reuse them when calling IPC.
 
@@ -82,9 +82,9 @@ def get_inir_env():
     """
     global INIR_ENV_CACHE, INIR_ENV_PID
     try:
-        pid = _find_inir_pid()
+        pid = _find_ba_pid()
         if pid is None:
-            print("[inir-super-daemon] inir not running, cannot import env", flush=True)
+            print("[ba-super-daemon] ba not running, cannot import env", flush=True)
             INIR_ENV_CACHE = {}
             INIR_ENV_PID = None
             return {}
@@ -92,7 +92,7 @@ def get_inir_env():
         if INIR_ENV_PID == pid and INIR_ENV_CACHE:
             return INIR_ENV_CACHE
 
-        print(f"[inir-super-daemon] Found inir pid={pid}", flush=True)
+        print(f"[ba-super-daemon] Found ba pid={pid}", flush=True)
         environ_path = f"/proc/{pid}/environ"
         with open(environ_path, "rb") as f:
             raw = f.read().decode("utf-8", errors="ignore")
@@ -111,10 +111,10 @@ def get_inir_env():
                 env_vars[k] = v
         INIR_ENV_CACHE = env_vars
         INIR_ENV_PID = pid
-        print(f"[inir-super-daemon] Imported env from inir: {env_vars}", flush=True)
+        print(f"[ba-super-daemon] Imported env from ba: {env_vars}", flush=True)
         return INIR_ENV_CACHE
     except Exception as e:
-        print(f"[inir-super-daemon] Error reading inir env: {e}", flush=True)
+        print(f"[ba-super-daemon] Error reading ba env: {e}", flush=True)
         return {}
 
 
@@ -126,7 +126,7 @@ def find_keyboard_devices():
             dev = InputDevice(path)
             caps = dev.capabilities().get(ecodes.EV_KEY, [])
         except Exception as e:
-            print(f"[inir-super-daemon] Error inspecting {path}: {e}", flush=True)
+            print(f"[ba-super-daemon] Error inspecting {path}: {e}", flush=True)
             continue
 
         name = (dev.name or "").lower()
@@ -140,20 +140,20 @@ def find_keyboard_devices():
 
         if has_super:
             print(
-                f"[inir-super-daemon] Using keyboard device {path} ({dev.name}), has_super={has_super}",
+                f"[ba-super-daemon] Using keyboard device {path} ({dev.name}), has_super={has_super}",
                 flush=True,
             )
             keyboards.append(path)
 
         if has_pointer_button:
             print(
-                f"[inir-super-daemon] Using pointer device {path} ({dev.name}), has_pointer_button={has_pointer_button}",
+                f"[ba-super-daemon] Using pointer device {path} ({dev.name}), has_pointer_button={has_pointer_button}",
                 flush=True,
             )
             pointers.append(path)
 
     if not keyboards:
-        print("[inir-super-daemon] No suitable keyboard devices found", flush=True)
+        print("[ba-super-daemon] No suitable keyboard devices found", flush=True)
 
     return keyboards, pointers
 
@@ -190,21 +190,21 @@ async def monitor_device(path):
                     and not interaction_since_super_down
                     and not tap_handled
                 ):
-                    # Tap of Super with no other keys or clicks: toggle inir overview
+                    # Tap of Super with no other keys or clicks: toggle ba overview
                     # with a global debounce so multiple devices don't double-trigger.
                     now = time.monotonic()
                     if now - last_toggle_time >= DEBOUNCE_SEC:
                         last_toggle_time = now
                         tap_handled = True
                         print(
-                            "[inir-super-daemon] Super tap detected, toggling inir overview",
+                            "[ba-super-daemon] Super tap detected, toggling ba overview",
                             flush=True,
                         )
                         try:
-                            inir_env = get_inir_env()
-                            if not inir_env:
+                            ba_env = get_ba_env()
+                            if not ba_env:
                                 print(
-                                    "[inir-super-daemon] No inir env available, skipping toggle",
+                                    "[ba-super-daemon] No ba env available, skipping toggle",
                                     flush=True,
                                 )
                                 super_down = False
@@ -213,22 +213,22 @@ async def monitor_device(path):
                                 continue
 
                             env = os.environ.copy()
-                            env.update(inir_env)
+                            env.update(ba_env)
 
-                            # Resolve the inir launcher for the IPC call
-                            inir_bin = os.environ.get(
+                            # Resolve the ba launcher for the IPC call
+                            ba_bin = os.environ.get(
                                 "INIR_LAUNCHER_PATH",
-                                shutil.which("inir") or "inir",
+                                shutil.which("ba") or "ba",
                             )
                             subprocess.Popen(
-                                [inir_bin, "overview", "toggle"],
+                                [ba_bin, "overview", "toggle"],
                                 env=env,
                                 stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL,
                             )
                         except Exception as e:
                             print(
-                                f"[inir-super-daemon] Error running toggle command: {e}",
+                                f"[ba-super-daemon] Error running toggle command: {e}",
                                 flush=True,
                             )
                 super_down = False
@@ -271,7 +271,7 @@ async def main():
         if keyboard_paths:
             break
         print(
-            "[inir-super-daemon] No keyboards with Super yet, retrying in 5s",
+            "[ba-super-daemon] No keyboards with Super yet, retrying in 5s",
             flush=True,
         )
         await asyncio.sleep(5)
