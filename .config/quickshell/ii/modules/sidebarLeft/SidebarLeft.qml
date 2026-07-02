@@ -76,15 +76,15 @@ Scope {
         exclusiveZone: 0
         implicitWidth: screen?.width ?? 1920
         WlrLayershell.namespace: "quickshell:sidebarLeft"
-        WlrLayershell.keyboardFocus: GlobalStates.sidebarLeftOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: GlobalStates.sidebarLeftOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         color: "transparent"
 
         Item {
             id: maskItem
             x: sidebarContentLoader.x
-            y: sidebarContentLoader.y + Appearance.sizes.baseBarHeight
+            y: sidebarContentLoader.y
             width: sidebarContentLoader.width
-            height: sidebarContentLoader.height - Appearance.sizes.baseBarHeight
+            height: sidebarContentLoader.height
             visible: false
         }
 

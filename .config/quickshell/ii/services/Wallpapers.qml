@@ -697,6 +697,27 @@ Singleton {
 
     function randomFromCurrentFolder(darkMode = Appearance.m3colors.darkmode, monitorName = "", target = "") {
         if (folderModel.count === 0) return
+
+        const randomFilter = Config.options?.background?.randomFilter ?? ""
+        if (randomFilter.length > 0) {
+            const keywords = randomFilter.toLowerCase().split(",").map(k => k.trim()).filter(k => k.length > 0)
+            const matchedPaths = []
+            for (let i = 0; i < folderModel.count; i++) {
+                const path = folderModel.get(i, "filePath")
+                if (path) {
+                    const fileName = path.toLowerCase()
+                    if (keywords.some(kw => fileName.includes(kw))) {
+                        matchedPaths.push(path)
+                    }
+                }
+            }
+            if (matchedPaths.length > 0) {
+                const randomIndex = Math.floor(Math.random() * matchedPaths.length)
+                root.select(matchedPaths[randomIndex], darkMode, monitorName, target)
+                return
+            }
+        }
+
         const randomIndex = Math.floor(Math.random() * folderModel.count)
         const filePath = folderModel.get(randomIndex, "filePath")
         root.select(filePath, darkMode, monitorName, target)
@@ -948,14 +969,40 @@ Singleton {
     function _pickRandomAndApply() {
         if (folderModel.count === 0) return
         const currentPath = Config.options?.background?.wallpaperPath ?? ""
+        const randomFilter = Config.options?.background?.randomFilter ?? ""
+
         let attempts = 0
         let randomIndex, filePath
-        // Try to pick a different wallpaper than the current one
-        do {
-            randomIndex = Math.floor(Math.random() * folderModel.count)
-            filePath = folderModel.get(randomIndex, "filePath")
-            attempts++
-        } while (filePath === currentPath && attempts < 5 && folderModel.count > 1)
+
+        if (randomFilter.length > 0) {
+            const keywords = randomFilter.toLowerCase().split(",").map(k => k.trim()).filter(k => k.length > 0)
+            const matchedPaths = []
+            for (let i = 0; i < folderModel.count; i++) {
+                const path = folderModel.get(i, "filePath")
+                if (path) {
+                    const fileName = path.toLowerCase()
+                    if (keywords.some(kw => fileName.includes(kw))) {
+                        matchedPaths.push(path)
+                    }
+                }
+            }
+            if (matchedPaths.length > 0) {
+                do {
+                    randomIndex = Math.floor(Math.random() * matchedPaths.length)
+                    filePath = matchedPaths[randomIndex]
+                    attempts++
+                } while (filePath === currentPath && attempts < 5 && matchedPaths.length > 1)
+            }
+        }
+
+        if (!filePath) {
+            attempts = 0
+            do {
+                randomIndex = Math.floor(Math.random() * folderModel.count)
+                filePath = folderModel.get(randomIndex, "filePath")
+                attempts++
+            } while (filePath === currentPath && attempts < 5 && folderModel.count > 1)
+        }
 
         if (!filePath) return
 

@@ -1039,6 +1039,7 @@ Singleton {
                     // to avoid JsonAdapter crash on property var inside JsonObject.
                 }
                 property string wallpaperPath: ""
+                property string randomFilter: ""
                 property string thumbnailPath: ""
                 property string fillMode: "fill" // "fill", "fit", "center", "tile"
                 property bool enableAnimation: true // Enable animated wallpapers (video/gif). When disabled, shows thumbnail instead (better performance)

@@ -63,9 +63,9 @@ Scope {
         Item {
             id: maskItem
             x: sidebarContentLoader.x
-            y: sidebarContentLoader.y + Appearance.sizes.baseBarHeight
+            y: sidebarContentLoader.y
             width: sidebarContentLoader.width
-            height: sidebarContentLoader.height - Appearance.sizes.baseBarHeight
+            height: sidebarContentLoader.height
             visible: false
         }
 

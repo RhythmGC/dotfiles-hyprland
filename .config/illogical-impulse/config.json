@@ -333,7 +333,7 @@
             "blurRadius": 32,
             "contrast": 0,
             "dim": 35,
-            "enable": true,
+            "enable": false,
             "enableAnimatedBlur": false,
             "enableAnimation": false,
             "hideWallpaper": false,
@@ -416,7 +416,8 @@
             "enable": true,
             "type": "crossfade"
         },
-        "wallpaperPath": "/home/rhythmgc/Wallpapers/random_wallpaper.png",
+        "wallpaperPath": "/home/rhythmgc/Wallpapers/random_wallpaper-1.png",
+        "randomFilter": "bluearchive, blue_archive",
         "wallpapersByMonitor": [],
         "widgets": {
             "battery": {
@@ -1876,7 +1877,7 @@
         "useSystemFileDialog": false
     },
     "wallpapers": {
-        "directory": ""
+        "directory": "/home/rhythmgc/Wallpapers"
     },
     "welcomeWizard": {
         "completed": false,
