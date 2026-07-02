@@ -87,7 +87,7 @@ fi
 # Standard Official Packages
 core_packages=("jq" "rsync" "curl" "wget" "fastfetch" "fd" "ripgrep" "unzip" "fnm" "pyenv")
 shell_packages=("fish" "starship")
-editor_packages=("neovim")
+editor_packages=("neovim" "antigravity-ide")
 desktop_packages=("hyprland" "hyprpaper" "hyprlock" "hypridle" "kitty" "rofi-wayland" "waybar" "polkit-kde-agent")
 
 # AUR Packages
