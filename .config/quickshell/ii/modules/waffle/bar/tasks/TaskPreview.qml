@@ -24,6 +24,8 @@ PopupWindow {
     function open() {
         marginBehavior.enabled = true;
         root.visible = true;
+        // Capture previews for windows in this app entry
+        captureAppPreviews();
     }
 
     function show(appEntry: var, button: Item) {
@@ -33,8 +35,27 @@ PopupWindow {
         root.open();
     }
 
+    // Capture previews for windows in the current app entry
+    function captureAppPreviews(): void {
+        if (!root.appEntry?.toplevels) return;
+        
+        const windowIds = [];
+        for (const tl of root.appEntry.toplevels) {
+            const match = NiriService.findNiriWindow(tl);
+            if (match?.niriWindow?.id) {
+                windowIds.push(match.niriWindow.id);
+            }
+        }
+        
+        if (windowIds.length > 0) {
+            WindowPreviewService.initialize();
+            // captureForTaskView will capture windows that need it
+            WindowPreviewService.captureForTaskView();
+        }
+    }
+
     ///////////////////// Internals /////////////////////
-    readonly property bool bottom: Config.options.waffles.bar.bottom
+    readonly property bool bottom: Config.options?.waffles?.bar?.bottom ?? false
     property real visualMargin: 12
     property real ambientShadowWidth: 1
 
@@ -73,7 +94,7 @@ PopupWindow {
             property real sourceEdgeMargin: root.visible ? (root.ambientShadowWidth + root.visualMargin) : -root.implicitHeight
             Behavior on sourceEdgeMargin {
                 id: marginBehavior
-                animation: Looks.transition.enter.createObject(this)
+                animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.panel : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.decelerate }
             }
             anchors {
                 left: parent.left
@@ -85,10 +106,10 @@ PopupWindow {
                 bottomMargin: root.bottom ? sourceEdgeMargin : (root.ambientShadowWidth + root.visualMargin)
                 topMargin: root.bottom ? (root.ambientShadowWidth + root.visualMargin) : sourceEdgeMargin
             }
-            color: Looks.colors.bg1Base
+            color: Looks.colors.popupSurface
             radius: Looks.radius.large
 
-            layer.enabled: true
+            layer.enabled: Appearance.effectsEnabled
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: contentItem.width

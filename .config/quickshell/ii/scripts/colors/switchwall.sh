@@ -1,41 +1,41 @@
 #!/usr/bin/env bash
 
-QUICKSHELL_CONFIG_NAME="ii"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
-CONFIG_DIR="$XDG_CONFIG_HOME/quickshell/$QUICKSHELL_CONFIG_NAME"
 CACHE_DIR="$XDG_CACHE_HOME/quickshell"
 STATE_DIR="$XDG_STATE_HOME/quickshell"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SHELL_CONFIG_FILE="$XDG_CONFIG_HOME/illogical-impulse/config.json"
-MATUGEN_DIR="$XDG_CONFIG_HOME/matugen"
+SHELL_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
+
+# shellcheck source=scripts/lib/config-path.sh
+source "$SCRIPT_DIR/../lib/config-path.sh"
+SHELL_CONFIG_FILE="$(inir_config_file)"
+TEMPLATE_DIR="$XDG_CONFIG_HOME/matugen"
 terminalscheme="$SCRIPT_DIR/terminal/scheme-base.json"
 
-handle_kde_material_you_colors() {
-    # Check if Qt app theming is enabled in config
-    if [ -f "$SHELL_CONFIG_FILE" ]; then
-        enable_qt_apps=$(jq -r '.appearance.wallpaperTheming.enableQtApps' "$SHELL_CONFIG_FILE")
-        if [ "$enable_qt_apps" == "false" ]; then
-            return
-        fi
-    fi
+# Validate critical runtime dependencies early
+if ! command -v jq &>/dev/null; then
+    echo "[switchwall.sh] Missing required dependency: jq"
+    echo "  Arch: sudo pacman -S jq"
+    exit 1
+fi
 
-    # Map $type_flag to allowed scheme variants for kde-material-you-colors-wrapper.sh
-    local kde_scheme_variant=""
-    case "$type_flag" in
-        scheme-content|scheme-expressive|scheme-fidelity|scheme-fruit-salad|scheme-monochrome|scheme-neutral|scheme-rainbow|scheme-tonal-spot)
-            kde_scheme_variant="$type_flag"
-            ;;
-        *)
-            kde_scheme_variant="scheme-tonal-spot" # default
-            ;;
-    esac
-    "$XDG_CONFIG_HOME"/matugen/templates/kde/kde-material-you-colors-wrapper.sh --scheme-variant "$kde_scheme_variant"
+# Serialized config.json write — flock prevents concurrent jq writes from
+# clobbering each other. QML's FileView doesn't participate in this lock;
+# ThemeService uses a 100ms delay to let FileView flush before invoking us.
+_config_locked_write() {
+    local lockfile="$SHELL_CONFIG_FILE.lock"
+    (
+        flock -w 5 200 || { echo "[switchwall.sh] config lock timeout" >&2; return 1; }
+        jq "$@" "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && \
+            mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+    ) 200>"$lockfile"
 }
 
 pre_process() {
     local mode_flag="$1"
+
     # Set GNOME color-scheme if mode_flag is dark or light
     if [[ "$mode_flag" == "dark" ]]; then
         gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
@@ -48,21 +48,74 @@ pre_process() {
     if [ ! -d "$CACHE_DIR"/user/generated ]; then
         mkdir -p "$CACHE_DIR"/user/generated
     fi
+    if [ ! -d "$STATE_DIR"/user/generated ]; then
+        mkdir -p "$STATE_DIR"/user/generated
+    fi
 }
 
 post_process() {
     local screen_width="$1"
     local screen_height="$2"
     local wallpaper_path="$3"
+    # Editor theming is handled by modules/30-editors.sh via applycolor.sh.
+}
 
-    handle_kde_material_you_colors &
-    "$SCRIPT_DIR/code/material-code-set-color.sh" &
+hex_to_rgb_triplet() {
+    local hex="$1"
+    hex="${hex#\#}"
+    [[ "$hex" =~ ^[A-Fa-f0-9]{6}$ ]] || return 1
+    printf "%d,%d,%d\n" "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}"
+}
+
+write_chromium_theme_contract() {
+    local source_json="$1"
+    local output_path="$2"
+    local hex_color=""
+    local rgb_color=""
+
+    [[ -f "$source_json" ]] || return 1
+    hex_color=$(jq -r '.app_headerbar_bg // .app_surface // .surface_container_low // .surface // .background // empty' "$source_json" 2>/dev/null)
+    [[ "$hex_color" =~ ^#[A-Fa-f0-9]{6}$ ]] || return 1
+    rgb_color=$(hex_to_rgb_triplet "$hex_color") || return 1
+    printf '%s\n' "$rgb_color" > "$output_path"
+}
+
+write_generated_wallpaper_path() {
+    local wallpaper_path="$1"
+    local wallpaper_state_path="$STATE_DIR/user/generated/wallpaper/path.txt"
+
+    mkdir -p "$(dirname "$wallpaper_state_path")"
+    printf '%s\n' "$wallpaper_path" > "$wallpaper_state_path"
+}
+
+get_max_monitor_resolution() {
+    local width=1920
+    local height=1080
+    # Try Niri first
+    if command -v niri >/dev/null 2>&1 && niri msg outputs >/dev/null 2>&1; then
+        # Parse niri msg outputs for resolution (e.g., "  Current mode: 1920x1080@60.000")
+        local res=$(niri msg outputs 2>/dev/null | grep -oP 'Current mode: \K\d+x\d+' | sort -t'x' -k1 -nr | head -1)
+        if [[ -n "$res" ]]; then
+            width=$(echo "$res" | cut -d'x' -f1)
+            height=$(echo "$res" | cut -d'x' -f2)
+        fi
+    # Fallback to Hyprland
+    elif command -v hyprctl >/dev/null 2>&1; then
+        width="$(hyprctl monitors -j 2>/dev/null | jq '([.[].width] | max)' | xargs)"
+        height="$(hyprctl monitors -j 2>/dev/null | jq '([.[].height] | max)' | xargs)"
+    fi
+    echo "$width $height"
 }
 
 check_and_prompt_upscale() {
     local img="$1"
-    min_width_desired="$(hyprctl monitors -j | jq '([.[].width] | max)' | xargs)" # max monitor width
-    min_height_desired="$(hyprctl monitors -j | jq '([.[].height] | max)' | xargs)" # max monitor height
+
+    # Check if upscale notifications are disabled in config
+    if [[ "$cfg_hide_upscale" == "true" ]]; then
+        return
+    fi
+
+    read min_width_desired min_height_desired <<< "$(get_max_monitor_resolution)"
 
     if command -v identify &>/dev/null && [ -f "$img" ]; then
         local img_width img_height
@@ -100,10 +153,10 @@ check_and_prompt_upscale() {
     fi
 }
 
-CUSTOM_DIR="$XDG_CONFIG_HOME/hypr/custom"
+CUSTOM_DIR="$XDG_CACHE_HOME/quickshell"
 RESTORE_SCRIPT_DIR="$CUSTOM_DIR/scripts"
 RESTORE_SCRIPT="$RESTORE_SCRIPT_DIR/__restore_video_wallpaper.sh"
-THUMBNAIL_DIR="$RESTORE_SCRIPT_DIR/mpvpaper_thumbnails"
+THUMBNAIL_DIR="$CUSTOM_DIR/video_thumbnails"
 VIDEO_OPTS="no-audio loop hwdec=auto scale=bilinear interpolation=no video-sync=display-resample panscan=1.0 video-scale-x=1.0 video-scale-y=1.0 video-align-x=0.5 video-align-y=0.5 load-scripts=no"
 
 is_video() {
@@ -111,12 +164,72 @@ is_video() {
     [[ "$extension" == "mp4" || "$extension" == "webm" || "$extension" == "mkv" || "$extension" == "avi" || "$extension" == "mov" ]] && return 0 || return 1
 }
 
+is_gif() {
+    local extension="${1##*.}"
+    [[ "${extension,,}" == "gif" ]] && return 0 || return 1
+}
+
+has_valid_file() {
+    local path="$1"
+    [[ -n "$path" && -f "$path" && -s "$path" ]]
+}
+
 kill_existing_mpvpaper() {
     pkill -f -9 mpvpaper || true
 }
 
+start_mpvpaper_for_all_outputs() {
+    local video_path="$1"
+    local outputs=""
+
+    # Niri: obtener conectores (HDMI-A-2, eDP-1, etc.) desde `niri msg outputs`
+    if command -v niri >/dev/null 2>&1 && niri msg outputs >/dev/null 2>&1; then
+        outputs=$(niri msg outputs | awk -F'[()]' '/^Output / {gsub(/^ +| +$/, "", $2); print $2}')
+    fi
+
+    # Hyprland (comportamiento original): nombres desde `hyprctl monitors -j`
+    if [[ -z "$outputs" ]] && command -v hyprctl >/dev/null 2>&1; then
+        outputs=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | .name')
+    fi
+
+    if [[ -z "$outputs" ]]; then
+        echo "[switchwall.sh] Warning: could not detect outputs for mpvpaper" >&2
+        return 1
+    fi
+
+    # Create a detached launcher script to ensure mpvpaper survives parent termination
+    local launcher_script="$RESTORE_SCRIPT_DIR/.mpvpaper_launcher_$$.sh"
+    cat > "$launcher_script" << 'LAUNCHER_EOF'
+#!/bin/bash
+video_path="$1"
+shift
+outputs="$@"
+VIDEO_OPTS="no-audio loop hwdec=auto scale=bilinear interpolation=no video-sync=display-resample panscan=1.0 video-scale-x=1.0 video-scale-y=1.0 video-align-x=0.5 video-align-y=0.5 load-scripts=no"
+for output in $outputs; do
+    nohup mpvpaper -o "$VIDEO_OPTS" "$output" "$video_path" > /dev/null 2>&1 &
+    disown
+    sleep 0.2
+done
+LAUNCHER_EOF
+    chmod +x "$launcher_script"
+    
+    # Execute launcher in a completely detached way using at if available, otherwise nohup
+    if command -v at >/dev/null 2>&1; then
+        echo "$launcher_script '$video_path' $outputs" | at now 2>/dev/null
+    else
+        (nohup "$launcher_script" "$video_path" $outputs > /dev/null 2>&1 &)
+    fi
+    
+    # Small delay to let the launcher start
+    sleep 0.3
+    
+    # Clean up launcher script after a delay
+    (sleep 5 && rm -f "$launcher_script") &
+}
+
 create_restore_script() {
     local video_path=$1
+    mkdir -p "$RESTORE_SCRIPT_DIR" 2>/dev/null || true
     cat > "$RESTORE_SCRIPT.tmp" << EOF
 #!/bin/bash
 # Generated by switchwall.sh - Don't modify it by yourself.
@@ -124,7 +237,15 @@ create_restore_script() {
 
 pkill -f -9 mpvpaper
 
-for monitor in \$(hyprctl monitors -j | jq -r '.[] | .name'); do
+# Get monitors - try Niri first, then Hyprland
+monitors=""
+if command -v niri >/dev/null 2>&1 && niri msg outputs >/dev/null 2>&1; then
+    monitors=\$(niri msg outputs | awk -F'[()]' '/^Output / {gsub(/^ +| +\$/, "", \$2); print \$2}')
+elif command -v hyprctl >/dev/null 2>&1; then
+    monitors=\$(hyprctl monitors -j | jq -r '.[] | .name')
+fi
+
+for monitor in \$monitors; do
     mpvpaper -o "$VIDEO_OPTS" "\$monitor" "$video_path" &
     sleep 0.1
 done
@@ -134,6 +255,7 @@ EOF
 }
 
 remove_restore() {
+    mkdir -p "$RESTORE_SCRIPT_DIR" 2>/dev/null || true
     cat > "$RESTORE_SCRIPT.tmp" << EOF
 #!/bin/bash
 # The content of this script will be generated by switchwall.sh - Don't modify it by yourself.
@@ -144,22 +266,111 @@ EOF
 set_wallpaper_path() {
     local path="$1"
     if [ -f "$SHELL_CONFIG_FILE" ]; then
-        jq --arg path "$path" '.background.wallpaperPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+        _config_locked_write --arg path "$path" '.background.wallpaperPath = $path'
+    fi
+}
+
+set_wallpaper_path_per_monitor() {
+    local path="$1"
+    local monitor="$2"
+    local startWs="${3:-1}"
+    local endWs="${4:-10}"
+
+    if [ -f "$SHELL_CONFIG_FILE" ]; then
+        # Use jq to update wallpapersByMonitor array
+        # Remove existing entry for this monitor, then add new entry
+        _config_locked_write --arg monitor "$monitor" \
+           --arg path "$path" \
+           --argjson startWs "${startWs:-1}" \
+           --argjson endWs "${endWs:-10}" \
+           '.background.wallpapersByMonitor = (
+               (.background.wallpapersByMonitor // []) |
+               map(select(.monitor != $monitor)) +
+               [{
+                   "monitor": $monitor,
+                   "path": $path,
+                   "workspaceFirst": $startWs,
+                   "workspaceLast": $endWs
+               }]
+           )'
     fi
 }
 
 set_thumbnail_path() {
     local path="$1"
     if [ -f "$SHELL_CONFIG_FILE" ]; then
-        jq --arg path "$path" '.background.thumbnailPath = $path' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
+        _config_locked_write --arg path "$path" '.background.thumbnailPath = $path'
     fi
 }
 
-categorize_wallpaper() {
-    img_cat=$("$SCRIPT_DIR/../ai/gemini-categorize-wallpaper.sh" "$1")
-    # notify-send "Wallpaper category" "$img_cat"
-    echo "$img_cat" > "$STATE_DIR/user/generated/wallpaper/category.txt"
+set_backdrop_thumbnail_path() {
+    local path="$1"
+    if [ -f "$SHELL_CONFIG_FILE" ]; then
+        _config_locked_write --arg path "$path" '.background.backdrop.thumbnailPath = $path'
+    fi
 }
+
+get_focused_monitor_name() {
+    if command -v niri >/dev/null 2>&1 && niri msg -j focused-output >/dev/null 2>&1; then
+        niri msg -j focused-output 2>/dev/null | jq -r '.name // ""'
+        return
+    fi
+    if command -v hyprctl >/dev/null 2>&1; then
+        hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused == true) | .name' | head -1
+        return
+    fi
+    echo ""
+ }
+
+ resolve_effective_theming_wallpaper() {
+    jq -r --arg focused_monitor "$(get_focused_monitor_name)" '
+        def monitor_entry: if ((.background.multiMonitor.enable // false) and ($focused_monitor != ""))
+            then ((.background.wallpapersByMonitor // []) | map(select(.monitor == $focused_monitor)) | .[0])
+            else null end;
+        def main_path: (monitor_entry.path // .background.wallpaperPath // "");
+        def monitor_backdrop: (monitor_entry.backdropPath // "");
+        def waffle_main: (if (.waffles.background.useMainWallpaper // "true") == true then main_path else (.waffles.background.wallpaperPath // main_path) end);
+        if (.appearance.wallpaperTheming.useBackdropForColors // false) then
+            if (.panelFamily // "ii") == "waffle" then
+                (if (.waffles.background.backdrop.useMainWallpaper // "true") == true then waffle_main else (.waffles.background.backdrop.wallpaperPath // waffle_main) end)
+            else
+                (if monitor_backdrop != "" then monitor_backdrop else (if (.background.backdrop.useMainWallpaper // "true") == true then main_path else (.background.backdrop.wallpaperPath // main_path) end) end)
+            end
+        else
+            if (.panelFamily // "ii") == "waffle" then waffle_main else main_path end
+        end // ""
+    ' "$SHELL_CONFIG_FILE" 2>/dev/null || echo ""
+ }
+
+ ensure_color_preview_for_media() {
+    local media_path="$1"
+    local out_path="$2"
+    mkdir -p "$(dirname "$out_path")"
+
+    if is_video "$media_path"; then
+        if ! command -v ffmpeg >/dev/null 2>&1; then
+            echo "[switchwall.sh] Missing ffmpeg for video color preview generation" >&2
+            return 1
+        fi
+        ffmpeg -y -i "$media_path" -vframes 1 "$out_path" >/dev/null 2>&1
+        return $?
+    fi
+
+    if is_gif "$media_path"; then
+        if command -v magick >/dev/null 2>&1; then
+            magick "$media_path[0]" "$out_path" >/dev/null 2>&1
+            return $?
+        fi
+        if command -v ffmpeg >/dev/null 2>&1; then
+            ffmpeg -y -i "$media_path" -vframes 1 "$out_path" >/dev/null 2>&1
+            return $?
+        fi
+        echo "[switchwall.sh] Missing magick/ffmpeg for gif color preview generation" >&2
+        return 1
+    fi
+
+    return 1
+ }
 
 switch() {
     imgpath="$1"
@@ -167,29 +378,75 @@ switch() {
     type_flag="$3"
     color_flag="$4"
     color="$5"
+    skip_config_write="$6"
+    noswitch_flag="${7:-}"
 
-    # Start Gemini auto-categorization if enabled
-    aiStylingEnabled=$(jq -r '.background.widgets.clock.cookie.aiStyling' "$SHELL_CONFIG_FILE")
-    if [[ "$aiStylingEnabled" == "true" ]]; then
-        categorize_wallpaper "$imgpath" &
+    # Per-monitor wallpaper changes: only update config, skip color generation
+    # Global theme colors should only change from global wallpaper changes
+    if [[ -n "$monitor_name" && -n "$imgpath" ]]; then
+        set_wallpaper_path_per_monitor "$imgpath" "$monitor_name" "$start_workspace" "$end_workspace"
+        echo "[switchwall.sh] Per-monitor wallpaper set for $monitor_name, skipping global color generation"
+        return
     fi
 
-    read scale screenx screeny screensizey < <(hyprctl monitors -j | jq '.[] | select(.focused) | .scale, .x, .y, .height' | xargs)
-    cursorposx=$(hyprctl cursorpos -j | jq '.x' 2>/dev/null) || cursorposx=960
-    cursorposx=$(bc <<< "scale=0; ($cursorposx - $screenx) * $scale / 1")
-    cursorposy=$(hyprctl cursorpos -j | jq '.y' 2>/dev/null) || cursorposy=540
-    cursorposy=$(bc <<< "scale=0; ($cursorposy - $screeny) * $scale / 1")
-    cursorposy_inverted=$((screensizey - cursorposy))
+    # Start Gemini auto-categorization if enabled
+    if [[ "$cfg_ai_styling" == "true" ]]; then
+        "$SCRIPT_DIR/../ai/gemini-categorize-wallpaper.sh" "$imgpath" > "$STATE_DIR/user/generated/wallpaper/category.txt" &
+    fi
 
-    matugen_args=(--source-color-index 0)
+    # Hyprland-specific cursor/monitor math: only run if hyprctl is available.
+    # On Niri or other compositors we fall back to centered defaults to avoid
+    # spamming errors while still producing valid colors.
+    if command -v hyprctl >/dev/null 2>&1; then
+        focused_monitor_info=$(hyprctl monitors -j 2>/dev/null | jq -r '[.[] | select(.focused == true)] | first | if . == null then "" else "\(.scale) \(.x) \(.y) \(.height)" end' 2>/dev/null)
+        if [[ -n "$focused_monitor_info" ]]; then
+            read scale screenx screeny screensizey <<< "$focused_monitor_info"
+            cursor_json=$(hyprctl cursorpos -j 2>/dev/null)
+            cursorposx=$(printf '%s' "$cursor_json" | jq -r '.x // empty' 2>/dev/null)
+            cursorposy=$(printf '%s' "$cursor_json" | jq -r '.y // empty' 2>/dev/null)
+            if [[ -n "$cursorposx" && -n "$cursorposy" ]]; then
+                cursorposx=$(bc <<< "scale=0; ($cursorposx - $screenx) * $scale / 1")
+                cursorposy=$(bc <<< "scale=0; ($cursorposy - $screeny) * $scale / 1")
+            else
+                cursorposx=960
+                cursorposy=540
+            fi
+            cursorposy_inverted=$((screensizey - cursorposy))
+        else
+            scale=1
+            screenx=0
+            screeny=0
+            screensizey=1080
+            cursorposx=960
+            cursorposy=540
+            cursorposy_inverted=$((screensizey - cursorposy))
+        fi
+    else
+        scale=1
+        screenx=0
+        screeny=0
+        screensizey=1080
+        cursorposx=960
+        cursorposy=540
+        cursorposy_inverted=$((screensizey - cursorposy))
+    fi
 
     if [[ "$color_flag" == "1" ]]; then
-        matugen_args+=(color hex "$color")
         generate_colors_material_args=(--color "$color")
     else
         if [[ -z "$imgpath" ]]; then
-            echo 'Aborted'
-            exit 0
+            if [[ -n "$noswitch_flag" ]]; then
+                # --noswitch without --image: read current wallpaper from config for color regeneration
+                imgpath=$(resolve_effective_theming_wallpaper)
+                if [[ -z "$imgpath" || ! -f "$imgpath" ]]; then
+                    echo "[switchwall.sh] --noswitch: No valid wallpaper path in config"
+                    exit 0
+                fi
+                echo "[switchwall.sh] --noswitch: Using current wallpaper for color regeneration: $imgpath"
+            else
+                echo 'Aborted'
+                exit 0
+            fi
         fi
 
         check_and_prompt_upscale "$imgpath" &
@@ -198,68 +455,96 @@ switch() {
         if is_video "$imgpath"; then
             mkdir -p "$THUMBNAIL_DIR"
 
-            missing_deps=()
-            if ! command -v mpvpaper &> /dev/null; then
-                missing_deps+=("mpvpaper")
-            fi
+            # Only check for ffmpeg (needed for thumbnail generation)
+            # mpvpaper is no longer needed - Qt Multimedia handles video playback natively
             if ! command -v ffmpeg &> /dev/null; then
-                missing_deps+=("ffmpeg")
-            fi
-            if [ ${#missing_deps[@]} -gt 0 ]; then
-                echo "Missing deps: ${missing_deps[*]}"
-                echo "Arch: sudo pacman -S ${missing_deps[*]}"
+                echo "Missing dependency: ffmpeg"
+                echo "Arch: sudo pacman -S ffmpeg"
                 action=$(notify-send \
                     -a "Wallpaper switcher" \
                     -c "im.error" \
                     -A "install_arch=Install (Arch)" \
                     "Can't switch to video wallpaper" \
-                    "Missing dependencies: ${missing_deps[*]}")
+                    "Missing dependency: ffmpeg (needed for thumbnail generation)")
                 if [[ "$action" == "install_arch" ]]; then
-                    kitty -1 sudo pacman -S "${missing_deps[*]}"
-                    if command -v mpvpaper &>/dev/null && command -v ffmpeg &>/dev/null; then
+                    kitty -1 sudo pacman -S ffmpeg
+                    if command -v ffmpeg &>/dev/null; then
                         notify-send 'Wallpaper switcher' 'Alright, try again!' -a "Wallpaper switcher"
                     fi
                 fi
                 exit 0
             fi
 
-            # Set wallpaper path
-            set_wallpaper_path "$imgpath"
+            # Extract first frame for thumbnail (used for color generation)
+            # Use md5sum hash of full path to avoid collisions between videos with same basename
+            thumbnail="$THUMBNAIL_DIR/$(echo -n "$imgpath" | md5sum | cut -d' ' -f1).jpg"
+            config_thumbnail="${cfg_thumbnail_path#file://}"
 
-            # Set video wallpaper
-            local video_path="$imgpath"
-            monitors=$(hyprctl monitors -j | jq -r '.[] | .name')
-            for monitor in $monitors; do
-                mpvpaper -o "$VIDEO_OPTS" "$monitor" "$video_path" &
-                sleep 0.1
-            done
+            if has_valid_file "$config_thumbnail"; then
+                thumbnail="$config_thumbnail"
+            elif ! has_valid_file "$thumbnail"; then
+                ffmpeg -y -i "$imgpath" -vframes 1 "$thumbnail" 2>/dev/null
+            fi
 
-            # Extract first frame for color generation
-            thumbnail="$THUMBNAIL_DIR/$(basename "$imgpath").jpg"
-            ffmpeg -y -i "$imgpath" -vframes 1 "$thumbnail" 2>/dev/null
-
-            # Set thumbnail path
-            set_thumbnail_path "$thumbnail"
-
-            if [ -f "$thumbnail" ]; then
-                matugen_args+=(image "$thumbnail")
-                generate_colors_material_args=(--path "$thumbnail")
-                create_restore_script "$video_path"
-            else
-                echo "Cannot create image to colorgen"
+            if ! has_valid_file "$thumbnail"; then
+                echo "Cannot create thumbnail for color generation"
                 remove_restore
                 exit 1
             fi
+
+            # Set wallpaper path (Qt Multimedia Video component will handle playback)
+            if [[ "$skip_config_write" != "1" ]]; then
+                set_wallpaper_path "$imgpath"
+            fi
+
+            # Set thumbnail path (used for color generation and as fallback)
+            if [[ "$skip_config_write" != "1" ]]; then
+                set_thumbnail_path "$thumbnail"
+            fi
+
+            # Use thumbnail for color generation
+            generate_colors_material_args=(--path "$thumbnail")
+            create_restore_script "$imgpath"
         else
-            matugen_args+=(image "$imgpath")
-            generate_colors_material_args=(--path "$imgpath")
+            color_source="$imgpath"
+            if is_gif "$imgpath"; then
+                color_preview="$THUMBNAIL_DIR/$(echo -n "$imgpath" | md5sum | cut -d' ' -f1).jpg"
+                if ensure_color_preview_for_media "$imgpath" "$color_preview"; then
+                    color_source="$color_preview"
+                fi
+            fi
+            generate_colors_material_args=(--path "$color_source")
             # Update wallpaper path in config
-            set_wallpaper_path "$imgpath"
+            if [[ "$skip_config_write" != "1" ]]; then
+                set_wallpaper_path "$imgpath"
+            fi
+            # Clear video thumbnail path (prevents stale video colors)
+            if [[ "$skip_config_write" != "1" ]]; then
+                set_thumbnail_path ""
+            fi
             remove_restore
         fi
     fi
 
     # Determine mode if not set
+    if [[ -z "$mode_flag" ]]; then
+        # Auto light/dark from wallpaper brightness (opt-in). Keeps UI text
+        # readable: a bright wallpaper selects the light scheme (dark text), a
+        # dark one selects dark. Falls back to the gsettings color-scheme on any
+        # failure (missing magick, unreadable image, etc.).
+        if [[ "$cfg_auto_dark_light" == "true" && -n "$imgpath" && -f "$imgpath" ]] \
+            && command -v magick >/dev/null 2>&1; then
+            wp_lum=$(magick "${imgpath}[0]" -resize 64x64\! -colorspace Gray -format '%[fx:mean]' info: 2>/dev/null)
+            if [[ -n "$wp_lum" ]]; then
+                if awk -v l="$wp_lum" 'BEGIN { exit !(l > 0.5) }'; then
+                    mode_flag="light"
+                else
+                    mode_flag="dark"
+                fi
+                echo "[switchwall.sh] auto dark/light: wallpaper luminance ${wp_lum} -> ${mode_flag}"
+            fi
+        fi
+    fi
     if [[ -z "$mode_flag" ]]; then
         current_mode=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
         if [[ "$current_mode" == "prefer-dark" ]]; then
@@ -269,51 +554,179 @@ switch() {
         fi
     fi
 
-    # enforce dark mode for terminal
+    # Shell/UI colors follow the requested real mode.
+    # Terminal colors may optionally force dark mode, but that must not darken the shell palette.
     if [[ -n "$mode_flag" ]]; then
-        matugen_args+=(--mode "$mode_flag")
-        if [[ $(jq -r '.appearance.wallpaperTheming.terminalGenerationProps.forceDarkMode' "$SHELL_CONFIG_FILE") == "true" ]]; then
-            generate_colors_material_args+=(--mode "dark")
-        else
-            generate_colors_material_args+=(--mode "$mode_flag")
+        generate_colors_material_args+=(--mode "$mode_flag")
+    fi
+    # If useBackdropForColors is enabled, override color source to use backdrop wallpaper
+    # Respects active panel family: ii reads from background.backdrop, waffle from waffles.background.backdrop
+    if [[ "$color_flag" != "1" ]]; then
+        if [[ "$cfg_use_backdrop" == "true" ]]; then
+            local backdrop_use_main=""
+            local backdrop_path=""
+
+            if [[ "$cfg_panel_family" == "waffle" ]]; then
+                backdrop_use_main="$cfg_waffle_backdrop_use_main"
+                backdrop_path="$cfg_waffle_backdrop_path"
+            else
+                backdrop_use_main="$cfg_ii_backdrop_use_main"
+                backdrop_path="$cfg_ii_backdrop_path"
+            fi
+
+            if [[ "$backdrop_use_main" != "true" && -n "$backdrop_path" && -f "$backdrop_path" ]]; then
+                echo "[switchwall.sh] Using backdrop wallpaper for color generation ($cfg_panel_family): $backdrop_path"
+                # Check if backdrop is a video - use its thumbnail instead
+                if is_video "$backdrop_path"; then
+                    local backdrop_thumb="$THUMBNAIL_DIR/$(echo -n "$backdrop_path" | md5sum | cut -d' ' -f1).jpg"
+                    if [[ -f "$backdrop_thumb" ]]; then
+                        generate_colors_material_args=(--path "$backdrop_thumb")
+                    fi
+                else
+                    generate_colors_material_args=(--path "$backdrop_path")
+                fi
+            fi
         fi
     fi
-    [[ -n "$type_flag" ]] && matugen_args+=(--type "$type_flag") && generate_colors_material_args+=(--scheme "$type_flag")
+
+    [[ -n "$type_flag" ]] && generate_colors_material_args+=(--scheme "$type_flag")
     generate_colors_material_args+=(--termscheme "$terminalscheme" --blend_bg_fg)
     generate_colors_material_args+=(--cache "$STATE_DIR/user/generated/color.txt")
 
     pre_process "$mode_flag"
+    write_generated_wallpaper_path "$imgpath"
 
     # Check if app and shell theming is enabled in config
-    if [ -f "$SHELL_CONFIG_FILE" ]; then
-        enable_apps_shell=$(jq -r '.appearance.wallpaperTheming.enableAppsAndShell' "$SHELL_CONFIG_FILE")
-        if [ "$enable_apps_shell" == "false" ]; then
-            echo "App and shell theming disabled, skipping matugen and color generation"
-            return
+    local enable_apps_shell="$cfg_enable_apps_shell"
+    local enable_terminal="$cfg_enable_terminal"
+
+    # Skip entirely only if BOTH app theming AND terminal theming are disabled
+    if [ "$enable_apps_shell" == "false" ] && [ "$enable_terminal" == "false" ]; then
+        echo "Both app/shell and terminal theming disabled, skipping color generation"
+        return
+    fi
+
+    # Set terminal generation properties from config (batched reads from cfg_*)
+    [[ "$cfg_term_saturation" != "null" && -n "$cfg_term_saturation" ]] && generate_colors_material_args+=(--term_saturation "$cfg_term_saturation")
+    [[ "$cfg_term_brightness" != "null" && -n "$cfg_term_brightness" ]] && generate_colors_material_args+=(--term_brightness "$cfg_term_brightness")
+    [[ "$cfg_term_harmony" != "null" && -n "$cfg_term_harmony" ]] && generate_colors_material_args+=(--harmony "$cfg_term_harmony")
+    [[ "$cfg_term_bg_brightness" != "null" && -n "$cfg_term_bg_brightness" ]] && generate_colors_material_args+=(--term_bg_brightness "$cfg_term_bg_brightness")
+    [[ "$cfg_color_strength" != "null" && -n "$cfg_color_strength" ]] && generate_colors_material_args+=(--color-strength "$cfg_color_strength")
+    [[ "$cfg_harmonize_threshold" != "null" && -n "$cfg_harmonize_threshold" ]] && generate_colors_material_args+=(--harmonize_threshold "$cfg_harmonize_threshold")
+    [[ "$cfg_term_fg_boost" != "null" && -n "$cfg_term_fg_boost" ]] && generate_colors_material_args+=(--term_fg_boost "$cfg_term_fg_boost")
+    [[ "$cfg_soften_colors" == "true" ]] && generate_colors_material_args+=(--soften)
+
+    # Generate colors and render templates in one unified Python pass
+    if [[ -n "${INIR_VENV:-}" ]]; then
+        _ii_venv="$(eval echo "$INIR_VENV")"
+    elif [[ -n "${ILLOGICAL_IMPULSE_VIRTUAL_ENV:-}" ]]; then
+        _ii_venv="$(eval echo "$ILLOGICAL_IMPULSE_VIRTUAL_ENV")"
+    else
+        _ii_venv="$HOME/.local/state/quickshell/.venv"
+    fi
+    source "$_ii_venv/bin/activate" 2>/dev/null || true
+    _ii_python="$_ii_venv/bin/python3"
+    [[ ! -x "$_ii_python" ]] && _ii_python="python3"
+
+    _scss_tmp="$STATE_DIR/user/generated/material_colors.scss.tmp"
+    _json_tmp="$STATE_DIR/user/generated/colors.json.tmp"
+    _json_out="$STATE_DIR/user/generated/colors.json"
+    _palette_tmp="$STATE_DIR/user/generated/palette.json.tmp"
+    _palette_out="$STATE_DIR/user/generated/palette.json"
+    _app_palette_tmp="$STATE_DIR/user/generated/app-palette.json.tmp"
+    _app_palette_out="$STATE_DIR/user/generated/app-palette.json"
+    _terminal_tmp="$STATE_DIR/user/generated/terminal.json.tmp"
+    _terminal_out="$STATE_DIR/user/generated/terminal.json"
+    _meta_tmp="$STATE_DIR/user/generated/theme-meta.json.tmp"
+    _meta_out="$STATE_DIR/user/generated/theme-meta.json"
+    _chromium_tmp="$STATE_DIR/user/generated/chromium.theme.tmp"
+    _chromium_out="$STATE_DIR/user/generated/chromium.theme"
+    force_dark_terminal="$cfg_force_dark_terminal"
+
+    # 1) Generate authoritative shell/UI colors.json + render app templates.
+    if "$_ii_python" "$SCRIPT_DIR/generate_colors_material.py" "${generate_colors_material_args[@]}" \
+        --json-output "$_json_tmp" \
+        --palette-output "$_palette_tmp" \
+        --app-palette-output "$_app_palette_tmp" \
+        --terminal-output "$_terminal_tmp" \
+        --meta-output "$_meta_tmp" \
+        --scss-output "$_scss_tmp" \
+        --render-templates "$TEMPLATE_DIR" \
+        > /dev/null 2>/dev/null && [[ -s "$_json_tmp" ]]; then
+        mv "$_json_tmp" "$_json_out"
+        [[ -s "$_palette_tmp" ]] && mv "$_palette_tmp" "$_palette_out" || rm -f "$_palette_tmp"
+        [[ -s "$_app_palette_tmp" ]] && mv "$_app_palette_tmp" "$_app_palette_out" || rm -f "$_app_palette_tmp"
+        if [[ "$force_dark_terminal" == "true" ]]; then
+            rm -f "$_terminal_tmp"
+        else
+            [[ -s "$_terminal_tmp" ]] && mv "$_terminal_tmp" "$_terminal_out" || rm -f "$_terminal_tmp"
+        fi
+        [[ -s "$_meta_tmp" ]] && mv "$_meta_tmp" "$_meta_out" || rm -f "$_meta_tmp"
+        if [[ "$force_dark_terminal" != "true" ]]; then
+            [[ -s "$_scss_tmp" ]] && mv "$_scss_tmp" "$STATE_DIR/user/generated/material_colors.scss" || rm -f "$_scss_tmp"
+        fi
+        if write_chromium_theme_contract "$_app_palette_out" "$_chromium_tmp" && [[ -s "$_chromium_tmp" ]]; then
+            mv "$_chromium_tmp" "$_chromium_out"
+        else
+            rm -f "$_chromium_tmp"
+        fi
+    else
+        echo "[switchwall] Warning: colors.json generation failed, keeping previous JSON" >&2
+        rm -f "$_json_tmp"
+        rm -f "$_palette_tmp"
+        rm -f "$_app_palette_tmp"
+        rm -f "$_terminal_tmp"
+        rm -f "$_meta_tmp"
+        rm -f "$_scss_tmp"
+        rm -f "$_chromium_tmp"
+    fi
+
+    if [[ "$force_dark_terminal" == "true" ]]; then
+        scss_generate_args=("${generate_colors_material_args[@]}")
+        for i in "${!scss_generate_args[@]}"; do
+            if [[ "${scss_generate_args[$i]}" == "--mode" && $((i + 1)) -lt ${#scss_generate_args[@]} ]]; then
+                scss_generate_args[$((i + 1))]="dark"
+                break
+            fi
+        done
+        _terminal_force_tmp="$STATE_DIR/user/generated/terminal.json.force.tmp"
+
+        scss_cmd=("$_ii_python" "$SCRIPT_DIR/generate_colors_material.py" "${scss_generate_args[@]}")
+        scss_cmd+=(--terminal-output "$_terminal_force_tmp")
+
+        if "${scss_cmd[@]}" > "$_scss_tmp" 2>/dev/null && [[ -s "$_scss_tmp" && -s "$_terminal_force_tmp" ]]; then
+            mv "$_scss_tmp" "$STATE_DIR/user/generated/material_colors.scss"
+            # Keep terminal outputs aligned with forced-dark generation path when enabled.
+            mv "$_terminal_force_tmp" "$_terminal_out"
+        else
+            echo "[switchwall] Warning: material_colors.scss generation failed, keeping previous SCSS" >&2
+            rm -f "$_scss_tmp"
+            rm -f "$_terminal_force_tmp"
+        fi
+    else
+        rm -f "$_scss_tmp"
+    fi
+
+    # Generate Vesktop theme if enabled (only when app theming is on)
+    if [ "$enable_apps_shell" != "false" ]; then
+        if [[ "$cfg_enable_vesktop" != "false" ]]; then
+            "$SCRIPT_DIR/system24_palette.sh"
         fi
     fi
 
-    # Set harmony and related properties
-    if [ -f "$SHELL_CONFIG_FILE" ]; then
-        harmony=$(jq -r '.appearance.wallpaperTheming.terminalGenerationProps.harmony' "$SHELL_CONFIG_FILE")
-        harmonize_threshold=$(jq -r '.appearance.wallpaperTheming.terminalGenerationProps.harmonizeThreshold' "$SHELL_CONFIG_FILE")
-        term_fg_boost=$(jq -r '.appearance.wallpaperTheming.terminalGenerationProps.termFgBoost' "$SHELL_CONFIG_FILE")
-        [[ "$harmony" != "null" && -n "$harmony" ]] && generate_colors_material_args+=(--harmony "$harmony")
-        [[ "$harmonize_threshold" != "null" && -n "$harmonize_threshold" ]] && generate_colors_material_args+=(--harmonize_threshold "$harmonize_threshold")
-        [[ "$term_fg_boost" != "null" && -n "$term_fg_boost" ]] && generate_colors_material_args+=(--term_fg_boost "$term_fg_boost")
+    # Note: applycolor.sh is NOT invoked here.  The shell's MaterialThemeLoader
+    # watches colors.json and runs applycolor.sh exactly once when the file
+    # changes (see services/MaterialThemeLoader.qml — delayedExternalApply).
+    # Running it here on top caused 2x app theming per regen and races between
+    # the parallel module workers.  CLI standalone use (shell not running) can
+    # invoke applycolor.sh manually if app theming is desired.
+    deactivate 2>/dev/null || true
+
+    # Pass screen width, height, and wallpaper path to post_process (only when app theming is on)
+    if [ "$enable_apps_shell" != "false" ]; then
+        read max_width_desired max_height_desired <<< "$(get_max_monitor_resolution)"
+        post_process "$max_width_desired" "$max_height_desired" "$imgpath"
     fi
-
-    matugen "${matugen_args[@]}"
-    source "$(eval echo $ILLOGICAL_IMPULSE_VIRTUAL_ENV)/bin/activate"
-    python3 "$SCRIPT_DIR/generate_colors_material.py" "${generate_colors_material_args[@]}" \
-        > "$STATE_DIR"/user/generated/material_colors.scss
-    "$SCRIPT_DIR"/applycolor.sh
-    deactivate
-
-    # Pass screen width, height, and wallpaper path to post_process
-    max_width_desired="$(hyprctl monitors -j | jq '([.[].width] | min)' | xargs)"
-    max_height_desired="$(hyprctl monitors -j | jq '([.[].height] | min)' | xargs)"
-    post_process "$max_width_desired" "$max_height_desired" "$imgpath"
 }
 
 main() {
@@ -323,23 +736,68 @@ main() {
     color_flag=""
     color=""
     noswitch_flag=""
+    skip_config_write=""
+    skip_accent_write=""
 
-    get_type_from_config() {
-        jq -r '.appearance.palette.type' "$SHELL_CONFIG_FILE" 2>/dev/null || echo "auto"
-    }
-    get_accent_color_from_config() {
-        jq -r '.appearance.palette.accentColor' "$SHELL_CONFIG_FILE" 2>/dev/null || echo ""
-    }
+    # Batch-read all config values in one jq call (replaces ~20 individual spawns)
+    if [[ -f "$SHELL_CONFIG_FILE" ]]; then
+        mapfile -t _cfg < <(jq -r '[
+            (.appearance.palette.type | tostring),
+            (.appearance.palette.accentColor | tostring),
+            (.appearance.theme // "auto"),
+            (.background.clock.cookie.aiStyling | tostring),
+            (.background.thumbnailPath // ""),
+            (.appearance.wallpaperTheming.useBackdropForColors // false),
+            (.panelFamily // "ii"),
+            (.waffles.background.backdrop.useMainWallpaper // true),
+            (.waffles.background.backdrop.wallpaperPath // ""),
+            (.background.backdrop.useMainWallpaper // true),
+            (.background.backdrop.wallpaperPath // ""),
+            (.appearance.wallpaperTheming.enableAppsAndShell // true),
+            (.appearance.wallpaperTheming.enableTerminal // true),
+            (.appearance.wallpaperTheming.terminalColorAdjustments.saturation // 0.65),
+            (.appearance.wallpaperTheming.terminalColorAdjustments.brightness // 0.60),
+            (.appearance.wallpaperTheming.terminalColorAdjustments.harmony // .appearance.wallpaperTheming.terminalGenerationProps.harmony // 0.40),
+            (.appearance.wallpaperTheming.terminalColorAdjustments.backgroundBrightness // 0.50),
+            (.appearance.wallpaperTheming.colorStrength // 1.0),
+            (.appearance.wallpaperTheming.terminalGenerationProps.harmonizeThreshold // 100),
+            (.appearance.wallpaperTheming.terminalGenerationProps.termFgBoost // 0.35),
+            (.appearance.softenColors | tostring),
+            (.appearance.wallpaperTheming.terminalGenerationProps.forceDarkMode // false),
+            (.appearance.wallpaperTheming.enableVesktop // true),
+            (.background.hideUpscaleNotification // false),
+            (.appearance.wallpaperTheming.autoDarkLightMode // false)
+        ] | .[]' "$SHELL_CONFIG_FILE" 2>/dev/null)
+    fi
+    cfg_palette_type="${_cfg[0]:-auto}"
+    cfg_accent_color="${_cfg[1]:-}"
+    cfg_theme="${_cfg[2]:-auto}"
+    cfg_ai_styling="${_cfg[3]:-false}"
+    cfg_thumbnail_path="${_cfg[4]:-}"
+    cfg_use_backdrop="${_cfg[5]:-false}"
+    cfg_panel_family="${_cfg[6]:-ii}"
+    cfg_waffle_backdrop_use_main="${_cfg[7]:-true}"
+    cfg_waffle_backdrop_path="${_cfg[8]:-}"
+    cfg_ii_backdrop_use_main="${_cfg[9]:-true}"
+    cfg_ii_backdrop_path="${_cfg[10]:-}"
+    cfg_enable_apps_shell="${_cfg[11]:-true}"
+    cfg_enable_terminal="${_cfg[12]:-true}"
+    cfg_term_saturation="${_cfg[13]:-0.65}"
+    cfg_term_brightness="${_cfg[14]:-0.60}"
+    cfg_term_harmony="${_cfg[15]:-0.40}"
+    cfg_term_bg_brightness="${_cfg[16]:-0.50}"
+    cfg_color_strength="${_cfg[17]:-1.0}"
+    cfg_harmonize_threshold="${_cfg[18]:-100}"
+    cfg_term_fg_boost="${_cfg[19]:-0.35}"
+    cfg_soften_colors="${_cfg[20]:-null}"
+    cfg_force_dark_terminal="${_cfg[21]:-false}"
+    cfg_enable_vesktop="${_cfg[22]:-true}"
+    cfg_hide_upscale="${_cfg[23]:-false}"
+    cfg_auto_dark_light="${_cfg[24]:-false}"
+
     set_accent_color() {
         local color="$1"
-        jq --arg color "$color" '.appearance.palette.accentColor = $color' "$SHELL_CONFIG_FILE" > "$SHELL_CONFIG_FILE.tmp" && mv "$SHELL_CONFIG_FILE.tmp" "$SHELL_CONFIG_FILE"
-    }
-
-    detect_scheme_type_from_image() {
-        local img="$1"
-        source "$(eval echo $ILLOGICAL_IMPULSE_VIRTUAL_ENV)/bin/activate"
-        "$SCRIPT_DIR"/scheme_for_image.py "$img" 2>/dev/null | tr -d '\n'
-        deactivate
+        _config_locked_write --arg color "$color" '.appearance.palette.accentColor = $color'
     }
 
     while [[ $# -gt 0 ]]; do
@@ -354,10 +812,12 @@ main() {
                 ;;
             --color)
                 if [[ "$2" =~ ^#?[A-Fa-f0-9]{6}$ ]]; then
-                    set_accent_color "$2"
+                    [[ "$skip_accent_write" != "1" ]] && set_accent_color "$2"
+                    color_flag="1"
+                    color="$2"
                     shift 2
                 elif [[ "$2" == "clear" ]]; then
-                    set_accent_color ""
+                    [[ "$skip_accent_write" != "1" ]] && set_accent_color ""
                     shift 2
                 else
                     set_accent_color $(hyprpicker --no-fancy)
@@ -370,8 +830,28 @@ main() {
                 ;;
             --noswitch)
                 noswitch_flag="1"
-                imgpath=$(jq -r '.background.wallpaperPath' "$SHELL_CONFIG_FILE" 2>/dev/null || echo "")
+                skip_config_write="1"
                 shift
+                ;;
+            --skip-config-write)
+                skip_config_write="1"
+                shift
+                ;;
+            --skip-accent-write)
+                skip_accent_write="1"
+                shift
+                ;;
+            --monitor)
+                monitor_name="$2"
+                shift 2
+                ;;
+            --start-workspace)
+                start_workspace="$2"
+                shift 2
+                ;;
+            --end-workspace)
+                end_workspace="$2"
+                shift 2
                 ;;
             *)
                 if [[ -z "$imgpath" ]]; then
@@ -382,20 +862,25 @@ main() {
         esac
     done
 
-    # If accentColor is set in config, use it
-    config_color="$(get_accent_color_from_config)"
-    if [[ "$config_color" =~ ^#?[A-Fa-f0-9]{6}$ ]]; then
-        color_flag="1"
-        color="$config_color"
-    fi
-
     # If type_flag is not set, get it from config
     if [[ -z "$type_flag" ]]; then
-        type_flag="$(get_type_from_config)"
+        type_flag="$cfg_palette_type"
+    fi
+
+    # If accentColor is set in config, use it for static themes only.
+    # For auto themes, colors must come from the wallpaper — a stale accentColor
+    # from a previous static-theme variant would override wallpaper extraction.
+    if [[ -z "$color_flag" ]]; then
+        if [[ "$cfg_theme" != "auto" ]]; then
+            if [[ "$cfg_accent_color" =~ ^#?[A-Fa-f0-9]{6}$ ]]; then
+                color_flag="1"
+                color="$cfg_accent_color"
+            fi
+        fi
     fi
 
     # Validate type_flag (allow 'auto' as well)
-    allowed_types=(scheme-content scheme-expressive scheme-fidelity scheme-fruit-salad scheme-monochrome scheme-neutral scheme-rainbow scheme-tonal-spot auto)
+    allowed_types=(scheme-content scheme-expressive scheme-fidelity scheme-fruit-salad scheme-monochrome scheme-neutral scheme-rainbow scheme-tonal-spot scheme-vibrant auto)
     valid_type=0
     for t in "${allowed_types[@]}"; do
         if [[ "$type_flag" == "$t" ]]; then
@@ -414,37 +899,18 @@ main() {
         imgpath="$(kdialog --getopenfilename . --title 'Choose wallpaper')"
     fi
 
-    if [[ -n "$imgpath" && -z "$noswitch_flag" ]]; then
-        set_accent_color ""
-        color_flag=""
-        color=""
+    # --noswitch should regenerate from the current effective theming source.
+    # If no explicit image was passed, force resolution now so family-specific
+    # wallpapers (e.g. waffle.background.wallpaperPath) are honored.
+    if [[ -z "$imgpath" && -n "$noswitch_flag" && -z "$color_flag" ]]; then
+        imgpath="$(resolve_effective_theming_wallpaper)"
     fi
 
-    # If type_flag is 'auto', detect scheme type from image (after imgpath is set)
-    if [[ "$type_flag" == "auto" ]]; then
-        if [[ -n "$imgpath" && -f "$imgpath" ]]; then
-            detected_type="$(detect_scheme_type_from_image "$imgpath")"
-            # Only use detected_type if it's valid
-            valid_detected=0
-            for t in "${allowed_types[@]}"; do
-                if [[ "$detected_type" == "$t" && "$detected_type" != "auto" ]]; then
-                    valid_detected=1
-                    break
-                fi
-            done
-            if [[ $valid_detected -eq 1 ]]; then
-                type_flag="$detected_type"
-            else
-                echo "[switchwall] Warning: Could not auto-detect a valid scheme, defaulting to 'scheme-tonal-spot'" >&2
-                type_flag="scheme-tonal-spot"
-            fi
-        else
-            echo "[switchwall] Warning: No image to auto-detect scheme from, defaulting to 'scheme-tonal-spot'" >&2
-            type_flag="scheme-tonal-spot"
-        fi
-    fi
+    # type_flag "auto" is passed directly to generate_colors_material.py which
+    # auto-detects the scheme from the already-loaded resized image. This avoids
+    # a separate Python+cv2 process (~600ms on high-res images).
 
-    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color"
+    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color" "$skip_config_write" "$noswitch_flag"
 }
 
 main "$@"

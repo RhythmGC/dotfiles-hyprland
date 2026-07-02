@@ -1,0 +1,4 @@
+module qs.modules.screenTranslator
+ScreenTranslator 1.0 ScreenTranslator.qml
+ScreenTranslatorPanel 1.0 ScreenTranslatorPanel.qml
+ScreenTextOverlay 1.0 ScreenTextOverlay.qml

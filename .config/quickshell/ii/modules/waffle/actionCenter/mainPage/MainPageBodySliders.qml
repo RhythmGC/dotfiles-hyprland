@@ -26,17 +26,24 @@ ColumnLayout {
             iconName: "weather-sunny"
 
             Behavior on animationValue {
-                animation: Looks.transition.longMovement.createObject(this)
+                animation: NumberAnimation { duration: Looks.transition.enabled ? 800 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.emphasize }
             }
         }
         
         WSlider {
+            id: brightnessSlider
             Layout.fillWidth: true
-            value: root.brightnessMonitor?.brightness ?? 0
-            scrollable: true
-            onMoved: {
-                root.brightnessMonitor?.setBrightness(value)
+            property real modelValue: root.brightnessMonitor?.brightness ?? 0
+
+            Binding {
+                target: brightnessSlider
+                property: "value"
+                value: brightnessSlider.modelValue
+                when: !brightnessSlider.pressed && !brightnessSlider._userInteracting
             }
+            scrollable: true
+            tooltipContent: `${Math.round(value * 100)}%`
+            onMoved: root.brightnessMonitor?.setBrightness(value)
         }
 
         WPanelIconButton {
@@ -48,17 +55,24 @@ ColumnLayout {
         spacing: 4
 
         WPanelIconButton {
-            iconName: WIcons.volumeIcon
+            iconName: WIcons.volumeIcon ?? "speaker"
             onClicked: Audio.toggleMute();
         }
         
         WSlider {
+            id: volumeSlider
             Layout.fillWidth: true
-            value: Audio.sink.audio.volume
-            scrollable: true
-            onMoved: {
-                Audio.sink.audio.volume = value;
+            property real modelValue: Audio.sink?.audio?.volume ?? 0
+            to: 1.5
+
+            Binding {
+                target: volumeSlider
+                property: "value"
+                value: volumeSlider.modelValue
+                when: !volumeSlider.pressed && !volumeSlider._userInteracting
             }
+            scrollable: true
+            onMoved: Audio.setSinkVolume(value)
         }
 
         WPanelIconButton {
@@ -67,7 +81,7 @@ ColumnLayout {
                 VolumeControl {}
             }
             onClicked: {
-                ActionCenterContext.push(volumeControlComp)
+                if (ActionCenterContext.stackView) ActionCenterContext.stackView.push(volumeControlComp)
             }
             contentItem: Item {
                 anchors.centerIn: parent

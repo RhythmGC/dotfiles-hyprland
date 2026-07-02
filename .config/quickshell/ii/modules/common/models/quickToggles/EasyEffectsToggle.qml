@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs
 import qs.services
+import qs.services.deferred
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.common.widgets
@@ -22,7 +23,10 @@ QuickToggleModel {
     }
 
     altAction: () => {
-        Quickshell.execDetached(["bash", "-c", "flatpak run com.github.wwmm.easyeffects || easyeffects"])
+        ShellExec.execFishOrBashOneLiner(
+            "flatpak run com.github.wwmm.easyeffects; or easyeffects",
+            "/usr/bin/flatpak run com.github.wwmm.easyeffects || /usr/bin/easyeffects"
+        )
         GlobalStates.sidebarRightOpen = false
     }
 

@@ -3,21 +3,41 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
-import qs
 import qs.services
+import qs.services.deferred
+import qs
 import qs.modules.common
 import qs.modules.common.widgets
 
 Scope {
     id: root
 
+    readonly property bool allowMultiplePanels: Config.options?.waffles?.behavior?.allowMultiplePanels ?? false
+
     Connections {
         target: GlobalStates
-
         function onSearchOpenChanged() {
             if (GlobalStates.searchOpen) {
-                LauncherSearch.query = "";
-                panelLoader.active = true;
+                if (!root.allowMultiplePanels) {
+                    GlobalStates.waffleActionCenterOpen = false
+                    GlobalStates.waffleNotificationCenterOpen = false
+                }
+                panelLoader.active = true
+            }
+        }
+    }
+
+    // Click-outside-to-close overlay
+    LazyLoader {
+        active: GlobalStates.searchOpen
+        component: PanelWindow {
+            anchors { top: true; bottom: true; left: true; right: true }
+            WlrLayershell.namespace: "quickshell:wStartMenuBg"
+            WlrLayershell.layer: WlrLayer.Top
+            color: "transparent"
+            MouseArea {
+                anchors.fill: parent
+                onClicked: GlobalStates.searchOpen = false
             }
         }
     }
@@ -29,30 +49,28 @@ Scope {
             id: panelWindow
             exclusiveZone: 0
             WlrLayershell.namespace: "quickshell:wStartMenu"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
             color: "transparent"
 
+            // Adaptive minimum size based on preset
+            property string preset: Config.options.waffles?.startMenu?.sizePreset ?? "normal"
+            property int minW: preset === "mini" ? 200 : preset === "compact" ? 280 : 360
+            property int minH: preset === "mini" ? 200 : preset === "compact" ? 280 : 300
+
             anchors {
-                bottom: Config.options.waffles.bar.bottom
-                top: !Config.options.waffles.bar.bottom
-                left: Config.options.waffles.bar.leftAlignApps
+                bottom: Config.options?.waffles?.bar?.bottom ?? true
+                top: !(Config.options?.waffles?.bar?.bottom ?? true)
+                left: Config.options?.waffles?.bar?.leftAlignApps ?? false
             }
 
-            implicitWidth: content.implicitWidth
-            implicitHeight: content.implicitHeight
-
-            HyprlandFocusGrab {
-                id: focusGrab
-                active: true
-                windows: [panelWindow]
-                onCleared: content.close()
-            }
+            implicitWidth: Math.max(minW, content.implicitWidth)
+            implicitHeight: Math.max(minH, content.implicitHeight)
 
             Connections {
                 target: GlobalStates
                 function onSearchOpenChanged() {
-                    if (!GlobalStates.searchOpen)
-                        content.close();
+                    if (!GlobalStates.searchOpen) content.close()
                 }
             }
 
@@ -60,44 +78,20 @@ Scope {
                 id: content
                 anchors.fill: parent
                 focus: true
-
                 onClosed: {
-                    GlobalStates.searchOpen = false;
-                    panelLoader.active = false;
-                    LauncherSearch.query = "";
+                    GlobalStates.searchOpen = false
+                    panelLoader.active = false
+                    LauncherSearch.query = ""
                 }
             }
         }
     }
 
-    function toggleClipboard() {
-        if (LauncherSearch.query.startsWith(Config.options.search.prefix.clipboard) || !GlobalStates.searchOpen) {
-            GlobalStates.searchOpen = !GlobalStates.searchOpen;
-        }
-        LauncherSearch.ensurePrefix(Config.options.search.prefix.clipboard);
-    }
-    function toggleEmojis() {
-        if (LauncherSearch.query.startsWith(Config.options.search.prefix.emojis) || !GlobalStates.searchOpen) {
-            GlobalStates.searchOpen = !GlobalStates.searchOpen;
-        }
-        LauncherSearch.ensurePrefix(Config.options.search.prefix.emojis);
-    }
-
     IpcHandler {
         target: "search"
-
-        function toggle() {
-            GlobalStates.searchOpen = !GlobalStates.searchOpen;
-        }
-        function close() {
-            GlobalStates.searchOpen = false;
-        }
-        function open() {
-            GlobalStates.searchOpen = true;
-        }
-        function toggleReleaseInterrupt() {
-            GlobalStates.superReleaseMightTrigger = false;
-        }
+        function toggle(): void { GlobalStates.searchOpen = !GlobalStates.searchOpen }
+        function close(): void { GlobalStates.searchOpen = false }
+        function open(): void { GlobalStates.searchOpen = true }
     }
 
     GlobalShortcut {

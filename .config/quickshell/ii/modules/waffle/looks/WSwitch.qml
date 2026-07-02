@@ -27,18 +27,24 @@ Switch {
         border.color: root.checked ? root.checkedColor : root.borderColor
 
         Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+            ColorAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.normal : 0
+                easing.type: Easing.OutQuad
+            }
         }
         Behavior on border.color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+            ColorAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.normal : 0
+                easing.type: Easing.OutQuad
+            }
         }
     }
 
-    // Custom thumb styling
+    // Custom thumb styling - Windows 11 style with smooth spring animation
     indicator: Rectangle {
         implicitWidth: (root.pressed || root.down) ? root.indicatorPressedWidth : root.indicatorHeight
         implicitHeight: (root.pressed || root.down) ? root.indicatorPressedHeight : root.indicatorHeight
-        radius: height / 2
+        radius: Math.min(width, height) / 2
         color: root.checked ? Looks.colors.accentFg : root.borderColor
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
@@ -46,21 +52,31 @@ Switch {
             if (root.checked) {
                 return 24 - (root.pressed || root.down ? root.indicatorPressedWidthDiff : 0);
             } else {
-                return (root.pressed || root.down) ? 3 : (Config.options.waffles.tweaks.switchHandlePositionFix ? 4 : 3);
+                return (root.pressed || root.down) ? 3 : (Config.options?.waffles?.tweaks?.switchHandlePositionFix ? 4 : 3);
             }
         }
 
         Behavior on anchors.leftMargin {
-            animation: Looks.transition.enter.createObject(this)
+            NumberAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.panel : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Looks.transition.easing.bezierCurve.spring
+            }
         }
         Behavior on implicitWidth {
-            animation: Looks.transition.resize.createObject(this)
+            NumberAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.fast : 0
+                easing.type: Easing.OutQuad
+            }
         }
         Behavior on implicitHeight {
-            animation: Looks.transition.resize.createObject(this)
+            NumberAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.fast : 0
+                easing.type: Easing.OutQuad
+            }
         }
         Behavior on color {
-            animation: Looks.transition.color.createObject(this)
+            animation: ColorAnimation { duration: Looks.transition.enabled ? 70 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
         }
     }
 }

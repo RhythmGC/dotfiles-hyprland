@@ -10,8 +10,7 @@ import qs.modules.waffle.looks
 PopupToolTip {
     id: root
 
-    required property Item realContentItem
-    realContentItem: WText {
+    property Item realContentItem: WText {
         text: root.text
         anchors.centerIn: parent
     }

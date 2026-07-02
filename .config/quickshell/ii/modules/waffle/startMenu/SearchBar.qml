@@ -30,12 +30,12 @@ FooterRectangle {
     color: searching ? Looks.colors.bgPanelBody : Looks.colors.bgPanelFooter
 
     Behavior on horizontalPadding {
-        enabled: Config.options.waffles.tweaks.smootherSearchBar
-        animation: Looks.transition.move.createObject(this)
+        enabled: Config.options.waffles?.tweaks?.smootherSearchBar ?? false
+        animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
     }
     Behavior on verticalPadding {
-        enabled: Config.options.waffles.tweaks.smootherSearchBar
-        animation: Looks.transition.move.createObject(this)
+        enabled: Config.options.waffles?.tweaks?.smootherSearchBar ?? false
+        animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
     }
 
     Rectangle {
@@ -83,7 +83,7 @@ FooterRectangle {
                         verticalCenter: parent.verticalCenter
                     }
                     color: Looks.colors.accentUnfocused
-                    text: Translation.tr("Search for apps") // should also have "", settings, and documents" but we don't have those
+                    text: Translation.tr("Search for apps")
                     visible: searchInput.text.length === 0
                     font.pixelSize: Looks.font.pixelSize.large
                 }

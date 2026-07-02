@@ -64,60 +64,72 @@ Button {
 
     Behavior on implicitWidth {
         enabled: root.enableImplicitWidthAnimation
-        animation: Appearance.animation.clickBounce.numberAnimation.createObject(this)
+        animation: NumberAnimation { duration: Appearance.animation.clickBounce.duration; easing.type: Appearance.animation.clickBounce.type; easing.bezierCurve: Appearance.animation.clickBounce.bezierCurve }
     }
 
     Behavior on implicitHeight {
         enabled: root.enableImplicitHeightAnimation
-        animation: Appearance.animation.clickBounce.numberAnimation.createObject(this)
+        animation: NumberAnimation { duration: Appearance.animation.clickBounce.duration; easing.type: Appearance.animation.clickBounce.type; easing.bezierCurve: Appearance.animation.clickBounce.bezierCurve }
     }
 
     Behavior on leftRadius {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        enabled: Appearance.animationsEnabled
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
     }
     Behavior on rightRadius {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        enabled: Appearance.animationsEnabled
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
     }
 
+    // TapHandler for right-click (altAction) - works better with Button control
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: {
+            if (root.altAction) root.altAction();
+        }
+    }
+
+    // TapHandler for middle-click
+    TapHandler {
+        acceptedButtons: Qt.MiddleButton
+        onTapped: {
+            if (root.middleClickAction) root.middleClickAction();
+        }
+    }
+
+    // TapHandler for long-press (also triggers altAction)
+    TapHandler {
+        acceptedButtons: Qt.LeftButton
+        longPressThreshold: 0.5
+        onLongPressed: {
+            if (root.altAction) root.altAction();
+        }
+    }
+
+    // MouseArea only for cursor shape and left-click handling
     property alias mouseArea: buttonMouseArea
     MouseArea {
         id: buttonMouseArea
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        acceptedButtons: Qt.LeftButton
         onPressed: (event) => { 
-            if(event.button === Qt.RightButton) {
-                if (root.altAction) root.altAction();
-                return;
-            }
-            if(event.button === Qt.MiddleButton) {
-                if (root.middleClickAction) root.middleClickAction();
-                return;
-            }
             root.down = true
             if (root.downAction) root.downAction();
         }
         onReleased: (event) => {
             root.down = false
-            if (event.button != Qt.LeftButton) return;
             if (root.releaseAction) root.releaseAction();
         }
         onClicked: (event) => {
-            if (event.button != Qt.LeftButton) return;
-            root.click()
+            root.clicked()
         }
         onCanceled: (event) => {
             root.down = false
         }
-
-        onPressAndHold: () => {
-            altAction(); 
-            root.down = false; 
-            root.clicked = false;
-        };
     }
 
-    property bool tabbedTo: root.focus && (focusReason === Qt.TabFocusReason || focusReason === Qt.BacktabFocusReason)
+
     background: Rectangle {
         id: buttonBackground
         topLeftRadius: root.leftRadius
@@ -128,11 +140,9 @@ Button {
 
         color: root.color
         Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+            enabled: Appearance.animationsEnabled
+            animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
         }
-
-        border.width: root.tabbedTo ? 2 : 0
-        border.color: Appearance.colors.colSecondary
     }
 
     contentItem: StyledText {

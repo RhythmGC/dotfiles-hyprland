@@ -4,5 +4,9 @@ import qs.modules.common
 Rectangle {
     id: contentItem
     anchors.fill: parent
-    color: Appearance.m3colors.m3surfaceContainer
+    // Overlay no tiene blur de wallpaper, usar colores sólidos en aurora
+    color: Appearance.angelEverywhere ? Appearance.angel.colGlassPanel
+         : Appearance.inirEverywhere ? Appearance.inir.colLayer1
+         : Appearance.auroraEverywhere ? Appearance.colors.colLayer2Base
+         : Appearance.colors.colSurfaceContainer
 }

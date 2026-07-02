@@ -6,6 +6,9 @@ import Quickshell.Bluetooth
 import Quickshell.Io
 import QtQuick
 
+/**
+ * Bluetooth status service.
+ */
 Singleton {
     id: root
 
@@ -15,23 +18,33 @@ Singleton {
     readonly property int activeDeviceCount: Bluetooth.defaultAdapter?.devices.values.filter(device => device.connected).length ?? 0
     readonly property bool connected: Bluetooth.devices.values.some(d => d.connected)
 
-    function sortFunction(a, b) {
-        // Ones with meaningful names before MAC addresses
-        const macRegex = /^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$/;
-        const aIsMac = macRegex.test(a.name);
-        const bIsMac = macRegex.test(b.name);
-        if (aIsMac !== bIsMac)
-            return aIsMac ? 1 : -1;
-
-        // Alphabetical by name
-        return a.name.localeCompare(b.name);
+    // Material Symbol icon for the currently-active device, or generic bluetooth
+    // states when no device is connected. Uses BluetoothDevice.icon (XDG icon
+    // name like "audio-headset", "input-keyboard") to pick a device-specific
+    // glyph so the bar reflects what's actually connected.
+    readonly property string activeIcon: {
+        if (!root.enabled) return "bluetooth_disabled";
+        if (!root.connected) return "bluetooth";
+        return root._materialIconForDevice(root.firstActiveDevice);
     }
-    property list<var> connectedDevices: Bluetooth.devices.values.filter(d => d.connected).sort(sortFunction)
-    property list<var> pairedButNotConnectedDevices: Bluetooth.devices.values.filter(d => d.paired && !d.connected).sort(sortFunction)
-    property list<var> unpairedDevices: Bluetooth.devices.values.filter(d => !d.paired && !d.connected).sort(sortFunction)
-    property list<var> friendlyDeviceList: [
-        ...connectedDevices,
-        ...pairedButNotConnectedDevices,
-        ...unpairedDevices
-    ]
+
+    function _materialIconForDevice(device: BluetoothDevice): string {
+        const xdg = (device?.icon ?? "").toLowerCase();
+        if (xdg.length === 0) return "bluetooth_connected";
+        if (xdg.includes("headset") || xdg.includes("headphone")) return "headphones";
+        if (xdg.includes("audio-card") || xdg.includes("speaker")) return "speaker";
+        if (xdg.includes("audio")) return "speaker";
+        if (xdg.includes("keyboard")) return "keyboard";
+        if (xdg.includes("mouse") || xdg.includes("pointer")) return "mouse";
+        if (xdg.includes("phone")) return "smartphone";
+        if (xdg.includes("watch")) return "watch";
+        if (xdg.includes("camera")) return "photo_camera";
+        if (xdg.includes("printer")) return "print";
+        if (xdg.includes("scanner")) return "scanner";
+        if (xdg.includes("gamepad") || xdg.includes("joystick") || xdg.includes("input-gaming")) return "sports_esports";
+        if (xdg.includes("computer") || xdg.includes("laptop")) return "laptop";
+        if (xdg.includes("tablet")) return "tablet";
+        if (xdg.includes("tv") || xdg.includes("video")) return "tv";
+        return "bluetooth_connected";
+    }
 }

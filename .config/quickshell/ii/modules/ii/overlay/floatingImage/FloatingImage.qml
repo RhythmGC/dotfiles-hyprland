@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import Quickshell
 import Qt5Compat.GraphicalEffects
 import qs.modules.common
 import qs.modules.common.functions
@@ -13,8 +12,8 @@ StyledOverlayWidget {
     resizable: false
     clickthrough: true
 
-    property string imageSource: Config.options.overlay.floatingImage.imageSource
-    property real scaleFactor: Config.options.overlay.floatingImage.scale
+    property string imageSource: Config.options?.overlay?.floatingImage?.imageSource ?? ""
+    property real scaleFactor: Config.options?.overlay?.floatingImage?.scale ?? 0.5
     property int imageWidth: 0
     property int imageHeight: 0
 
@@ -28,6 +27,13 @@ StyledOverlayWidget {
 
     onImageSourceChanged: {
         imageDownloader.running = false;
+        if (!root.imageSource || root.imageSource.trim().length === 0) {
+            root.imageWidth = 0;
+            root.imageHeight = 0;
+            animatedImage.source = "";
+            root.setSize();
+            return;
+        }
         imageDownloader.sourceUrl = root.imageSource;
         imageDownloader.filePath = Qt.resolvedUrl(Directories.tempImages + "/" + Qt.md5(root.imageSource))
         imageDownloader.running = true;
@@ -37,6 +43,11 @@ StyledOverlayWidget {
     }
 
     function setSize() {
+        if (root.imageWidth <= 0 || root.imageHeight <= 0) {
+            bg.implicitWidth = 340;
+            bg.implicitHeight = 164;
+            return;
+        }
         bg.implicitWidth = root.imageWidth * root.scaleFactor;
         bg.implicitHeight = root.imageHeight * root.scaleFactor;
     }
@@ -48,11 +59,12 @@ StyledOverlayWidget {
 
         WheelHandler {
             onWheel: (event) => {
+                const currentScale = Config.options?.overlay?.floatingImage?.scale ?? 0.5;
                 if (event.angleDelta.y < 0) {
-                    Config.options.overlay.floatingImage.scale = Math.max(0.1, Config.options.overlay.floatingImage.scale - 0.1);
+                    Config.setNestedValue("overlay.floatingImage.scale", Math.max(0.1, currentScale - 0.1));
                 }
                 else if (event.angleDelta.y > 0) {
-                    Config.options.overlay.floatingImage.scale = Math.min(5.0, Config.options.overlay.floatingImage.scale + 0.1);
+                    Config.setNestedValue("overlay.floatingImage.scale", Math.min(5.0, currentScale + 0.1));
                 }
             }
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
@@ -72,14 +84,23 @@ StyledOverlayWidget {
             anchors.centerIn: parent
             width: root.imageWidth * root.scaleFactor
             height: root.imageHeight * root.scaleFactor
-            sourceSize: {
-                const dpr = (QsWindow.window as QsWindow)?.devicePixelRatio ?? 1;
-                return Qt.size(width * dpr, height * dpr);
-            }
+            sourceSize.width: width
+            sourceSize.height: height
 
             playing: visible
             asynchronous: true
             source: ""
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    const w = sourceSize.width > 0 ? sourceSize.width : Math.max(1, implicitWidth)
+                    const h = sourceSize.height > 0 ? sourceSize.height : Math.max(1, implicitHeight)
+                    if (root.imageWidth <= 0 || root.imageHeight <= 0) {
+                        root.imageWidth = w;
+                        root.imageHeight = h;
+                        root.setSize();
+                    }
+                }
+            }
 
             ImageDownloaderProcess {
                 id: imageDownloader
@@ -87,8 +108,8 @@ StyledOverlayWidget {
                 sourceUrl: root.imageSource
 
                 onDone: (path, width, height) => {
-                    root.imageWidth = width;
-                    root.imageHeight = height;
+                    root.imageWidth = Number.isFinite(width) && width > 0 ? width : 0;
+                    root.imageHeight = Number.isFinite(height) && height > 0 ? height : 0;
                     root.setSize();
                     animatedImage.source = path;
                 }

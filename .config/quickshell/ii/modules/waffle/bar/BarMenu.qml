@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.waffle.looks
@@ -16,6 +16,10 @@ BarPopup {
     ]
     readonly property bool hasIcons: model.some(item => item.iconName !== undefined && item.iconName !== "")
     padding: 2
+    
+    // Context menus close on focus lost (click outside) and hover lost (mouse leaves)
+    closeOnFocusLost: true
+    closeOnHoverLost: true
 
     contentItem: ColumnLayout {
         anchors.centerIn: parent
@@ -41,6 +45,15 @@ BarPopup {
                         id: btn
                         Layout.fillWidth: true
                         inset: 2
+                        horizontalPadding: 10
+                        verticalPadding: 6
+                        font.pixelSize: Looks.font.pixelSize.small
+                        readonly property var menuPopup: root
+                        
+                        // Hover más visible con accent color
+                        colBackground: "transparent"
+                        colBackgroundHover: ColorUtils.transparentize(Looks.colors.accent, 0.85)
+                        colBackgroundActive: ColorUtils.transparentize(Looks.colors.accent, 0.7)
 
                         required property var modelData
                         forceShowIcon: root.hasIcons
@@ -50,7 +63,7 @@ BarPopup {
 
                         onClicked: {
                             if (modelData.action) modelData.action();
-                            root.close();
+                            menuPopup.close();
                         }
                     }
                 }

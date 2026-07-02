@@ -8,6 +8,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 import qs.services.ai
+import qs.services.deferred
 
 /**
  * Basic service to handle LLM chats. Supports Google's and OpenAI's API formats.
@@ -18,15 +19,140 @@ import qs.services.ai
 Singleton {
     id: root
 
+    function _log(...args): void {
+        if (Quickshell.env("QS_DEBUG") === "1") console.log(...args);
+    }
+
+    property bool _initialized: false
+    property var _lastInterfaceMessage: null
+
     property Component aiMessageComponent: AiMessageData {}
     property Component aiModelComponent: AiModel {}
     property Component geminiApiStrategy: GeminiApiStrategy {}
     property Component openaiApiStrategy: OpenAiApiStrategy {}
+    property Component openaiResponseApiStrategy: OpenAiResponseApiStrategy {}
     property Component mistralApiStrategy: MistralApiStrategy {}
+    property Component anthropicApiStrategy: AnthropicApiStrategy {}
     readonly property string interfaceRole: "interface"
     readonly property string apiKeyEnvVarName: "API_KEY"
 
     signal responseFinished()
+
+    IpcHandler {
+        target: "ai"
+
+        function ensureInitialized(): void { root.ensureInitialized() }
+        function diagnose(): string {
+            const policy = (Config.options?.policies?.ai ?? 0)
+            const model = root.models?.[root.currentModelId]
+            return JSON.stringify({
+                initialized: root._initialized,
+                policy,
+                currentModelId: root.currentModelId ?? "",
+                currentModelName: model?.name ?? "",
+                currentModelEndpoint: model?.endpoint ?? "",
+                currentModelRequiresKey: !!model?.requires_key,
+                apiKeysLoaded: !!KeyringStorage.loaded,
+                currentModelHasApiKey: !!root.currentModelHasApiKey,
+                modelCount: (root.modelList ?? []).length,
+                modelList: root.modelList ?? [],
+                currentTool: root.currentTool ?? "",
+                temperature: root.temperature,
+                lastInterfaceMessage: root._lastInterfaceMessage ?? "",
+            })
+        }
+
+        function run(inputText: string): void {
+            const text = (inputText ?? "").trim()
+            if (text.length === 0) return
+
+            root.ensureInitialized()
+
+            const prefix = "/"
+            if (!text.startsWith(prefix)) {
+                root.sendUserMessage(text)
+                return
+            }
+
+            const parts = text.split(" ")
+            const command = (parts[0] ?? "").substring(1)
+            const args = parts.slice(1)
+
+            switch (command) {
+                case "attach":
+                    const attachPath = args.join(" ").trim()
+                    if (attachPath.length === 0) {
+                        root.addMessage(Translation.tr("Usage: %1attach PATH").arg(prefix), root.interfaceRole)
+                        break
+                    }
+                    root.attachFile(attachPath)
+                    break
+                case "model":
+                    if (args.length === 0 || !args[0] || args[0] === "get") {
+                        root.addMessage(Translation.tr("Usage: %1model MODEL_ID").arg(prefix), root.interfaceRole)
+                        break
+                    }
+                    root.setModel(args[0])
+                    break
+                case "tool":
+                    if (args.length === 0 || args[0] === "get") {
+                        root.addMessage(Translation.tr("Usage: %1tool TOOL_NAME").arg(prefix), root.interfaceRole)
+                        break
+                    }
+                    if (root.setTool(args[0])) {
+                        root.addMessage(Translation.tr("Tool set to: %1").arg(args[0]), root.interfaceRole)
+                    }
+                    break
+                case "prompt":
+                    if (args.length === 0 || args[0] === "get") {
+                        root.printPrompt()
+                        break
+                    }
+                    root.loadPrompt(args.join(" ").trim())
+                    break
+                case "key":
+                    root.addMessage(
+                        Translation.tr("The /key command is disabled over IPC"),
+                        root.interfaceRole
+                    )
+                    break
+                case "save": {
+                    const joined = args.join(" ").trim()
+                    if (joined.length === 0) {
+                        root.addMessage(Translation.tr("Usage: %1save CHAT_NAME").arg(prefix), root.interfaceRole)
+                        break
+                    }
+                    root.saveChat(joined)
+                    break
+                }
+                case "load": {
+                    const joined = args.join(" ").trim()
+                    if (joined.length === 0) {
+                        root.addMessage(Translation.tr("Usage: %1load CHAT_NAME").arg(prefix), root.interfaceRole)
+                        break
+                    }
+                    root.loadChat(joined)
+                    break
+                }
+                case "clear":
+                    root.clearMessages()
+                    break
+                case "temp":
+                    if (args.length === 0 || args[0] === "get") root.printTemperature()
+                    else root.setTemperature(args[0])
+                    break
+                default:
+                    root.addMessage(Translation.tr("Unknown command: ") + command, root.interfaceRole)
+                    break
+            }
+        }
+
+        function runGet(inputText: string): string {
+            root._lastInterfaceMessage = null
+            run(inputText)
+            return root._lastInterfaceMessage ?? ""
+        }
+    }
 
     property string systemPrompt: {
         let prompt = Config.options?.ai?.systemPrompt ?? "";
@@ -40,6 +166,7 @@ Singleton {
     // property var messages: []
     property var messageIDs: []
     property var messageByID: ({})
+    property bool _pendingRequest: false
     readonly property var apiKeys: KeyringStorage.keyringData?.apiKeys ?? {}
     readonly property var apiKeysLoaded: KeyringStorage.loaded
     readonly property bool currentModelHasApiKey: {
@@ -63,7 +190,11 @@ Singleton {
     }
 
     function safeModelName(modelName) {
-        return modelName.replace(/:/g, "_").replace(/ /g, "-").replace(/\//g, "-")
+        return (modelName ?? "")
+            .toLowerCase()
+            .replace(/:/g, "_")
+            .replace(/ /g, "-")
+            .replace(/\//g, "-")
     }
 
     property list<var> defaultPrompts: []
@@ -80,7 +211,7 @@ Singleton {
 
     // Gemini: https://ai.google.dev/gemini-api/docs/function-calling
     // OpenAI: https://platform.openai.com/docs/guides/function-calling
-    property string currentTool: Config?.options.ai.tool ?? "search"
+    property string currentTool: Config.options?.ai?.tool ?? "search"
     property var tools: {
         "gemini": {
             "functions": [{"functionDeclarations": [
@@ -233,9 +364,111 @@ Singleton {
             ],
             "search": [],
             "none": [],
+        },
+        "anthropic": {
+            "functions": [
+                {
+                    "name": "get_shell_config",
+                    "description": "Get the desktop shell config file contents",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {},
+                    }
+                },
+                {
+                    "name": "set_shell_config",
+                    "description": "Set a field in the desktop graphical shell config file. Must only be used after `get_shell_config`.",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "The key to set, e.g. `bar.borderless`. MUST NOT BE GUESSED, use `get_shell_config` to see what keys are available before setting.",
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "The value to set, e.g. `true`"
+                            }
+                        },
+                        "required": ["key", "value"]
+                    }
+                },
+                {
+                    "name": "run_shell_command",
+                    "description": "Run a shell command in bash and get its output. Use this only for quick commands that don't require user interaction. For commands that require interaction, ask the user to run manually instead.",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "The bash command to run",
+                            },
+                        },
+                        "required": ["command"]
+                    }
+                },
+            ],
+            "search": [],
+            "none": [],
+        },
+        "openai-response": {
+            "functions": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "get_shell_config",
+                        "description": "Get the desktop shell config file contents",
+                        "parameters": {}
+                    },
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "set_shell_config",
+                        "description": "Set a field in the desktop graphical shell config file. Must only be used after `get_shell_config`.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "key": {
+                                    "type": "string",
+                                    "description": "The key to set, e.g. `bar.borderless`. MUST NOT BE GUESSED, use `get_shell_config` to see what keys are available before setting.",
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "The value to set, e.g. `true`"
+                                }
+                            },
+                            "required": ["key", "value"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "run_shell_command",
+                        "description": "Run a shell command in bash and get its output. Use this only for quick commands that don't require user interaction. For commands that require interaction, ask the user to run manually instead.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string",
+                                    "description": "The bash command to run",
+                                },
+                            },
+                            "required": ["command"]
+                        }
+                    },
+                },
+            ],
+            "search": [],
+            "none": [],
         }
     }
-    property list<var> availableTools: Object.keys(root.tools[models[currentModelId]?.api_format])
+    property list<var> availableTools: {
+        const fmt = models[currentModelId]?.api_format
+        const map = fmt ? root.tools[fmt] : null
+        return map ? Object.keys(map) : []
+    }
     property var toolDescriptions: {
         "functions": Translation.tr("Commands, edit configs, search.\nTakes an extra turn to switch to search mode if that's needed"),
         "search": Translation.tr("Gives the model search capabilities (immediately)"),
@@ -254,78 +487,82 @@ Singleton {
     // - key_get_description: Description of pricing and how to get an API key
     // - api_format: The API format of the model. Can be "openai" or "gemini". Default is "openai".
     // - extraParams: Extra parameters to be passed to the model. This is a JSON object.
-    property var models: Config.options.policies.ai === 2 ? {} : {
-        "gemini-2.5-flash": aiModelComponent.createObject(this, {
-            "name": "Gemini 2.5 Flash",
-            "icon": "google-gemini-symbolic",
-            "description": Translation.tr("Online | Google's model\nNewer model that's slower than its predecessor but should deliver higher quality answers"),
-            "homepage": "https://aistudio.google.com",
-            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
-            "model": "gemini-2.5-flash",
-            "requires_key": true,
-            "key_id": "gemini",
-            "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
-            "api_format": "gemini",
-        }),
-        "gemini-3-flash": aiModelComponent.createObject(this, {
-            "name": "Gemini 3 Flash",
-            "icon": "google-gemini-symbolic",
-            "description": Translation.tr("Online | Google's model\nPro-level intelligence at the speed and pricing of Flash."),
-            "homepage": "https://aistudio.google.com",
-            "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent",
-            "model": "gemini-3-flash-preview",
-            "requires_key": true,
-            "key_id": "gemini",
-            "key_get_link": "https://aistudio.google.com/app/apikey",
-            "key_get_description": Translation.tr("**Pricing**: free. Data used for training.\n\n**Instructions**: Log into Google account, allow AI Studio to create Google Cloud project or whatever it asks, go back and click Get API key"),
-            "api_format": "gemini",
-        }),
-        "mistral-medium-3": aiModelComponent.createObject(this, {
-            "name": "Mistral Medium 3",
-            "icon": "mistral-symbolic",
-            "description": Translation.tr("Online | %1's model | Delivers fast, responsive and well-formatted answers. Disadvantages: not very eager to do stuff; might make up unknown function calls").arg("Mistral"),
-            "homepage": "https://mistral.ai/news/mistral-medium-3",
-            "endpoint": "https://api.mistral.ai/v1/chat/completions",
-            "model": "mistral-medium-2505",
-            "requires_key": true,
-            "key_id": "mistral",
-            "key_get_link": "https://console.mistral.ai/api-keys",
-            "key_get_description": Translation.tr("**Instructions**: Log into Mistral account, go to Keys on the sidebar, click Create new key"),
-            "api_format": "mistral",
-        }),
-    }
+    // Models loaded dynamically from config.json ai.extraModels
+    property var models: (Config.options?.policies?.ai ?? 0) === 2 ? {} : ({})
     property var modelList: Object.keys(root.models)
-    property var currentModelId: Persistent.states?.ai?.model || modelList[0]
+    property var currentModelId: {
+        const saved = Persistent.states?.ai?.model
+        return (saved && root.models[saved]) ? saved : modelList[0]
+    }
 
     property var apiStrategies: {
         "openai": openaiApiStrategy.createObject(this),
+        "openai-response": openaiResponseApiStrategy.createObject(this),
         "gemini": geminiApiStrategy.createObject(this),
         "mistral": mistralApiStrategy.createObject(this),
+        "anthropic": anthropicApiStrategy.createObject(this),
     }
     property ApiStrategy currentApiStrategy: apiStrategies[models[currentModelId]?.api_format || "openai"]
 
-    function addUserModels() {
-        (Config?.options.ai?.extraModels ?? []).forEach(model => {
-            const safeModelName = root.safeModelName(model["model"]);
+    property var _loadedExtraModelIds: []
+
+    function _syncExtraModels() {
+        if (!Config.ready) return
+        root._loadedExtraModelIds.forEach(id => {
+            if (root.models[id]) delete root.models[id]
+        })
+        root._loadedExtraModelIds = []
+        const policy = Config.options?.policies?.ai ?? 0
+        ;(Config.options?.ai?.extraModels ?? []).forEach(model => {
+            if (policy === 2 && !(model?.endpoint ?? "").includes("localhost")) return
+            const safeModelName = root.safeModelName(model["model"])
             root.addModel(safeModelName, model)
-        });
+            root._loadedExtraModelIds.push(safeModelName)
+        })
+        root.modelList = Object.keys(root.models)
     }
 
     Connections {
         target: Config
-        function onReadyChanged() {
-            if (!Config.ready) return;
-            root.addUserModels()
-        }
+        function onReadyChanged() { root._syncExtraModels() }
+        function onConfigChanged() { root._syncExtraModels() }
     }
 
     property string requestScriptFilePath: "/tmp/quickshell/ai/request.sh"
     property string pendingFilePath: ""
 
+    function ensureInitialized(): void {
+        if (root._initialized)
+            return;
+        root._initialized = true;
+
+        const policy = (Config.options?.policies?.ai ?? 0)
+
+        getOllamaModels.running = true
+        if (policy !== 2) {
+            getOpenRouterModels.running = true
+        }
+        getDefaultPrompts.running = true
+        getUserPrompts.running = true
+        getSavedChats.running = true
+
+        // Do necessary setup for model
+        setModel(currentModelId, false, false);
+    }
+
+    // Retry pending request when API keys finish loading
+    Connections {
+        target: KeyringStorage
+        function onLoadedChanged() {
+            if (KeyringStorage.loaded && root._pendingRequest) {
+                root._pendingRequest = false;
+                requester.makeRequest();
+            }
+        }
+    }
+
     Component.onCompleted: {
-        setModel(currentModelId, false, false); // Do necessary setup for model
-        root.addUserModels() // Config onReadyChanged above might not fire if config is loaded before this service
+        // Lazy: initialize only when UI actually uses the AI service.
     }
 
     function guessModelLogo(model) {
@@ -350,20 +587,29 @@ Singleton {
     }
 
     function addModel(modelName, data) {
-        root.models = Object.assign({}, root.models, {
-            [modelName]: aiModelComponent.createObject(this, data)
-        });
+        root.models[modelName] = aiModelComponent.createObject(this, data);
     }
 
     Process {
         id: getOllamaModels
-        running: true
-        command: ["bash", "-c", `${Directories.scriptPath}/ai/show-installed-ollama-models.sh`.replace(/file:\/\//, "")]
+        running: false
+        command: ["/usr/bin/bash", `${Directories.scriptsPath}/ai/show-installed-ollama-models.sh`]
+        property string _stderr: ""
         stdout: SplitParser {
             onRead: data => {
                 try {
                     if (data.length === 0) return;
                     const dataJson = JSON.parse(data);
+
+                    const policy = (Config.options?.policies?.ai ?? 0)
+                    if (policy === 2 && (!dataJson || dataJson.length === 0)) {
+                        root.addMessage(
+                            Translation.tr("No local models available\n\nInstall Ollama or change `policies.ai`"),
+                            root.interfaceRole
+                        )
+                        return
+                    }
+
                     root.modelList = [...root.modelList, ...dataJson];
                     dataJson.forEach(model => {
                         const safeModelName = root.safeModelName(model);
@@ -381,7 +627,62 @@ Singleton {
                     root.modelList = Object.keys(root.models);
 
                 } catch (e) {
-                    console.log("Could not fetch Ollama models:", e);
+                    _log("Could not fetch Ollama models:", e);
+                }
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: getOllamaModels._stderr = text
+        }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) return
+            const policy = (Config.options?.policies?.ai ?? 0)
+            if (policy === 2) {
+                root.addMessage(
+                    Translation.tr("No local models available\n\nInstall Ollama or change `policies.ai`"),
+                    root.interfaceRole
+                )
+            }
+            if (getOllamaModels._stderr && getOllamaModels._stderr.length > 0) {
+                _log("[Ai] Ollama model loader stderr:", getOllamaModels._stderr.substring(0, 400))
+            }
+        }
+    }
+
+    Process {
+        id: getOpenRouterModels
+        running: false
+        command: ["/usr/bin/curl", "-s", "https://openrouter.ai/api/v1/models"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    if (text.length === 0) return;
+                    const response = JSON.parse(text);
+                    const freeModels = (response.data || []).filter(m => 
+                        m.pricing?.prompt === "0" && m.pricing?.completion === "0"
+                    );
+                    
+                    freeModels.forEach(model => {
+                        const safeModelName = "openrouter-" + root.safeModelName(model.id);
+                        const provider = model.id.split("/")[0] || "Unknown";
+                        root.addModel(safeModelName, {
+                            "name": model.name || model.id,
+                            "icon": root.guessModelLogo(model.id),
+                            "description": Translation.tr("Free via OpenRouter | %1").arg(provider),
+                            "homepage": `https://openrouter.ai/${model.id}`,
+                            "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+                            "model": model.id,
+                            "requires_key": true,
+                            "key_id": "openrouter",
+                            "key_get_link": "https://openrouter.ai/settings/keys",
+                            "key_get_description": Translation.tr("**Pricing**: free tier model.\n\n**Instructions**: Log into OpenRouter, go to Keys, click Create API Key"),
+                        });
+                    });
+                    
+                    root.modelList = Object.keys(root.models);
+                    _log("[Ai] Loaded", freeModels.length, "free OpenRouter models");
+                } catch (e) {
+                    _log("[Ai] Could not fetch OpenRouter models:", e);
                 }
             }
         }
@@ -389,8 +690,8 @@ Singleton {
 
     Process {
         id: getDefaultPrompts
-        running: true
-        command: ["ls", "-1", Directories.defaultAiPrompts]
+        running: false
+        command: ["/usr/bin/ls", "-1", Directories.defaultAiPrompts]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text.length === 0) return;
@@ -403,8 +704,8 @@ Singleton {
 
     Process {
         id: getUserPrompts
-        running: true
-        command: ["ls", "-1", Directories.userAiPrompts]
+        running: false
+        command: ["/usr/bin/ls", "-1", Directories.userAiPrompts]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text.length === 0) return;
@@ -417,8 +718,8 @@ Singleton {
 
     Process {
         id: getSavedChats
-        running: true
-        command: ["ls", "-1", Directories.aiChats]
+        running: false
+        command: ["/usr/bin/ls", "-1", Directories.aiChats]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text.length === 0) return;
@@ -434,16 +735,27 @@ Singleton {
         watchChanges: false;
         onLoadedChanged: {
             if (!promptLoader.loaded) return;
-            Config.options.ai.systemPrompt = promptLoader.text();
-            root.addMessage(Translation.tr("Loaded the following system prompt\n\n---\n\n%1").arg(Config.options.ai.systemPrompt), root.interfaceRole);
+            Config.setNestedValue(["ai", "systemPrompt"], promptLoader.text())
+            root.addMessage(Translation.tr("Loaded the following system prompt\n\n---\n\n%1").arg(Config.options?.ai?.systemPrompt ?? ""), root.interfaceRole);
         }
     }
 
     function printPrompt() {
-        root.addMessage(Translation.tr("The current system prompt is\n\n---\n\n%1").arg(Config.options.ai.systemPrompt), root.interfaceRole);
+        root.addMessage(Translation.tr("The current system prompt is\n\n---\n\n%1").arg(Config.options?.ai?.systemPrompt ?? ""), root.interfaceRole);
+    }
+
+    // Human-readable name of the loaded prompt (derived from its file name, e.g.
+    // "ii-Default.md" → "ii-Default"). Persisted so it survives restarts.
+    property string currentPromptName: Persistent.states?.ai?.promptName ?? ""
+
+    function _promptNameFromPath(filePath) {
+        const base = (filePath ?? "").split("/").pop();
+        return base.replace(/\.(md|txt)$/i, "");
     }
 
     function loadPrompt(filePath) {
+        root.currentPromptName = root._promptNameFromPath(filePath);
+        if (Persistent.states?.ai) Persistent.states.ai.promptName = root.currentPromptName;
         promptLoader.path = "" // Unload
         promptLoader.path = filePath; // Load
         promptLoader.reload();
@@ -451,6 +763,7 @@ Singleton {
 
     function addMessage(message, role) {
         if (message.length === 0) return;
+        if (role === root.interfaceRole) root._lastInterfaceMessage = message;
         const aiMessage = aiMessageComponent.createObject(root, {
             "role": role,
             "content": message,
@@ -489,14 +802,17 @@ Singleton {
         if (modelList.indexOf(modelId) !== -1) {
             const model = models[modelId]
             // See if policy prevents online models
-            if (Config.options.policies.ai === 2 && !model.endpoint.includes("localhost")) {
+            if ((Config.options?.policies?.ai ?? 0) === 2 && !model.endpoint.includes("localhost")) {
                 root.addMessage(
                     Translation.tr("Online models disallowed\n\nControlled by `policies.ai` config option"),
                     root.interfaceRole
-                );
-                return;
+                )
+                return
             }
-            if (setPersistentState) Persistent.states.ai.model = modelId;
+            root.currentModelId = modelId;
+            if (setPersistentState && Persistent.states?.ai) {
+                Persistent.states.ai.model = modelId;
+            }
             if (feedback) root.addMessage(Translation.tr("Model set to %1").arg(model.name), root.interfaceRole);
             if (model.requires_key) {
                 // If key not there show advice
@@ -510,12 +826,21 @@ Singleton {
     }
 
     function setTool(tool) {
-        if (!root.tools[models[currentModelId]?.api_format] || !(tool in root.tools[models[currentModelId]?.api_format])) {
-            root.addMessage(Translation.tr("Invalid tool. Supported tools:\n- %1").arg(root.availableTools.join("\n- ")), root.interfaceRole);
+        const model = models[currentModelId]
+        if (!model) {
+            root.addMessage(
+                Translation.tr("No model selected\n\nUse /model to pick one"),
+                root.interfaceRole
+            )
             return false;
         }
-        Config.options.ai.tool = tool;
-        return true;
+        const fmt = model.api_format
+        if (!root.tools[fmt] || !(tool in root.tools[fmt])) {
+            root.addMessage(Translation.tr("Invalid tool. Supported tools:\n- %1").arg(root.availableTools ? root.availableTools.join("\n- ") : ""), root.interfaceRole);
+            return false;
+        }
+        Config.setNestedValue(["ai", "tool"], tool)
+        return true
     }
     
     function getTemperature() {
@@ -523,17 +848,32 @@ Singleton {
     }
 
     function setTemperature(value) {
-        if (value == NaN || value < 0 || value > 2) {
-            root.addMessage(Translation.tr("Temperature must be between 0 and 2"), Ai.interfaceRole);
+        const num = Number(value)
+        if (Number.isNaN(num)) {
+            root.addMessage(Translation.tr("Temperature must be a number"), Ai.interfaceRole);
             return;
         }
-        Persistent.states.ai.temperature = value;
-        root.temperature = value;
-        root.addMessage(Translation.tr("Temperature set to %1").arg(value), Ai.interfaceRole);
+        const model = models[currentModelId]
+        const max = (model?.api_format === "gemini") ? 2 : 1
+        if (num < 0 || num > max) {
+            root.addMessage(Translation.tr("Temperature must be between 0 and %1").arg(max), Ai.interfaceRole);
+            return;
+        }
+
+        Persistent.states.ai.temperature = num;
+        root.temperature = num;
+        root.addMessage(Translation.tr("Temperature set to %1").arg(num), Ai.interfaceRole);
     }
 
     function setApiKey(key) {
         const model = models[currentModelId];
+        if (!model) {
+            root.addMessage(
+                Translation.tr("No model selected\n\nUse /model to pick one"),
+                root.interfaceRole
+            )
+            return;
+        }
         if (!model.requires_key) {
             root.addMessage(Translation.tr("%1 does not require an API key").arg(model.name), Ai.interfaceRole);
             return;
@@ -549,6 +889,13 @@ Singleton {
 
     function printApiKey() {
         const model = models[currentModelId];
+        if (!model) {
+            root.addMessage(
+                Translation.tr("No model selected\n\nUse /model to pick one"),
+                root.interfaceRole
+            )
+            return;
+        }
         if (model.requires_key) {
             const key = root.apiKeys[model.key_id];
             if (key) {
@@ -579,7 +926,7 @@ Singleton {
 
     Process {
         id: requester
-        property list<string> baseCommand: ["bash"]
+        property list<string> baseCommand: ["/usr/bin/bash"]
         property AiMessageData message
         property ApiStrategy currentStrategy
 
@@ -596,14 +943,29 @@ Singleton {
         function makeRequest() {
             const model = models[currentModelId];
 
-            // Fetch API keys if needed
-            if (model?.requires_key && !KeyringStorage.loaded) KeyringStorage.fetchKeyringData();
+            if (!model) {
+                root.addMessage(
+                    Translation.tr("No model selected\n\nUse /model to pick one (or enable AI / local models in settings)"),
+                    root.interfaceRole
+                )
+                return
+            }
+
+            // Ensure API keys are loaded before making request
+            if (model?.requires_key && !KeyringStorage.loaded) {
+                KeyringStorage.fetchKeyringData();
+                // Wait for keys to load, then retry
+                _pendingRequest = true;
+                return;
+            }
             
             requester.currentStrategy = root.currentApiStrategy;
             requester.currentStrategy.reset(); // Reset strategy state
 
             /* Put API key in environment variable */
-            if (model.requires_key) requester.environment[`${root.apiKeyEnvVarName}`] = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : ""
+            if (model?.requires_key) {
+                requester.environment[`${root.apiKeyEnvVarName}`] = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : ""
+            }
 
             /* Build endpoint, request data */
             const endpoint = root.currentApiStrategy.buildEndpoint(model);
@@ -638,9 +1000,15 @@ Singleton {
             // console.log("Request headers: ", JSON.stringify(requestHeaders));
             // console.log("Header string: ", headerString);
 
-            /* Get authorization header from strategy */
-            const authHeader = requester.currentStrategy.buildAuthorizationHeader(root.apiKeyEnvVarName);
-            
+            /* Get authorization header from strategy. Only send it when the
+               model actually uses a key — otherwise the API_KEY env var is
+               unset and we'd send an empty `Authorization: Bearer `, which
+               local/keyless endpoints (e.g. Ollama) reject with a missing-auth
+               error. */
+            const authHeader = model?.requires_key
+                ? requester.currentStrategy.buildAuthorizationHeader(root.apiKeyEnvVarName)
+                : "";
+
             /* Script shebang */
             const scriptShebang = "#!/usr/bin/env bash\n";
 
@@ -654,7 +1022,7 @@ Singleton {
 
             /* Create command string */
             let scriptRequestContent = ""
-            scriptRequestContent += `curl --no-buffer "${endpoint}"`
+            scriptRequestContent += `curl -sS --no-buffer "${endpoint}"`
                 + ` ${headerString}`
                 + (authHeader ? ` ${authHeader}` : "")
                 + ` --data '${CF.StringUtils.shellSingleQuoteEscape(JSON.stringify(data))}'`
@@ -673,7 +1041,7 @@ Singleton {
             onRead: data => {
                 if (data.length === 0) return;
                 if (requester.message.thinking) requester.message.thinking = false;
-                // console.log("[Ai] Raw response line: ", data);
+                _log("[Ai] Raw response line: ", data.substring(0, 100));
 
                 // Handle response line
                 try {
@@ -785,13 +1153,11 @@ Singleton {
         property string shellCommand: ""
         property AiMessageData message
         property string baseMessageContent: ""
-        command: ["bash", "-c", shellCommand]
+        command: ["/usr/bin/bash", "-c", shellCommand]
         stdout: SplitParser {
             onRead: (output) => {
                 commandExecutionProc.message.functionResponse += output + "\n\n";
-                const updatedContent = commandExecutionProc.baseMessageContent + `\n\n<think>\n<tt>${commandExecutionProc.message.functionResponse}</tt>\n</think>`;
-                commandExecutionProc.message.rawContent = updatedContent;
-                commandExecutionProc.message.content = updatedContent;
+                root._log("[Ai] commandExecutionProc output:", output)
             }
         }
         onExited: (exitCode, exitStatus) => {

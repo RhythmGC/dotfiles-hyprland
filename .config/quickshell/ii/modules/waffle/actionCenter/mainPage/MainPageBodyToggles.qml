@@ -1,5 +1,4 @@
 pragma ComponentBehavior: Bound
-import Qt.labs.synchronizer
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -8,7 +7,6 @@ import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
-import qs.modules.common.models.quickToggles
 import qs.modules.common.functions
 import qs.modules.waffle.looks
 import qs.modules.waffle.actionCenter.toggles
@@ -21,7 +19,7 @@ Item {
     property int currentPage: 0
     readonly property int itemsPerPage: columns * rows
     readonly property int pages: Math.ceil(toggles.length / itemsPerPage)
-    property list<string> toggles: Config.options.waffles.actionCenter.toggles
+    property list<string> toggles: Config.options?.waffles?.actionCenter?.toggles ?? []
 
     property real padding: 22
     property real reducedBottomPadding: 12
@@ -60,9 +58,8 @@ Item {
 
         orientation: Qt.Vertical
         clip: true
-        Synchronizer on currentIndex {
-            property alias source: root.currentPage
-        }
+        currentIndex: root.currentPage
+        onCurrentIndexChanged: if (currentIndex !== root.currentPage) root.currentPage = currentIndex
 
         Repeater {
             model: root.pages
@@ -87,16 +84,38 @@ Item {
         }
     }
 
-    VerticalPageIndicator {
+    Column {
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         anchors.rightMargin: 6
-        
-        currentIndex: root.currentPage
-        count: root.pages
-        onClicked: (index) => root.currentPage = index
-        onIncreasePage: root.increasePage();
-        onDecreasePage: root.decreasePage();
+        spacing: 6
+
+        NavigationArrow {
+            down: false
+        }
+
+        Repeater {
+            model: root.pages
+            delegate: MouseArea {
+                id: pageIndicator
+                required property int index
+                hoverEnabled: true
+                onClicked: root.currentPage = index
+                anchors.horizontalCenter: parent.horizontalCenter
+                implicitWidth: 6
+                implicitHeight: 6
+
+                Circle {
+                    anchors.centerIn: parent
+                    diameter: (index === root.currentPage || pageIndicator.containsMouse) && !pageIndicator.pressed ? 6 : 4
+                    color: pageIndicator.containsMouse ? Looks.colors.controlBgHover : Looks.colors.controlBg
+                }
+            }
+        }
+
+        NavigationArrow {
+            down: true
+        }
     }
 
     FocusedScrollMouseArea {
@@ -104,7 +123,25 @@ Item {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
         hoverEnabled: false
-        onScrollUp: root.decreasePage();
-        onScrollDown: root.increasePage();
+        onScrollUp: decreasePage();
+        onScrollDown: increasePage();
+    }
+
+    component NavigationArrow: FluentIcon {
+        id: navArrow
+        required property bool down
+        anchors.horizontalCenter: parent.horizontalCenter
+        implicitHeight: 12
+        implicitWidth: 12 - (2 * upArea.containsPress)
+        icon: down ? "caret-down" : "caret-up"
+        color: upArea.containsMouse ? Looks.colors.controlBgHover : Looks.colors.controlBg
+        filled: true
+        opacity: ((down && root.currentPage < root.pages - 1) || (!down && root.currentPage > 0)) ? 1 : 0
+        MouseArea {
+            id: upArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: navArrow.down ? root.increasePage() : root.decreasePage();
+        }
     }
 }

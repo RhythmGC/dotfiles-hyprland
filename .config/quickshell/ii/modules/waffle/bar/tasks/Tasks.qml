@@ -9,43 +9,72 @@ MouseArea {
     id: root
 
     Layout.fillHeight: true
-    implicitHeight: appRow.implicitHeight
-    implicitWidth: appRow.implicitWidth
+    implicitHeight: row.implicitHeight
+    implicitWidth: row.implicitWidth
     hoverEnabled: true
+    
+    readonly property var pinnedApps: TaskbarApps.apps.filter(app => app.pinned && app.toplevels.length === 0)
+    readonly property var runningApps: TaskbarApps.apps.filter(app => app.toplevels.length > 0)
+    
+    // Signal to close all context menus before opening a new one
+    signal closeAllContextMenus()
 
     function showPreviewPopup(appEntry, button) {
         previewPopup.show(appEntry, button);
     }
 
     Behavior on implicitWidth {
-        animation: Looks.transition.move.createObject(this)
+        animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
     }
 
-    WListView {
-        id: appRow
+    // Apps row
+    RowLayout {
+        id: row
         anchors {
             top: parent.top
             bottom: parent.bottom
         }
-        orientation: Qt.Horizontal
         spacing: 0
-        implicitWidth: contentWidth
-        clip: true
-        interactive: false
-        // TODO: Include only apps (and windows) in current workspace only | wait, does that even make sense in a Hyprland workflow?
-        model: ScriptModel {
-            objectProp: "appId"
-            values: TaskbarApps.apps.filter(app => app.appId !== "SEPARATOR")
-        }
-        delegate: TaskAppButton {
-            required property var modelData
-            appEntry: modelData
 
-            onHoverPreviewRequested: {
-                root.showPreviewPopup(appEntry, this);
+        Repeater {
+            model: ScriptModel {
+                objectProp: "appId"
+                values: root.pinnedApps
             }
-            onHoverPreviewDismissed: {
-                previewPopup.close();
+            delegate: TaskAppButton {
+                required property var modelData
+                appEntry: modelData
+                tasksParent: root
+
+                onHoverPreviewRequested: {
+                    root.showPreviewPopup(appEntry, this)
+                }
+                onHoverPreviewDismissed: {
+                    previewPopup.close()
+                }
+            }
+        }
+
+        WTaskbarSeparator {
+            visible: root.pinnedApps.length > 0 && root.runningApps.length > 0
+        }
+
+        Repeater {
+            model: ScriptModel {
+                objectProp: "appId"
+                values: root.runningApps
+            }
+            delegate: TaskAppButton {
+                required property var modelData
+                appEntry: modelData
+                tasksParent: root
+
+                onHoverPreviewRequested: {
+                    root.showPreviewPopup(appEntry, this)
+                }
+                onHoverPreviewDismissed: {
+                    previewPopup.close()
+                }
             }
         }
     }
@@ -56,4 +85,5 @@ MouseArea {
         tasksHovered: root.containsMouse
         anchor.window: root.QsWindow.window
     }
+
 }

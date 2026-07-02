@@ -3,7 +3,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import qs.services
 import qs.modules.common
 import qs.modules.common.functions
@@ -12,8 +11,13 @@ import qs.modules.waffle.bar
 
 BarPopup {
     id: root
+    
+    property var trayParent: null  // Reference to Tray for closing other menus
 
+    // Disable both auto-close mechanisms - this menu is controlled by the toggle button
     closeOnFocusLost: false
+    closeOnHoverLost: false
+    
     onFocusCleared: {
         const hasMenuOpen = contentItem.children.some(c => (c.menuOpen));
         if (!hasMenuOpen)
@@ -49,6 +53,7 @@ BarPopup {
                     id: trayButton
                     required property var modelData
                     item: modelData
+                    trayParent: root.trayParent
 
                     topInset: 0
                     bottomInset: 0
@@ -73,10 +78,10 @@ BarPopup {
                     property real initialY
 
                     Behavior on x {
-                        animation: Looks.transition.move.createObject(this)
+                        animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
                     }
                     Behavior on y {
-                        animation: Looks.transition.move.createObject(this)
+                        animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
                     }
 
                     MouseArea {

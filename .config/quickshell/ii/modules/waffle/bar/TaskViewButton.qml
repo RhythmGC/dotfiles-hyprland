@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import org.kde.kirigami as Kirigami
 import qs
 import qs.services
@@ -13,13 +14,14 @@ AppButton {
     pressedScale: checked ? 5/6 : 1
     separateLightDark: true
 
-    checked: GlobalStates.overviewOpen
+    checked: GlobalStates.waffleTaskViewOpen
     onClicked: {
-        GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        // Use IPC to toggle TaskView - this triggers preview capture before opening
+        Quickshell.execDetached([Quickshell.shellPath("scripts/inir"), "taskview", "toggle"])
     }
 
     BarToolTip {
         extraVisibleCondition: root.shouldShowTooltip
-        text: Translation.tr("Task View") // Should be a preview of workspaces, but we'll have this for now...
+        text: Translation.tr("Task View")
     }
 }

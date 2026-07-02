@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -8,58 +9,59 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.waffle.looks
-import qs.modules.waffle.notificationCenter
 
 Scope {
-    id: notificationPopup
+    id: root
+
+    Component.onCompleted: Notifications.ensureInitialized()
+    
+    // Position from shared notifications config
+    readonly property string position: Config.options?.notifications?.position ?? "bottomRight"
+    readonly property bool isTop: position.startsWith("top")
+    readonly property bool isLeft: position.endsWith("Left")
 
     PanelWindow {
-        id: root
-        visible: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked
-        screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+        id: panelWindow
+        // Hide during GameMode to avoid input interference
+        visible: (Notifications.popupList.length > 0) && !GlobalStates.screenLocked && !GlobalStates.waffleNotificationCenterOpen && !(GameMode.active && GameMode.suppressNotifications)
 
-        WlrLayershell.namespace: "quickshell:notificationPopup"
-        WlrLayershell.layer: WlrLayer.Overlay
-        exclusiveZone: 0
-
-        anchors {
-            top: true
-            right: true
-            bottom: true
+        screen: {
+            const list = Config.options?.notifications?.screenList ?? [];
+            const focused = CompositorService.isNiri
+                ? Quickshell.screens.find(s => s.name === NiriService.currentOutput) ?? GlobalStates.primaryScreen
+                : Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? GlobalStates.primaryScreen;
+            if (!list || list.length === 0) return focused;
+            if (focused && list.includes(focused.name ?? "")) return focused;
+            const pinned = Quickshell.screens.find(s => list.includes(s?.name ?? ""));
+            return pinned ?? GlobalStates.primaryScreen ?? focused;
         }
 
+        WlrLayershell.namespace: "quickshell:wNotificationPopup"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        exclusiveZone: 0
+        
+        // Only capture input on actual notification area
         mask: Region {
-            item: listview.contentItem
+            item: listview
+        }
+
+        anchors {
+            top: root.isTop
+            bottom: !root.isTop
+            left: root.isLeft
+            right: !root.isLeft
         }
 
         color: "transparent"
-        implicitWidth: listview.implicitWidth
+        implicitWidth: 380
+        implicitHeight: Math.min(listview.contentHeight + 16, (screen?.height ?? 800) * 0.7)
 
-        WListView {
+        WNotificationListView {
             id: listview
             anchors {
-                bottom: parent.bottom
-                right: parent.right
-                left: parent.left
-            }
-            leftMargin: 16
-            rightMargin: 16
-            topMargin: 16
-            bottomMargin: 16
-
-            height: Math.min(contentItem.height + topMargin + bottomMargin, parent.height)
-            width: parent.width - Appearance.sizes.elevationMargin * 2
-            
-            implicitWidth: 396
-            spacing:12
-
-            model: ScriptModel {
-                values: Notifications.popupList
-            }
-            delegate: WSingleNotification {
-                required property var modelData
-                notification: modelData
-                width: ListView.view.width - ListView.view.leftMargin - ListView.view.rightMargin
+                fill: parent
+                margins: 8
             }
         }
     }

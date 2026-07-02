@@ -4,28 +4,27 @@ import qs.modules.common
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.services
 
 Singleton {
     id: root
 
-    function isPinned(appId) {
-        return Config.options.dock.pinnedApps.indexOf(appId) !== -1;
-    }
-
     function togglePin(appId) {
-        if (root.isPinned(appId)) {
-            Config.options.dock.pinnedApps = Config.options.dock.pinnedApps.filter(id => id !== appId)
-        } else {
-            Config.options.dock.pinnedApps = Config.options.dock.pinnedApps.concat([appId])
-        }
+        const pinned = Config.options?.dock?.pinnedApps ?? []
+        const exists = pinned.indexOf(appId) !== -1
+        const next = exists ? pinned.filter(id => id !== appId) : pinned.concat([appId])
+        Config.setNestedValue(["dock", "pinnedApps"], next)
     }
 
     property list<var> apps: {
         var map = new Map();
 
         // Pinned apps
-        const pinnedApps = Config.options?.dock.pinnedApps ?? [];
+        const pinnedApps = Config.options?.dock?.pinnedApps ?? [];
         for (const appId of pinnedApps) {
+            // Skip pinned apps with no desktop entry installed
+            if (!AppSearch.lookupDesktopEntry(appId))
+                continue;
             if (!map.has(appId.toLowerCase())) map.set(appId.toLowerCase(), ({
                 pinned: true,
                 toplevels: []

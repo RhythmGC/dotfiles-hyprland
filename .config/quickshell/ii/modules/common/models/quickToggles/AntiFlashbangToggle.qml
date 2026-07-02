@@ -8,10 +8,11 @@ QuickToggleModel {
     name: Translation.tr("Anti-flashbang")
     tooltipText: Translation.tr("Anti-flashbang")
     icon: "flash_off"
-    toggled: HyprlandAntiFlashbangShader.enabled
+    toggled: Config.options?.light?.antiFlashbang?.enable ?? false
 
     mainAction: () => {
-        HyprlandAntiFlashbangShader.toggle()
+        const current = Config.options?.light?.antiFlashbang?.enable ?? false
+        Config.setNestedValue("light.antiFlashbang.enable", !current)
     }
     hasMenu: true
 }

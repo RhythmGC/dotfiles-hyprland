@@ -5,13 +5,21 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.waffle.looks
+import Quickshell.Services.Pipewire
 
 BarButton {
     id: root
 
-    checked: GlobalStates.sidebarLeftOpen
+    // Screen share detection: niri in any link
+    readonly property bool screenShareActive: (Pipewire.links?.values ?? []).some(link => {
+        const src = link?.source?.name ?? "";
+        const tgt = link?.target?.name ?? "";
+        return src === "niri" || tgt === "niri";
+    })
+
+    checked: GlobalStates.waffleActionCenterOpen
     onClicked: {
-        GlobalStates.sidebarLeftOpen = !GlobalStates.sidebarLeftOpen;
+        GlobalStates.waffleActionCenterOpen = !GlobalStates.waffleActionCenterOpen;
     }
 
     contentItem: Item {
@@ -28,16 +36,119 @@ BarButton {
             spacing: 4
 
             IconHoverArea {
-                id: internetHoverArea
-                iconItem: FluentIcon {
+                id: recordingHoverArea
+                visible: RecorderStatus.isRecording
+                iconItem: Item {
                     anchors.verticalCenter: parent.verticalCenter
-                    icon: "wifi-1"
-                    color: Looks.colors.inactiveIcon
+                    implicitWidth: 20
+                    implicitHeight: 20
 
                     FluentIcon {
                         anchors.fill: parent
-                        icon: WIcons.internetIcon
+                        icon: "record"
+                        color: Looks.colors.danger
                     }
+
+                    Rectangle {
+                        width: 4
+                        height: 4
+                        radius: 2
+                        color: Looks.colors.danger
+                        anchors { top: parent.top; right: parent.right; topMargin: -1; rightMargin: -1 }
+
+                        SequentialAnimation on opacity {
+                            running: RecorderStatus.isRecording
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0.5; duration: 1200 }
+                            NumberAnimation { to: 1.0; duration: 1200 }
+                        }
+                    }
+                }
+                onClicked: GlobalActions.runById("screen-record", "")
+            }
+
+            // Mic indicator (only when in use)
+            IconHoverArea {
+                id: micHoverArea
+                readonly property bool micInUse: Privacy.micActive || (Audio?.micBeingAccessed ?? false)
+                visible: micInUse
+                iconItem: Item {
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitWidth: 20
+                    implicitHeight: 20
+
+                    FluentIcon {
+                        anchors.fill: parent
+                        icon: Audio.micMuted ? "mic-off" : "mic-on"
+                    }
+
+                    Rectangle {
+                        visible: !Audio.micMuted
+                        width: 4
+                        height: 4
+                        radius: 2
+                        color: Looks.colors.accent
+                        anchors { top: parent.top; right: parent.right; topMargin: -1; rightMargin: -1 }
+
+                        SequentialAnimation on opacity {
+                            running: micHoverArea.micInUse && !Audio.micMuted
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0.5; duration: 1200 }
+                            NumberAnimation { to: 1.0; duration: 1200 }
+                        }
+                    }
+                }
+                onClicked: Audio.toggleMicMute()
+            }
+
+            // Screen sharing indicator (only when active)
+            IconHoverArea {
+                id: screenShareHoverArea
+                visible: root.screenShareActive
+                iconItem: FluentIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon: "eye-filled"
+                }
+            }
+
+            IconHoverArea {
+                id: capsHoverArea
+                visible: KeyboardIndicators.capsLockVisible
+                iconItem: FluentIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon: KeyboardIndicators.capsFluentIcon
+                    implicitSize: 18
+                }
+            }
+
+            IconHoverArea {
+                id: numHoverArea
+                visible: KeyboardIndicators.numLockVisible
+                iconItem: FluentIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon: KeyboardIndicators.numFluentIcon
+                    implicitSize: 18
+                }
+            }
+
+            IconHoverArea {
+                id: layoutHoverArea
+                visible: KeyboardIndicators.layoutVisible
+                iconItem: WText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: KeyboardIndicators.currentLayoutCodeInline
+                    font.pixelSize: Looks.font.pixelSize.small
+                    font.weight: Font.DemiBold
+                    color: Looks.colors.fg
+                }
+            }
+
+            IconHoverArea {
+                id: internetHoverArea
+                iconItem: FluentIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon: WIcons.internetIcon
+                    filled: true
                 }
             }
 
@@ -45,13 +156,7 @@ BarButton {
                 id: volumeHoverArea
                 iconItem: FluentIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    icon: "speaker"
-                    color: Looks.colors.inactiveIcon
-                    
-                    FluentIcon {
-                        anchors.fill: parent
-                        icon: WIcons.volumeIcon
-                    }
+                    icon: WIcons.volumeIcon
                 }
                 onScrollDown: Audio.decrementVolume();
                 onScrollUp: Audio.incrementVolume();
@@ -60,12 +165,18 @@ BarButton {
             IconHoverArea {
                 id: batteryHoverArea
                 visible: Battery?.available ?? false
-                iconItem: FluentIcon {
+                iconItem: Row {
                     anchors.verticalCenter: parent.verticalCenter
-                    icon: WIcons.batteryLevelIcon
+                    spacing: 2
                     FluentIcon {
-                        anchors.fill: parent
+                        anchors.verticalCenter: parent.verticalCenter
                         icon: WIcons.batteryIcon
+                    }
+                    WText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: `${Math.round((Battery?.percentage ?? 0) * 100)}%`
+                        font.pixelSize: Looks.font.pixelSize.small
+                        color: Looks.colors.fg
                     }
                 }
             }
@@ -88,6 +199,30 @@ BarButton {
         children: [iconItem]
     }
 
+    BarToolTip {
+        extraVisibleCondition: root.shouldShowTooltip && recordingHoverArea.containsMouse
+        text: Translation.tr("Screen recording: Active")
+    }
+    BarToolTip {
+        extraVisibleCondition: root.shouldShowTooltip && micHoverArea.containsMouse
+        text: Translation.tr("Microphone: %1").arg(Audio.micMuted ? Translation.tr("Muted") : Translation.tr("In use"))
+    }
+    BarToolTip {
+        extraVisibleCondition: root.shouldShowTooltip && screenShareHoverArea.containsMouse
+        text: Translation.tr("Screen sharing: Active")
+    }
+    BarToolTip {
+        extraVisibleCondition: root.shouldShowTooltip && layoutHoverArea.containsMouse
+        text: Translation.tr("Keyboard layout: %1").arg(KeyboardIndicators.currentLayoutName || KeyboardIndicators.currentLayoutCodeInline)
+    }
+    BarToolTip {
+        extraVisibleCondition: root.shouldShowTooltip && capsHoverArea.containsMouse
+        text: Translation.tr("Caps Lock: On")
+    }
+    BarToolTip {
+        extraVisibleCondition: root.shouldShowTooltip && numHoverArea.containsMouse
+        text: Translation.tr("Num Lock: On")
+    }
     BarToolTip {
         extraVisibleCondition: root.shouldShowTooltip && internetHoverArea.containsMouse
         text: Translation.tr("%1\nInternet access").arg(Network.ethernet ? Translation.tr("Network") : Network.networkName)

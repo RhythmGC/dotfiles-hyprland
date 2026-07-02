@@ -10,33 +10,52 @@ import QtQuick.Controls
  */
 Button {
     id: root
+    hoverEnabled: true
+    padding: 0
     property bool toggled
+    property bool buttonHovered: buttonMouseArea.containsMouse
     property string buttonText
     property bool pointingHandCursor: true
-    property real buttonRadius: Appearance?.rounding?.small ?? 4
+    property real buttonRadius: Appearance.angelEverywhere ? Appearance.angel.roundingSmall
+        : (Appearance?.rounding?.small ?? 4)
     property real buttonRadiusPressed: buttonRadius
     property real buttonEffectiveRadius: root.down ? root.buttonRadiusPressed : root.buttonRadius
     property int rippleDuration: 1200
     property bool rippleEnabled: true
     property var downAction // When left clicking (down)
     property var releaseAction // When left clicking (release)
+    property var moveAction // When mouse moves while pressed (for drag support)
     property var altAction // When right clicking
     property var middleClickAction // When middle clicking
 
-    property color colBackground: ColorUtils.transparentize(Appearance?.colors.colLayer1Hover, 1) || "transparent"
-    property color colBackgroundHover: Appearance?.colors.colLayer1Hover ?? "#E5DFED"
+    property color colBackground: Appearance.angelEverywhere
+        ? Appearance.angel.colGlassCard
+        : (ColorUtils.transparentize(Appearance?.colors.colLayer1Hover, 1) || "transparent")
+    property color colBackgroundHover: Appearance.angelEverywhere
+        ? Appearance.angel.colGlassCardHover
+        : (Appearance?.colors.colLayer1Hover ?? "#E5DFED")
     property color colBackgroundToggled: Appearance?.colors.colPrimary ?? "#65558F"
     property color colBackgroundToggledHover: Appearance?.colors.colPrimaryHover ?? "#77699C"
     property color colRipple: Appearance?.colors.colLayer1Active ?? "#D6CEE2"
     property color colRippleToggled: Appearance?.colors.colPrimaryActive ?? "#D6CEE2"
 
     opacity: root.enabled ? 1 : 0.4
-    property color buttonColor: ColorUtils.transparentize(root.toggled ? 
-        (root.hovered ? colBackgroundToggledHover : 
+    property color buttonColor: ColorUtils.transparentize(root.toggled ?
+        (root.buttonHovered ? colBackgroundToggledHover :
             colBackgroundToggled) :
-        (root.hovered ? colBackgroundHover : 
+        (root.buttonHovered ? colBackgroundHover :
             colBackground), root.enabled ? 0 : 1)
     property color rippleColor: root.toggled ? colRippleToggled : colRipple
+
+    Behavior on opacity {
+        enabled: Appearance.animationsEnabled
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+    }
+
+    Behavior on buttonEffectiveRadius {
+        enabled: Appearance.animationsEnabled
+        animation: NumberAnimation { duration: Appearance.animation.elementResize.duration; easing.type: Appearance.animation.elementResize.type; easing.bezierCurve: Appearance.animation.elementResize.bezierCurve }
+    }
 
     function startRipple(x, y) {
         const stateY = buttonBackground.y;
@@ -58,10 +77,12 @@ Button {
     }
 
     MouseArea {
+        id: buttonMouseArea
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: root.pointingHandCursor ? Qt.PointingHandCursor : Qt.ArrowCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-        onPressed: (event) => { 
+        onPressed: (event) => {
             if(event.button === Qt.RightButton) {
                 if (root.altAction) root.altAction(event);
                 return;
@@ -74,7 +95,13 @@ Button {
             if (root.downAction) root.downAction();
             if (!root.rippleEnabled) return;
             const {x,y} = event
-            startRipple(x, y)
+            // Guard against tear-down race: when a parent Loader / popover is destroying
+            // this RippleButton mid-click, the function table can be torn down before
+            // the MouseArea callback finishes. Qt 6.11+ warns; pre-6.11 silently no-op'd.
+            if (typeof root.startRipple === "function") root.startRipple(x, y)
+        }
+        onPositionChanged: (event) => {
+            if (root.moveAction) root.moveAction(event);
         }
         onReleased: (event) => {
             root.down = false
@@ -86,6 +113,7 @@ Button {
         }
         onCanceled: (event) => {
             root.down = false
+            if (root.releaseAction) root.releaseAction();
             if (!root.rippleEnabled) return;
             rippleFadeAnim.restart();
         }
@@ -124,7 +152,7 @@ Button {
         ParallelAnimation {
             RippleAnim {
                 target: ripple
-                properties: "implicitWidth,implicitHeight"
+                properties: "rippleWidth,rippleHeight"
                 from: 0
                 to: rippleAnim.radius * 2
             }
@@ -137,8 +165,17 @@ Button {
         implicitHeight: 30
 
         color: root.buttonColor
+        border.width: Appearance.angelEverywhere ? 1 : 0
+        border.color: Appearance.angelEverywhere
+            ? (root.buttonHovered ? Appearance.angel.colBorderHover : "transparent")
+            : "transparent"
+        Behavior on border.color {
+            enabled: Appearance.animationsEnabled
+            animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+        }
         Behavior on color {
-            animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+            enabled: Appearance.animationsEnabled
+            animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
         }
 
         layer.enabled: true
@@ -152,16 +189,17 @@ Button {
 
         Item {
             id: ripple
-            width: ripple.implicitWidth
-            height: ripple.implicitHeight
+            width: ripple.rippleWidth
+            height: ripple.rippleHeight
             opacity: 0
             visible: width > 0 && height > 0
 
-            property real implicitWidth: 0
-            property real implicitHeight: 0
+            property real rippleWidth: 0
+            property real rippleHeight: 0
 
             Behavior on opacity {
-                animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+                enabled: Appearance.animationsEnabled
+                animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
             }
 
             RadialGradient {

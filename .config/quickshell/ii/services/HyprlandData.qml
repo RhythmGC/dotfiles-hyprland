@@ -4,8 +4,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import Quickshell.Hyprland
+import qs.services
 
 /**
  * Provides access to some Hyprland data not available in Quickshell.Hyprland.
@@ -22,48 +22,34 @@ Singleton {
     property var monitors: []
     property var layers: ({})
 
-    // Convenient stuff
-
-    function toplevelsForWorkspace(workspace) {
-        return ToplevelManager.toplevels.values.filter(toplevel => {
-            const address = `0x${toplevel.HyprlandToplevel?.address}`;
-            var win = HyprlandData.windowByAddress[address];
-            return win?.workspace?.id === workspace;
-        })
-    }
-
-    function hyprlandClientsForWorkspace(workspace) {
-        return root.windowList.filter(win => win.workspace.id === workspace);
-    }
-
-    function clientForToplevel(toplevel) {
-        if (!toplevel || !toplevel.HyprlandToplevel) {
-            return null;
-        }
-        const address = `0x${toplevel?.HyprlandToplevel?.address}`;
-        return root.windowByAddress[address];
-    }
-
-    // Internals
-
     function updateWindowList() {
+        if (!CompositorService.isHyprland)
+            return;
         getClients.running = true;
     }
 
     function updateLayers() {
+        if (!CompositorService.isHyprland)
+            return;
         getLayers.running = true;
     }
 
     function updateMonitors() {
+        if (!CompositorService.isHyprland)
+            return;
         getMonitors.running = true;
     }
 
     function updateWorkspaces() {
+        if (!CompositorService.isHyprland)
+            return;
         getWorkspaces.running = true;
         getActiveWorkspace.running = true;
     }
 
     function updateAll() {
+        if (!CompositorService.isHyprland)
+            return;
         updateWindowList();
         updateMonitors();
         updateLayers();
@@ -80,26 +66,33 @@ Singleton {
     }
 
     Component.onCompleted: {
+        if (!CompositorService.isHyprland)
+            return;
         updateAll();
     }
 
     Connections {
         target: Hyprland
+        enabled: CompositorService.isHyprland
 
         function onRawEvent(event) {
             // console.log("Hyprland raw event:", event.name);
-            if (["openlayer", "closelayer", "screencast"].includes(event.name)) return;
             updateAll()
         }
     }
 
     Process {
         id: getClients
-        command: ["hyprctl", "clients", "-j"]
+        command: ["/usr/bin/hyprctl", "clients", "-j"]
         stdout: StdioCollector {
             id: clientsCollector
             onStreamFinished: {
-                root.windowList = JSON.parse(clientsCollector.text)
+                try {
+                    root.windowList = JSON.parse(clientsCollector.text)
+                } catch (e) {
+                    console.log("[HyprlandData] Failed to parse clients JSON:", e);
+                    root.windowList = [];
+                }
                 let tempWinByAddress = {};
                 for (var i = 0; i < root.windowList.length; ++i) {
                     var win = root.windowList[i];
@@ -113,35 +106,48 @@ Singleton {
 
     Process {
         id: getMonitors
-        command: ["hyprctl", "monitors", "-j"]
+        command: ["/usr/bin/hyprctl", "monitors", "-j"]
         stdout: StdioCollector {
             id: monitorsCollector
             onStreamFinished: {
-                root.monitors = JSON.parse(monitorsCollector.text);
+                try {
+                    root.monitors = JSON.parse(monitorsCollector.text);
+                } catch (e) {
+                    console.log("[HyprlandData] Failed to parse monitors JSON:", e);
+                    root.monitors = [];
+                }
             }
         }
     }
 
     Process {
         id: getLayers
-        command: ["hyprctl", "layers", "-j"]
+        command: ["/usr/bin/hyprctl", "layers", "-j"]
         stdout: StdioCollector {
             id: layersCollector
             onStreamFinished: {
-                root.layers = JSON.parse(layersCollector.text);
+                try {
+                    root.layers = JSON.parse(layersCollector.text);
+                } catch (e) {
+                    console.log("[HyprlandData] Failed to parse layers JSON:", e);
+                    root.layers = {};
+                }
             }
         }
     }
 
     Process {
         id: getWorkspaces
-        command: ["hyprctl", "workspaces", "-j"]
+        command: ["/usr/bin/hyprctl", "workspaces", "-j"]
         stdout: StdioCollector {
             id: workspacesCollector
             onStreamFinished: {
-                var rawWorkspaces = JSON.parse(workspacesCollector.text);
-                // Filter out invalid workspace ids (e.g. lock-screen temp workspace 2147483647 - N)
-                root.workspaces = rawWorkspaces.filter(ws => ws.id >= 1 && ws.id <= 100);
+                try {
+                    root.workspaces = JSON.parse(workspacesCollector.text);
+                } catch (e) {
+                    console.log("[HyprlandData] Failed to parse workspaces JSON:", e);
+                    root.workspaces = [];
+                }
                 let tempWorkspaceById = {};
                 for (var i = 0; i < root.workspaces.length; ++i) {
                     var ws = root.workspaces[i];
@@ -155,11 +161,16 @@ Singleton {
 
     Process {
         id: getActiveWorkspace
-        command: ["hyprctl", "activeworkspace", "-j"]
+        command: ["/usr/bin/hyprctl", "activeworkspace", "-j"]
         stdout: StdioCollector {
             id: activeWorkspaceCollector
             onStreamFinished: {
-                root.activeWorkspace = JSON.parse(activeWorkspaceCollector.text);
+                try {
+                    root.activeWorkspace = JSON.parse(activeWorkspaceCollector.text);
+                } catch (e) {
+                    console.log("[HyprlandData] Failed to parse active workspace JSON:", e);
+                    root.activeWorkspace = null;
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ import Quickshell.Io
 import qs
 import qs.modules.common
 import qs.services
+import qs.services.deferred
 
 Scope {
     id: root
@@ -26,6 +27,7 @@ Scope {
             }
         }
     }
+    
     property list<var> categories: [
         {
             name: Translation.tr("All"),
@@ -33,32 +35,31 @@ Scope {
         },
         {
             name: Translation.tr("Apps"),
-            prefix: Config.options.search.prefix.app
+            prefix: Config.options.search?.prefix?.app ?? ">"
         },
         {
             name: Translation.tr("Actions"),
-            prefix: Config.options.search.prefix.action
+            prefix: Config.options.search?.prefix?.action ?? "/"
         },
         {
             name: Translation.tr("Clipboard"),
-            prefix: Config.options.search.prefix.clipboard
+            prefix: Config.options.search?.prefix?.clipboard ?? ";"
         },
         {
             name: Translation.tr("Emojis"),
-            prefix: Config.options.search.prefix.emojis
+            prefix: Config.options.search?.prefix?.emojis ?? ":"
         },
         {
             name: Translation.tr("Math"),
-            prefix: Config.options.search.prefix.math
+            prefix: Config.options.search?.prefix?.math ?? "="
         },
         {
             name: Translation.tr("Commands"),
-            prefix: Config.options.search.prefix.shellCommand
+            prefix: Config.options.search?.prefix?.shellCommand ?? "$"
         },
         {
             name: Translation.tr("Web"),
-            prefix: Config.options.search.prefix.webSearch
+            prefix: Config.options.search?.prefix?.webSearch ?? "?"
         },
     ]
-
 }

@@ -22,11 +22,13 @@ ProgressBar {
     property real waveFps: 60
 
     Behavior on waveAmplitudeMultiplier {
-        animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
+        enabled: Appearance.animationsEnabled
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
     }
 
     Behavior on value {
-        animation: Appearance?.animation.elementMoveEnter.numberAnimation.createObject(this)
+        enabled: Appearance.animationsEnabled
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveEnter.duration; easing.type: Appearance.animation.elementMoveEnter.type; easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve }
     }
     
     background: Item {
@@ -73,7 +75,7 @@ ProgressBar {
                 anchors.left: parent.left
                 width: contentItem.width * root.visualPosition
                 height: contentItem.height
-                radius: height / 2
+                radius: Appearance.angelEverywhere ? Appearance.angel.roundingSmall : height / 2
                 color: root.highlightColor
             }
         }
@@ -82,7 +84,7 @@ ProgressBar {
             anchors.right: parent.right
             width: (1 - root.visualPosition) * parent.width - valueBarGap
             height: parent.height
-            radius: height / 2
+            radius: Appearance.angelEverywhere ? Appearance.angel.roundingSmall : height / 2
             color: root.trackColor
         }
         
@@ -90,7 +92,7 @@ ProgressBar {
             anchors.right: parent.right
             width: valueBarGap
             height: valueBarGap
-            radius: height / 2
+            radius: Appearance.angelEverywhere ? Appearance.angel.roundingSmall : height / 2
             color: root.highlightColor
         }
     }

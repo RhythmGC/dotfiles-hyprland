@@ -12,12 +12,18 @@ import Quickshell.Widgets
  * It doesn't exactly match the spec because it does not make sense to have stuff on a computer that fucking huge.
  * Should be at 3/4 scale...
  */
-
+ 
 Slider {
     id: root
 
+    // Settings search integration (optional)
+    property bool enableSettingsSearch: true
+    property int settingsSearchOptionId: -1
+    property string settingsSearchLabel: ""
+    property string settingsSearchDescription: ""
+    property list<string> settingsSearchKeywords: []
+
     property list<real> stopIndicatorValues: [1]
-    property list<real> dividerValues: []
     enum Configuration {
         Wavy = 4,
         XS = 12,
@@ -31,11 +37,18 @@ Slider {
 
     property real handleDefaultWidth: 3
     property real handlePressedWidth: 1.5
-    property color highlightColor: Appearance.colors.colPrimary
-    property color trackColor: Appearance.colors.colSecondaryContainer
-    property color handleColor: Appearance.colors.colPrimary
-    property color dotColor: Appearance.m3colors.m3onSecondaryContainer
-    property color dotColorHighlighted: Appearance.m3colors.m3onPrimary
+    property color highlightColor: Appearance.angelEverywhere ? Appearance.angel.colPrimary
+        : Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary
+    property color trackColor: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+        : Appearance.inirEverywhere ? Appearance.inir.colLayer2 
+        : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface 
+        : Appearance.colors.colSecondaryContainer
+    property color handleColor: Appearance.angelEverywhere ? Appearance.angel.colPrimary
+        : Appearance.inirEverywhere ? Appearance.inir.colPrimary : Appearance.colors.colPrimary
+    property color dotColor: Appearance.angelEverywhere ? Appearance.angel.colTextSecondary
+        : Appearance.inirEverywhere ? Appearance.inir.colTextSecondary : Appearance.m3colors.m3onSecondaryContainer
+    property color dotColorHighlighted: Appearance.angelEverywhere ? Appearance.angel.colOnPrimary
+        : Appearance.inirEverywhere ? Appearance.inir.colOnPrimary : Appearance.m3colors.m3onPrimary
     property real unsharpenRadius: Appearance.rounding.unsharpen
     property real trackWidth: configuration
     property real trackRadius: trackWidth >= StyledSlider.Configuration.XL ? 21
@@ -46,10 +59,10 @@ Slider {
     property real handleHeight: (configuration === StyledSlider.Configuration.Wavy) ? 24 : Math.max(33, trackWidth + 9)
     property real handleWidth: root.pressed ? handlePressedWidth : handleDefaultWidth
     property real handleMargins: 4
-    property real dividerMargins: 2
     property real trackDotSize: 3
-    property bool usePercentTooltip: true
-    property string tooltipContent: usePercentTooltip ? `${Math.round(((value - from) / (to - from)) * 100)}%` : `${Math.round(value)}`
+    property string tooltipContent: `${Math.round(value * 100)}%`
+    property bool scrollable: false
+    property bool _userInteracting: false
     property bool wavy: configuration === StyledSlider.Configuration.Wavy // If true, the progress bar will have a wavy fill effect
     property bool animateWave: true
     property real waveAmplitudeMultiplier: wavy ? 0.5 : 0
@@ -64,14 +77,92 @@ Slider {
     from: 0
     to: 1
 
-    Behavior on value { // This makes the adjusted value (like volume) shift smoothly
-        SmoothedAnimation {
-            velocity: Appearance.animation.elementMoveFast.velocity
+    function _findSettingsContext() {
+        var page = null;
+        var sectionTitle = "";
+        var groupTitle = "";
+        var p = root.parent;
+        while (p) {
+            if (!page && p.hasOwnProperty("settingsPageIndex")) {
+                page = p;
+            }
+            if (p.hasOwnProperty("title")) {
+                if (!sectionTitle && p.hasOwnProperty("icon")) {
+                    sectionTitle = p.title;
+                } else if (!groupTitle && !p.hasOwnProperty("icon")) {
+                    groupTitle = p.title;
+                }
+            }
+            p = p.parent;
+        }
+        return { page: page, sectionTitle: sectionTitle, groupTitle: groupTitle };
+    }
+
+    function focusFromSettingsSearch() {
+        var p = root.parent;
+        while (p) {
+            if (p.hasOwnProperty("expanded") && p.hasOwnProperty("collapsible")) {
+                p.expanded = true;
+                break;
+            }
+            p = p.parent;
+        }
+        root.forceActiveFocus();
+    }
+
+    Component.onCompleted: {
+        if (!enableSettingsSearch)
+            return;
+        if (typeof SettingsSearchRegistry === "undefined")
+            return;
+
+        var ctx = _findSettingsContext();
+        var page = ctx.page;
+        var pageIndex = page && page.settingsPageIndex !== undefined ? page.settingsPageIndex : -1;
+        if (pageIndex < 0)
+            return;
+
+        var sectionTitle = ctx.sectionTitle;
+        var label = root.settingsSearchLabel || ctx.groupTitle || sectionTitle;
+
+        settingsSearchOptionId = SettingsSearchRegistry.registerOption({
+            control: root,
+            pageIndex: pageIndex,
+            pageName: page && page.settingsPageName ? page.settingsPageName : "",
+            section: sectionTitle,
+            label: label,
+            description: root.settingsSearchDescription || "",
+            keywords: root.settingsSearchKeywords || []
+        });
+    }
+
+    Component.onDestruction: {
+        if (typeof SettingsSearchRegistry !== "undefined") {
+            SettingsSearchRegistry.unregisterControl(root);
+        }
+    }
+
+    Timer {
+        id: _userInteractingReset
+        interval: 250
+        repeat: false
+        onTriggered: root._userInteracting = false
+    }
+
+    // No animation on value - instant response to user input
+    // External changes (volume changed by other app) also instant, which is fine
+
+    onPressedChanged: {
+        if (pressed) {
+            root._userInteracting = true
+        } else {
+            _userInteractingReset.restart()
+            root.moved()
         }
     }
 
     Behavior on handleMargins {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
     }
 
     component TrackDot: Rectangle {
@@ -81,11 +172,11 @@ Slider {
         x: root.handleMargins + (normalizedValue * root.effectiveDraggingWidth) - (root.trackDotSize / 2)
         width: root.trackDotSize
         height: root.trackDotSize
-        radius: Appearance.rounding.full
+        radius: Math.min(width, height) / 2
         color: normalizedValue > root.visualPosition ? root.dotColor : root.dotColorHighlighted
 
         Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+            animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
         }
     }
 
@@ -93,97 +184,93 @@ Slider {
         anchors.fill: parent
         onPressed: (mouse) => mouse.accepted = false
         cursorShape: root.pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor 
+
+        onWheel: (event) => {
+            if (!root.scrollable) {
+                event.accepted = false
+                return
+            }
+
+            root._userInteracting = true
+            _userInteractingReset.restart()
+
+            const step = root.stepSize > 0 ? root.stepSize : 0.02
+            if (event.angleDelta.y > 0) {
+                root.value = Math.min(root.value + step, root.to)
+                root.moved()
+            } else {
+                root.value = Math.max(root.value - step, root.from)
+                root.moved()
+            }
+        }
     }
 
     background: Item {
-        id: background
         anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: root.width
+        width: parent.width
         implicitHeight: trackWidth
-        property var normalized: root.dividerValues.map(v => (v - root.from) / (root.to - root.from))
-        property var filtered: normalized.filter(v => Math.abs(v - root.visualPosition) * effectiveDraggingWidth > handleMargins + handleWidth / 2 - dividerMargins)
-        property var leftValues: [0, ...filtered.filter(v => v < root.visualPosition), root.visualPosition]
-        property var rightValues: [root.visualPosition, ...filtered.filter(v => v > root.visualPosition), 1]
-        property var leftWidths: leftValues.map((v, i, a) => a[i + 1] - v).slice(0, -1)
-        property var rightWidths: rightValues.map((v, i, a) => a[i + 1] - v).slice(0, -1)
-
+        
         // Fill left
-        Repeater {
-            model: background.leftWidths.length
-
-            Loader {
-                required property real index
-                anchors.verticalCenter: background.verticalCenter
-                property real leftMargin: index > 0 ? root.dividerMargins : 0
-                property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : root.handleMargins
-                x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
-                width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? handleWidth / 2 : 0) + (index === 0 ? leftPadding : 0)
-                height: root.trackWidth
-                active: !root.wavy
-                sourceComponent: Rectangle {
-                    color: root.highlightColor
-                    topLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
-                    bottomLeftRadius: index === 0 ? root.trackRadius : root.unsharpenRadius
-                    topRightRadius: root.unsharpenRadius
-                    bottomRightRadius: root.unsharpenRadius
-                }
+        Loader {
+            anchors {
+                verticalCenter: parent.verticalCenter
+                left: parent.left
+            }
+            width: root.handleMargins + (root.visualPosition * root.effectiveDraggingWidth) - (handle.implicitWidth / 2 + root.handleMargins)
+            height: root.trackWidth
+            active: !root.wavy
+            sourceComponent: Rectangle {
+                color: root.highlightColor
+                topLeftRadius: root.trackRadius
+                bottomLeftRadius: root.trackRadius
+                topRightRadius: root.unsharpenRadius
+                bottomRightRadius: root.unsharpenRadius
             }
         }
 
-        Repeater {
-            model: background.leftWidths.length
-
-            Loader {
-                required property int index
-                anchors.verticalCenter: background.verticalCenter
-                property real leftMargin: index > 0 ? root.dividerMargins : 0
-                property real rightMargin: index < background.leftWidths.length - 1 ? root.dividerMargins : root.handleMargins
-                x: background.leftValues[index] * root.effectiveDraggingWidth + leftMargin + (index > 0 ? leftPadding : 0)
-                width: background.leftWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === background.leftWidths.length - 1 ? handleWidth / 2 : 0) + (index === 0 ? leftPadding : 0)
-                height: root.height
-                active: root.wavy
-                sourceComponent: WavyLine {
-                    id: wavyFill
-                    frequency: root.waveFrequency
-                    fullLength: root.width
-                    color: root.highlightColor
-                    amplitudeMultiplier: root.wavy ? 0.5 : 0
-                    width: parent.width
-                    height: root.trackWidth
-                    Connections {
-                        target: root
-                        function onValueChanged() { wavyFill.requestPaint(); }
-                        function onHighlightColorChanged() { wavyFill.requestPaint(); }
-                    }
-                    FrameAnimation {
-                        running: root.animateWave
-                        onTriggered: {
-                            wavyFill.requestPaint()
-                        }
+        Loader {
+            anchors {
+                verticalCenter: parent.verticalCenter
+                left: parent.left
+            }
+            width: root.handleMargins + (root.visualPosition * root.effectiveDraggingWidth) - (handle.implicitWidth / 2 + root.handleMargins)
+            height: root.height
+            active: root.wavy
+            sourceComponent: WavyLine {
+                id: wavyFill
+                frequency: root.waveFrequency
+                fullLength: root.width
+                color: root.highlightColor
+                amplitudeMultiplier: root.wavy ? 0.5 : 0
+                width: root.handleMargins + (root.visualPosition * root.effectiveDraggingWidth) - (handle.implicitWidth / 2 + root.handleMargins)
+                height: root.trackWidth
+                Connections {
+                    target: root
+                    function onValueChanged() { wavyFill.requestPaint(); }
+                    function onHighlightColorChanged() { wavyFill.requestPaint(); }
+                }
+                FrameAnimation {
+                    running: root.animateWave
+                    onTriggered: {
+                        wavyFill.requestPaint()
                     }
                 }
             }
         }
 
         // Fill right
-        Repeater {
-            model: background.rightWidths.length
-
-            Rectangle {
-                required property int index
-                anchors.verticalCenter: background.verticalCenter
-                property real leftMargin: index > 0 ? root.dividerMargins : root.handleMargins
-                property real rightMargin: index < background.rightWidths.length - 1 ? root.dividerMargins : 0
-                x: background.rightValues[index] * root.effectiveDraggingWidth + leftMargin + (index === 0 ? handleWidth / 2 : 0) + leftPadding
-                width: background.rightWidths[index] * root.effectiveDraggingWidth - leftMargin - rightMargin - (index === 0 ? handleWidth / 2 : 0) + (index === background.rightWidths.length - 1 ? rightPadding : 0)
-                height: trackWidth
-                color: root.trackColor
-                topRightRadius: index === background.rightWidths.length - 1 ? root.trackRadius : root.unsharpenRadius
-                bottomRightRadius: index === background.rightWidths.length - 1 ? root.trackRadius : root.unsharpenRadius
-                topLeftRadius: root.unsharpenRadius
-                bottomLeftRadius: root.unsharpenRadius
+        Rectangle {
+            anchors {
+                verticalCenter: parent.verticalCenter
+                right: parent.right
             }
+            width: root.handleMargins + ((1 - root.visualPosition) * root.effectiveDraggingWidth) - (handle.implicitWidth / 2 + root.handleMargins)
+            height: trackWidth
+            color: root.trackColor
+            topRightRadius: root.trackRadius
+            bottomRightRadius: root.trackRadius
+            topLeftRadius: root.unsharpenRadius
+            bottomLeftRadius: root.unsharpenRadius
         }
 
         // Stop indicators
@@ -202,13 +289,18 @@ Slider {
 
         implicitWidth: root.handleWidth
         implicitHeight: root.handleHeight
-        x: root.leftPadding + (root.visualPosition * root.effectiveDraggingWidth) - (root.handleWidth / 2)
+        x: root.handleMargins + (root.visualPosition * root.effectiveDraggingWidth) - (implicitWidth / 2)
         anchors.verticalCenter: parent.verticalCenter
-        radius: Appearance.rounding.full
+        radius: Math.min(width, height) / 2
         color: root.handleColor
 
         Behavior on implicitWidth {
-            animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
+            enabled: Appearance.animationsEnabled
+            animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
+        }
+        Behavior on implicitHeight {
+            enabled: Appearance.animationsEnabled
+            animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
         }
 
         StyledToolTip {
@@ -217,6 +309,7 @@ Slider {
             font {
                 family: Appearance.font.family.numbers
                 variableAxes: Appearance.font.variableAxes.numbers
+                features: { "tnum": 1 }
             }
         }
     }

@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.waffle.looks
@@ -23,25 +23,45 @@ Menu {
     padding: 3
     property real sourceEdgeMargin: -implicitHeight
     clip: true
-
+    
     enter: Transition {
-        NumberAnimation {
-            property: "sourceEdgeMargin"
-            from: -root.implicitHeight
-            to: root.margins
-            duration: 200
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Looks.transition.easing.bezierCurve.easeIn
+        enabled: Looks.transition.enabled
+        ParallelAnimation {
+            NumberAnimation {
+                property: "sourceEdgeMargin"
+                from: -root.implicitHeight * 0.3
+                to: root.margins
+                duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Looks.transition.easing.bezierCurve.popIn
+            }
+            NumberAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: Looks.transition.enabled ? Looks.transition.duration.normal : 0
+                easing.type: Easing.OutQuad
+            }
         }
     }
     exit: Transition {
-        NumberAnimation {
-            property: "sourceEdgeMargin"
-            from: root.margins
-            to: -root.implicitHeight
-            duration: 150
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Looks.transition.easing.bezierCurve.easeOut
+        enabled: Looks.transition.enabled
+        ParallelAnimation {
+            NumberAnimation {
+                property: "sourceEdgeMargin"
+                from: root.margins
+                to: -root.implicitHeight * 0.2
+                duration: Looks.transition.enabled ? Looks.transition.duration.fast : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Looks.transition.easing.bezierCurve.popOut
+            }
+            NumberAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: Looks.transition.enabled ? Looks.transition.duration.fast : 0
+                easing.type: Easing.InQuad
+            }
         }
     }
 
@@ -65,30 +85,23 @@ Menu {
                 implicitWidth: menuListView.implicitWidth + root.padding * 2
                 implicitHeight: root.contentItem.implicitHeight + root.padding * 2
             }
-
         }
-    }
-
-    Component.onCompleted: {
-        menuListView.itemAtIndex(0)?.forceActiveFocus();
     }
 
     contentItem: Item {
         implicitWidth: menuListView.implicitWidth
         implicitHeight: menuListView.implicitHeight
-        WListView {
+        ListView {
             id: menuListView
-            interactive: contentHeight > height
             anchors {
                 left: parent.left
                 right: parent.right
                 top: root.downDirection ? parent.top : undefined
                 bottom: root.downDirection ? undefined : parent.bottom
-                margins: root.margins // ????
+                margins: root.margins
                 topMargin: root.downDirection ? root.sourceEdgeMargin : root.margins
                 bottomMargin: root.downDirection ? root.margins : root.sourceEdgeMargin
             }
-            clip: true
             implicitHeight: contentHeight
             implicitWidth: Array.from({
                 length: count
@@ -100,5 +113,6 @@ Menu {
 
     delegate: WMenuItem {
         id: menuItemDelegate
+        width: ListView.view?.width
     }
 }

@@ -75,7 +75,12 @@ Item {
                     spacing: 4
 
                     model: ScriptModel {
-                        values: Network.friendlyWifiNetworks
+                        values: [...Network.wifiNetworks].sort((a, b) => {
+                            // Active networks first, then by signal strength
+                            if (a.active && !b.active) return -1;
+                            if (!a.active && b.active) return 1;
+                            return b.strength - a.strength;
+                        })
                     }
                     delegate: WWifiNetworkItem {
                         required property WifiAccessPoint modelData
@@ -89,15 +94,15 @@ Item {
         WPanelSeparator {}
 
         FooterRectangle {
-            WTextButton {
+            FooterMoreButton {
                 anchors {
                     verticalCenter: parent.verticalCenter
                     left: parent.left
                 }
                 text: Translation.tr("More Internet settings")
                 onClicked: {
-                    Quickshell.execDetached(["qs", "-p", Quickshell.shellPath(""), "ipc", "call", "sidebarLeft", "toggle"]);
-                    Quickshell.execDetached(["bash", "-c", Config.options.apps.network]);
+                    GlobalStates.waffleActionCenterOpen = false
+                    AppLauncher.launchNetworkSettings(Network.ethernet)
                 }
             }
             WBorderlessButton {

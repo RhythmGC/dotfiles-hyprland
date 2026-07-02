@@ -12,7 +12,19 @@ import qs.modules.waffle.looks
 Scope {
     id: root
 
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
+    property bool initialized: false
+    readonly property var targetScreens: {
+        const list = Config.options?.osd?.screenList ?? []
+        const screens = Quickshell.screens
+        if (!list || list.length === 0)
+            return screens
+        const matched = screens.filter(screen => {
+            const screenName = screen?.name ?? ""
+            return screenName.length > 0 && list.includes(screenName)
+        })
+        // Fallback safety: stale monitor names should never hide the OSD everywhere.
+        return matched.length > 0 ? matched : screens
+    }
     property string currentIndicator: "volume"
     property var indicators: [
         {
@@ -25,7 +37,25 @@ Scope {
             sourceUrl: "BrightnessOSD.qml",
             globalStateValue: "osdBrightnessOpen"
         },
+        {
+            id: "media",
+            sourceUrl: "MediaOSD.qml",
+            globalStateValue: "osdMediaOpen"
+        },
+        {
+            id: "keyboardLayout",
+            sourceUrl: "KeyboardLayoutOSD.qml",
+            globalStateValue: "osdKeyboardLayoutOpen"
+        },
     ]
+
+    // Suppress OSD during startup and gamemode niri-reload transitions
+    Timer {
+        id: initDelay
+        interval: 1500
+        running: true
+        onTriggered: root.initialized = true
+    }
 
     function triggerBrightnessOsd() {
         root.currentIndicator = "brightness";
@@ -35,6 +65,18 @@ Scope {
     function triggerVolumeOSD() {
         root.currentIndicator = "volume";
         GlobalStates.osdVolumeOpen = true;
+    }
+
+    function triggerMediaOSD() {
+        if (!(Config.options?.osd?.mediaEnabled ?? true))
+            return;
+        root.currentIndicator = "media";
+        GlobalStates.osdMediaOpen = true;
+    }
+
+    function triggerKeyboardLayoutOSD() {
+        root.currentIndicator = "keyboardLayout";
+        GlobalStates.osdKeyboardLayoutOpen = true;
     }
 
     // Listen to brightness changes
@@ -49,12 +91,24 @@ Scope {
     Connections {
         target: Audio.sink?.audio ?? null
         function onVolumeChanged() {
-            if (Audio.ready)
+            if (Audio.ready && root.initialized && !GameMode.suppressNiriToast)
                 root.triggerVolumeOSD();
         }
         function onMutedChanged() {
-            if (Audio.ready)
+            if (Audio.ready && root.initialized && !GameMode.suppressNiriToast)
                 root.triggerVolumeOSD();
+        }
+    }
+
+    // Media OSD is triggered via IPC only (not on every track change)
+    // See services/MprisController.qml IpcHandler
+
+    Connections {
+        target: KeyboardIndicators
+        function onPopupSequenceChanged() {
+            if (!root.initialized)
+                return;
+            root.triggerKeyboardLayoutOSD();
         }
     }
 
@@ -70,6 +124,22 @@ Scope {
             if (GlobalStates.osdVolumeOpen)
                 panelLoader.active = true;
         }
+        function onOsdMediaOpenChanged() {
+            if (GlobalStates.osdMediaOpen) {
+                if (!(Config.options?.osd?.mediaEnabled ?? true)) {
+                    GlobalStates.osdMediaOpen = false;
+                    return;
+                }
+                root.currentIndicator = "media";
+                panelLoader.active = true;
+            }
+        }
+        function onOsdKeyboardLayoutOpenChanged() {
+            if (GlobalStates.osdKeyboardLayoutOpen) {
+                root.currentIndicator = "keyboardLayout";
+                panelLoader.active = true;
+            }
+        }
     }
 
     // The actual thing
@@ -82,23 +152,20 @@ Scope {
                 GlobalStates[i.globalStateValue] = false;
             });
         }
-        sourceComponent: PanelWindow {
-            id: panelWindow
+        sourceComponent: Variants {
+            model: root.targetScreens
+            delegate: PanelWindow {
+                id: panelWindow
+                required property var modelData
+                screen: modelData
 
-            Connections {
-                target: root
-                function onFocusedScreenChanged() {
-                    osdRoot.screen = root.focusedScreen;
-                }
-            }
-
-            color: "transparent"
+                color: "transparent"
             exclusiveZone: 0
             WlrLayershell.namespace: "quickshell:wOnScreenDisplay"
             WlrLayershell.layer: WlrLayer.Overlay
             anchors {
-                top: !Config.options.waffles.bar.bottom
-                bottom: Config.options.waffles.bar.bottom
+                top: root.currentIndicator === "keyboardLayout" ? true : !(Config.options?.waffles?.bar?.bottom ?? false)
+                bottom: root.currentIndicator === "keyboardLayout" ? false : Config.options?.waffles?.bar?.bottom ?? false
             }
             mask: Region {
                 item: osdIndicatorLoader
@@ -141,19 +208,13 @@ Scope {
             }
         }
     }
+    }
 
     IpcHandler {
         target: "osd"
 
-        function trigger() {
+        function trigger(): void {
             root.trigger();
         }
-    }
-
-    GlobalShortcut {
-        name: "osdTrigger"
-        description: "Triggers OSD display"
-
-        onPressed: root.trigger()
     }
 }

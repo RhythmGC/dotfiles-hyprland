@@ -7,11 +7,13 @@ import Quickshell
 Singleton {
     id: root
     
-    property StackView stackView
+    property StackView stackView: null
 
     function push(component) {
-        if (stackView) {
+        if (stackView && stackView.depth !== undefined) {
             stackView.push(component)
+        } else {
+            console.warn("[ActionCenterContext] stackView not ready")
         }
     }
 

@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import qs
 import qs.services
+import qs.services.deferred
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.common.widgets
@@ -35,14 +36,16 @@ Item {
                     id: flickable
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-
-                    contentHeight: contentLayout.implicitHeight
+                    contentHeight: contentLoader.item?.implicitHeight ?? 0
                     contentWidth: width
                     clip: true
 
-                    AudioChoices {
-                        id: contentLayout
+                    Loader {
+                        id: contentLoader
                         width: flickable.width
+                        active: true
+                        asynchronous: true
+                        sourceComponent: AudioChoicesComponent {}
                     }
                 }
             }
@@ -51,36 +54,21 @@ Item {
         WPanelSeparator {}
 
         FooterRectangle {
-            WButton {
-                id: moreSettingsButton
+            FooterMoreButton {
                 anchors {
                     verticalCenter: parent.verticalCenter
                     left: parent.left
                 }
-                implicitHeight: 40
-                implicitWidth: contentItem.implicitWidth + 30
-                color: "transparent"
-
+                text: Translation.tr("More volume settings")
                 onClicked: {
-                    Quickshell.execDetached(["qs", "-p", Quickshell.shellPath(""), "ipc", "call", "sidebarLeft", "toggle"]);
-                    Quickshell.execDetached(["bash", "-c", Config.options.apps.volumeMixer]);
-                }
-
-                contentItem: Item {
-                    anchors.centerIn: parent
-                    implicitWidth: buttonText.implicitWidth
-                    WText {
-                        id: buttonText
-                        anchors.centerIn: parent
-                        text: Translation.tr("More volume settings")
-                        color: moreSettingsButton.pressed ? Looks.colors.fg : Looks.colors.fg1
-                    }
+                    GlobalStates.waffleActionCenterOpen = false
+                    AppLauncher.launch("volumeMixer")
                 }
             }
         }
     }
 
-    component AudioChoices: ColumnLayout {
+    component AudioChoicesComponent: ColumnLayout {
         spacing: 4
 
         SectionText {
@@ -88,14 +76,12 @@ Item {
         }
 
         Repeater {
-            model: ScriptModel {
-                values: root.output ? Audio.outputDevices : Audio.inputDevices
-            }
+            model: root.output ? Audio.outputDevices : Audio.inputDevices
             delegate: WChoiceButton {
                 required property var modelData
                 icon.name: WIcons.audioDeviceIcon(modelData)
                 text: Audio.friendlyDeviceName(modelData)
-                checked: (root.output ? Audio.sink : Audio.source) === modelData
+                checked: modelData.id === (root.output ? Audio.sink : Audio.source)?.id
                 onClicked: {
                     if (root.output) Audio.setDefaultSink(modelData);
                     else Audio.setDefaultSource(modelData);
@@ -107,8 +93,6 @@ Item {
             visible: EasyEffects.available && root.output
             color: Looks.colors.bg2Hover
         }
-
-        ////////////////////////////////////////////////////////////
 
         SectionText {
             visible: EasyEffects.available && root.output
@@ -124,7 +108,7 @@ Item {
 
         WChoiceButton {
             visible: EasyEffects.available && root.output
-            text: "EasyEffects"
+            text: Translation.tr("EasyEffects")
             checked: EasyEffects.active
             onClicked: EasyEffects.enable()
         }
@@ -133,10 +117,7 @@ Item {
             color: Looks.colors.bg2Hover
         }
 
-        ////////////////////////////////////////////////////////////
-
         SectionText {
-            visible: EasyEffects.available
             text: Translation.tr("Volume mixer")
         }
 
@@ -147,9 +128,7 @@ Item {
         }
 
         Repeater {
-            model: ScriptModel {
-                values: root.output ? Audio.outputAppNodes : Audio.inputAppNodes
-            }
+            model: root.output ? Audio.outputAppNodes : Audio.inputAppNodes
             delegate: VolumeEntry {
                 required property var modelData
                 node: modelData

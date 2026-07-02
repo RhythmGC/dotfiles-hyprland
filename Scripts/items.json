@@ -8,6 +8,7 @@
   "nvim",
   "fastfetch",
   "quickshell",
+  "fuzzel",
   "starship.toml",
   "vesktop/settings",
   "matugen",

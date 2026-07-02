@@ -53,7 +53,7 @@ ExpandableChoiceButton {
             spacing: 1
 
             Behavior on Layout.topMargin {
-                animation: Looks.transition.move.createObject(this)
+                animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
             }
 
             WText { // Network name
@@ -61,7 +61,6 @@ ExpandableChoiceButton {
                 elide: Text.ElideRight
                 font.pixelSize: Looks.font.pixelSize.large
                 text: root.wifiNetwork?.ssid ?? Translation.tr("Unknown")
-                textFormat: Text.PlainText
             }
             WText { // Status
                 id: statusText
@@ -72,7 +71,7 @@ ExpandableChoiceButton {
                 color: Looks.colors.subfg
                 visible: root.wifiNetwork?.active || root.expanded
                 Behavior on opacity {
-                    animation: Looks.transition.opacity.createObject(this)
+                    animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.normal : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
                 }
             }
 

@@ -14,11 +14,29 @@ RippleButton {
     property real elementSpacing: 5
     implicitWidth: expanded ? (Math.max(contentRowLayout.implicitWidth + 10 * 2, baseSize)) : baseSize
     implicitHeight: baseSize
-    buttonRadius: baseSize / 14 * 4
-    colBackground: Appearance.colors.colPrimaryContainer
-    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
-    colRipple: Appearance.colors.colPrimaryContainerActive
-    property color colOnBackground: Appearance.colors.colOnPrimaryContainer
+
+    Behavior on implicitWidth {
+        enabled: Appearance.animationsEnabled
+        NumberAnimation { duration: Appearance.animation.elementResize.duration; easing.type: Appearance.animation.elementResize.type; easing.bezierCurve: Appearance.animation.elementResize.bezierCurve }
+    }
+
+    buttonRadius: Appearance.angelEverywhere ? Appearance.angel.roundingNormal : (baseSize / 14 * 4)
+    colBackground: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
+                 : Appearance.inirEverywhere ? Appearance.inir.colPrimaryContainer
+                 : Appearance.auroraEverywhere ? Appearance.m3colors.m3primaryContainer
+                 : Appearance.colors.colPrimaryContainer
+    colBackgroundHover: Appearance.angelEverywhere ? Appearance.angel.colGlassCardHover
+                      : Appearance.inirEverywhere ? Appearance.inir.colPrimaryContainerHover
+                      : Appearance.auroraEverywhere ? Appearance.m3colors.m3primaryContainer
+                      : Appearance.colors.colPrimaryContainerHover
+    colRipple: Appearance.angelEverywhere ? Appearance.angel.colGlassCardActive
+             : Appearance.inirEverywhere ? Appearance.inir.colPrimaryContainerActive
+             : Appearance.auroraEverywhere ? Appearance.m3colors.m3primaryContainer
+             : Appearance.colors.colPrimaryContainerActive
+    property color colOnBackground: Appearance.angelEverywhere ? Appearance.angel.colPrimary
+                                  : Appearance.inirEverywhere ? Appearance.inir.colOnPrimaryContainer
+                                  : Appearance.auroraEverywhere ? Appearance.m3colors.m3onPrimaryContainer
+                                  : Appearance.colors.colOnPrimaryContainer
     contentItem: Row {
         id: contentRowLayout
         property real horizontalMargins: (root.baseSize - icon.width) / 2
@@ -45,7 +63,7 @@ RippleButton {
             sourceComponent: Revealer {
                 visible: root.expanded || implicitWidth > 0
                 reveal: root.expanded
-                implicitWidth: reveal ? (buttonText.implicitWidth + root.elementSpacing + contentRowLayout.horizontalMargins) : 0
+                width: reveal ? (buttonText.implicitWidth + root.elementSpacing + contentRowLayout.horizontalMargins) : 0
                 StyledText {
                     id: buttonText
                     anchors {
@@ -54,8 +72,8 @@ RippleButton {
                         verticalCenter: parent.verticalCenter
                     }
                     text: root.buttonText
-                    color: Appearance.colors.colOnPrimaryContainer
-                    font.pixelSize: 14
+                    color: root.colOnBackground
+                    font.pixelSize: Appearance.font.pixelSize.small
                     font.weight: 450
                 }
             }

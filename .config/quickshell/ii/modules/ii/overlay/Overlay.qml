@@ -16,23 +16,78 @@ Scope {
     property Component regionComponent: Component {
         Region {}
     }
-    
+
+    // Keep PanelWindow alive after first open for instant subsequent toggles.
+    // The Loader stays active once created; visibility is driven by GlobalStates.overlayOpen.
+    property bool _everOpened: false
+
+    // Check persistent state directly to bootstrap the Loader before widgets register
+    readonly property bool _hasPersistentPins: {
+        const overlay = Persistent.states.overlay;
+        const openWidgets = overlay.open;
+        if (!openWidgets || openWidgets.length === 0) return false;
+        for (let i = 0; i < openWidgets.length; i++) {
+            const entry = overlay[openWidgets[i]];
+            if (entry && entry.pinned) return true;
+        }
+        return false;
+    }
+
+    // Capture target screen when opening (don't follow focus while open)
+    property var targetScreen: null
+
+    // Ready flag to ensure screen is set before window becomes visible
+    property bool _readyToShow: false
+
+    Connections {
+        target: GlobalStates
+        function onOverlayOpenChanged() {
+            if (GlobalStates.overlayOpen) {
+                // Hide first to ensure screen updates before showing
+                root._readyToShow = false
+                // Mark as opened so the Loader stays active forever
+                root._everOpened = true
+                // Set target screen when opening
+                const outputName = NiriService.currentOutput
+                root.targetScreen = Quickshell.screens.find(s => s.name === outputName) ?? GlobalStates.primaryScreen ?? null
+                if (Quickshell.env("QS_DEBUG") === "1") console.log("[Overlay] Opening on output:", outputName, "targetScreen:", root.targetScreen?.name)
+                // Now ready to show on correct screen
+                root._readyToShow = true
+            } else {
+                root._readyToShow = false
+            }
+        }
+    }
+
     Loader {
         id: overlayLoader
-        active: GlobalStates.overlayOpen || OverlayContext.hasPinnedWidgets
+        // Once opened, keep alive — no more destroy/recreate on every toggle
+        // Also activate if persistent state has pinned widgets (bootstraps before widgets register)
+        active: root._everOpened || root._hasPersistentPins
         sourceComponent: PanelWindow {
             id: overlayWindow
+            // Visible when overlay is open OR when there are pinned widgets to show
+            visible: GlobalStates.overlayOpen || OverlayContext.hasPinnedWidgets
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "quickshell:overlay"
             WlrLayershell.layer: WlrLayer.Overlay
-            // Use OnDemand for pinned widgets to allow focus switching with mouse clicks
-            WlrLayershell.keyboardFocus: GlobalStates.overlayOpen ? WlrKeyboardFocus.Exclusive : (OverlayContext.clickableWidgets.length > 0 ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None)
-            visible: true
+            // Exclusive focus when open; OnDemand for pinned clickable widgets when closed;
+            // None otherwise (avoids input capture during GameMode)
+            WlrLayershell.keyboardFocus: GlobalStates.overlayOpen
+                ? WlrKeyboardFocus.Exclusive
+                : (OverlayContext.clickableWidgets.length > 0 && !GameMode.shouldHidePanels
+                    ? WlrKeyboardFocus.OnDemand
+                    : WlrKeyboardFocus.None)
             color: "transparent"
 
+            // Zero-size item ensures an explicit empty input region instead of
+            // ambiguous null (which compositors may treat as "full surface input").
+            // Critical: this is a full-screen overlay surface — a stale null mask
+            // would capture ALL input on the entire screen during gamemode.
+            Item { id: emptyMask; width: 0; height: 0 }
             mask: Region {
-                item: GlobalStates.overlayOpen ? overlayContent : null
-                regions: OverlayContext.clickableWidgets.map((widget) => regionComponent.createObject(this, {
+                item: GlobalStates.overlayOpen ? overlayContent : emptyMask
+                regions: GameMode.shouldHidePanels ? [] : OverlayContext.clickableWidgets.map((widget) => regionComponent.createObject(this, {
                     item: widget
                 }));
             }
@@ -44,7 +99,7 @@ Scope {
                 right: true
             }
 
-            HyprlandFocusGrab {
+            CompositorFocusGrab {
                 id: grab
                 windows: [overlayWindow]
                 active: false
@@ -56,13 +111,14 @@ Scope {
             Connections {
                 target: GlobalStates
                 function onOverlayOpenChanged() {
-                    delayedGrabTimer.restart();
+                    delayedGrabTimer.restart()
                 }
             }
 
             Timer {
                 id: delayedGrabTimer
-                interval: Appearance.animation.elementMoveFast.duration
+                interval: Appearance.calcEffectiveDuration(
+                    Config.options.overlay.animationDurationMs ?? Appearance.animation.elementMoveFast.duration)
                 onTriggered: {
                     grab.active = GlobalStates.overlayOpen;
                 }
@@ -83,12 +139,17 @@ Scope {
         }
     }
 
-    GlobalShortcut {
-        name: "overlayToggle"
-        description: "Toggles overlay on press"
+    Loader {
+        active: CompositorService.isHyprland
+        sourceComponent: Item {
+            GlobalShortcut {
+                name: "overlayToggle"
+                description: "Toggles overlay on press"
 
-        onPressed: {
-            GlobalStates.overlayOpen = !GlobalStates.overlayOpen;
+                onPressed: {
+                    GlobalStates.overlayOpen = !GlobalStates.overlayOpen;
+                }
+            }
         }
     }
 }

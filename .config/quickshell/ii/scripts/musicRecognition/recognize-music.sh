@@ -1,9 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 INTERVAL=2
 TOTAL_DURATION=30
+MIN_VALID_RESULT_LENGTH=300
 SOURCE_TYPE="monitor"  # monitor | input
-FIFO=$(mktemp -u /tmp/songrec_out_XXXXXX)
+TMP_PATH="/tmp/quickshell/media/songrec"
+TMP_RAW="$TMP_PATH/recording.raw"
+TMP_MP3="$TMP_PATH/recording.mp3"
 
 while getopts "i:t:s:" opt; do
   case $opt in
@@ -13,43 +18,47 @@ while getopts "i:t:s:" opt; do
     *) exit 1 ;;
   esac
 done
-
-if ! command -v songrec >/dev/null 2>&1; then
-    exit 1
-fi
-
 if [ "$SOURCE_TYPE" = "monitor" ]; then
-    AUDIO_DEVICE=$(pactl get-default-sink).monitor
+    MONITOR_SOURCE=$(/usr/bin/pactl get-default-sink).monitor
 elif [ "$SOURCE_TYPE" = "input" ]; then
-    AUDIO_DEVICE=$(pactl info | grep "Default Source:" | awk '{print $3}' || true)
+    MONITOR_SOURCE=$(/usr/bin/pactl info | /usr/bin/grep "Default Source:" | /usr/bin/awk '{print $3}' || true)
 else
     echo "Invalid source type"
     exit 1
 fi
 
-if [ -z "$AUDIO_DEVICE" ] || ! pactl list short sources | grep -q "$AUDIO_DEVICE"; then
+if [ ! -x /usr/bin/songrec ] || [ ! -x /usr/bin/parec ] || [ ! -x /usr/bin/ffmpeg ]; then
     exit 1
 fi
 
-mkfifo "$FIFO"
+if [ -z "$MONITOR_SOURCE" ] || ! /usr/bin/pactl list short sources | /usr/bin/grep -q "$MONITOR_SOURCE"; then
+    exit 1
+fi
 
 cleanup() {
-    kill "$SONGREC_PID" 2>/dev/null || true
-    wait "$SONGREC_PID" 2>/dev/null
-    rm -f "$FIFO"
+    /usr/bin/rm -f "$TMP_RAW" "$TMP_MP3"
+    /usr/bin/pkill -P $$ parec >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-songrec listen --audio-device "$AUDIO_DEVICE" --request-interval "$INTERVAL" --json --disable-mpris > "$FIFO" &
-SONGREC_PID=$!
+/usr/bin/mkdir -p "$TMP_PATH"
+/usr/bin/parec --device="$MONITOR_SOURCE" --format=s16le --rate=44100 --channels=2 > "$TMP_RAW" &
+START_TIME=$(/usr/bin/date +%s)
 
-( sleep "$TOTAL_DURATION" && kill "$SONGREC_PID" 2>/dev/null ) &
+while true; do
+    /usr/bin/sleep "$INTERVAL"
+    CURRENT_TIME=$(/usr/bin/date +%s)
+    ELAPSED=$((CURRENT_TIME - START_TIME))
 
-while IFS= read -r line; do
-    if echo "$line" | grep -q '"matches": \['; then
-        echo "$line"
+    if (( ELAPSED >= TOTAL_DURATION )); then
         exit 0
     fi
-done < "$FIFO"
 
-exit 0
+    /usr/bin/ffmpeg -f s16le -ar 44100 -ac 2 -i "$TMP_RAW" -acodec libmp3lame -y -hide_banner -loglevel error "$TMP_MP3" 2>/dev/null
+    RESULT=$(/usr/bin/songrec recognize -j "$TMP_MP3" 2>/dev/null || true)
+
+    if echo "$RESULT" | /usr/bin/grep -q '"matches"[[:space:]]*:[[:space:]]*\[' && [ ${#RESULT} -gt $MIN_VALID_RESULT_LENGTH ]; then
+        echo "$RESULT"
+        exit 0
+    fi
+done

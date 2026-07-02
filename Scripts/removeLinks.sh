@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DOTFILES="$HOME/dotfiles"
-ITEMS_FILE="$HOME/dotfiles/tempScripts/items.json"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+DOTFILES="$HOME/dotfiles-hyprland"
+ITEMS_FILE="$SCRIPT_DIR/items.json"
 
 DST_CONFIG="$HOME/.config"
 

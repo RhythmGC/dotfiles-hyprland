@@ -18,20 +18,21 @@ WSessionScreenTextButton {
     colBackground: ColorUtils.transparentize(Looks.darkColors.bg2)
     colBackgroundHover: Looks.applyContentTransparency(Looks.darkColors.bg2Hover)
     colBackgroundActive: Looks.applyContentTransparency(Looks.darkColors.bg2Active)
+
     property color color: {
         if (root.down) {
-            return root.colBackgroundActive;
+            return root.colBackgroundActive
         } else if (root.hovered) {
-            return root.colBackgroundHover;
-        } else {
-            return root.colBackground;
+            return root.colBackgroundHover
         }
+        return root.colBackground
     }
+
     background: Rectangle {
-        id: background
         radius: Looks.radius.medium
         color: root.color
     }
+
     contentItem: Item {
         FluentIcon {
             anchors.centerIn: parent
@@ -42,7 +43,7 @@ WSessionScreenTextButton {
     }
 
     onClicked: {
-        powerMenu.visible = !powerMenu.visible;
+        powerMenu.visible = !powerMenu.visible
     }
 
     WMenu {
@@ -52,10 +53,10 @@ WSessionScreenTextButton {
 
         color: Looks.darkColors.bg1Base
         Component.onCompleted: {
-            powerMenu.backgroundPane.borderColor = Looks.applyContentTransparency(Looks.darkColors.bg2Border);
+            powerMenu.backgroundPane.borderColor = Looks.applyContentTransparency(Looks.darkColors.bg2Border)
         }
+
         delegate: WMenuItem {
-            id: menuItemDelegate
             colBackground: ColorUtils.transparentize(Looks.darkColors.bg1Base)
             colBackgroundHover: Looks.applyContentTransparency(Looks.darkColors.bg2Hover)
             colBackgroundActive: Looks.applyContentTransparency(Looks.darkColors.bg2Active)

@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
+import Quickshell.Widgets
 import qs.services
 import qs.modules.common
 import qs.modules.common.functions
@@ -11,146 +12,205 @@ import qs.modules.waffle.looks
 
 Rectangle {
     id: root
-    implicitHeight: 176
+    implicitHeight: 120
     implicitWidth: 358
     color: Looks.colors.bgPanelBody
-    anchors.fill: parent
 
     readonly property var activePlayer: MprisController.activePlayer
+    readonly property string effectiveArtUrl: MprisController.isYtMusicActive ? YtMusic.currentThumbnail : (activePlayer?.trackArtUrl ?? "")
+    readonly property string effectiveTitle: MprisController.isYtMusicActive ? YtMusic.currentTitle : (activePlayer?.trackTitle ?? "")
+    readonly property string effectiveArtist: MprisController.isYtMusicActive ? YtMusic.currentArtist : (activePlayer?.trackArtist ?? "")
 
-    Column {
-        anchors {
-            fill: parent
-            leftMargin: 23
-            rightMargin: 23
-            topMargin: 16
-            bottomMargin: 20
-        }
-        spacing: 25
-
-        AppInfoRow {
-            anchors {
-                left: parent.left
-                right: parent.right
-            }
-        }
-
-        TrackInfoRow {
-            anchors {
-                left: parent.left
-                right: parent.right
-            }
-        }
-
-        ControlButtonsRow {
-            anchors.horizontalCenter: parent.horizontalCenter
-        }
-    }
-
-    component AppInfoRow: RowLayout {
-        id: appInfo
-        spacing: 8
-
-        property var desktopEntry: {
-            const desktopEntryString = root.activePlayer?.desktopEntry ?? "";
-            return DesktopEntries.byId(desktopEntryString);
-        }
-
-        FluentIcon {
-            implicitSize: 20
-            icon: appInfo.desktopEntry?.icon || "music-note-2"
-            monochrome: !appInfo.desktopEntry?.icon
-        }
-
-        WText {
-            Layout.fillWidth: true
-            text: appInfo.desktopEntry?.name ?? Translation.tr("Media")
-            horizontalAlignment: Text.AlignLeft
-            elide: Text.ElideRight
-        }
-    }
-
-    component TrackInfoRow: RowLayout {
-        spacing: 16
+    // Volume feedback overlay
+    Rectangle {
+        id: volumeOverlay
+        anchors.centerIn: parent
+        width: 80
+        height: 80
+        radius: Looks.radius.medium
+        color: ColorUtils.transparentize(Looks.colors.bg0, 0.15)
+        opacity: 0
+        visible: opacity > 0
+        z: 100
 
         ColumnLayout {
-            id: trackInfo
-            Layout.fillWidth: true
-            spacing: 0
+            anchors.centerIn: parent
+            spacing: 4
 
-            WText {
-                Layout.fillWidth: true
-                font.weight: Looks.font.weight.strong
-                font.pixelSize: Looks.font.pixelSize.large
-                elide: Text.ElideRight
-                text: StringUtils.cleanMusicTitle(root.activePlayer?.trackTitle) || Translation.tr("Unknown Title")
+            FluentIcon {
+                Layout.alignment: Qt.AlignHCenter
+                icon: root.activePlayer?.volume > 0 ? "speaker" : "speaker-mute"
+                implicitSize: 24
             }
 
             WText {
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-                text: root.activePlayer?.trackArtist || Translation.tr("Unknown Artist")
+                Layout.alignment: Qt.AlignHCenter
+                text: Math.round((root.activePlayer?.volume ?? 0) * 100) + "%"
+                font.pixelSize: Looks.font.pixelSize.normal
+                font.weight: Font.DemiBold
             }
         }
 
-        StyledImage {
-            id: artImage
-            Layout.preferredWidth: 58
-            Layout.preferredHeight: trackInfo.implicitHeight
-            source: MprisController.activeTrack?.artUrl || ""
-            fillMode: Image.PreserveAspectFit
+        Behavior on opacity {
+            animation: Looks.transition.opacity
+        }
 
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Item {
-                    width: artImage.width
-                    height: artImage.height
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: artImage.paintedWidth
-                        height: artImage.paintedHeight
-                        radius: Looks.radius.medium
+        Timer {
+            id: volumeHideTimer
+            interval: 1000
+            onTriggered: volumeOverlay.opacity = 0
+        }
+    }
+
+    // Scroll to change player volume
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        onWheel: wheel => {
+            if (!MprisController.canChangeVolume) return
+            const step = 0.05
+            const current = MprisController.getVolume()
+            if (wheel.angleDelta.y > 0)
+                MprisController.setVolume(Math.min(1, current + step))
+            else if (wheel.angleDelta.y < 0)
+                MprisController.setVolume(Math.max(0, current - step))
+            
+            // Show volume feedback
+            volumeOverlay.opacity = 1
+            volumeHideTimer.restart()
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: 16
+        spacing: 14
+
+        // Album art
+        Rectangle {
+            Layout.preferredWidth: 88
+            Layout.preferredHeight: 88
+            radius: Looks.radius.medium
+            color: Looks.colors.bg1Base
+            clip: true
+
+            StyledImage {
+                id: artImage
+                anchors.fill: parent
+                source: MediaArtwork.displaySource
+                fillMode: Image.PreserveAspectCrop
+                cache: false
+            }
+
+            FluentIcon {
+                anchors.centerIn: parent
+                icon: "music-note-2"
+                implicitSize: 32
+                visible: !MediaArtwork.ready || artImage.status !== Image.Ready
+            }
+        }
+
+        // Info + controls
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 8
+
+            // Track info
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    WText {
+                        Layout.fillWidth: true
+                        text: StringUtils.cleanMusicTitle(root.activePlayer?.trackTitle) || Translation.tr("Not playing")
+                        font.pixelSize: Looks.font.pixelSize.normal
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
                     }
+
+                    // Player app icon
+                    IconImage {
+                        id: playerIcon
+                        Layout.preferredWidth: 20
+                        Layout.preferredHeight: 20
+                        source: {
+                            const de = root.activePlayer?.desktopEntry ?? "";
+                            const identity = (root.activePlayer?.identity ?? "").toLowerCase();
+                            
+                            // Special cases for common players
+                            if (identity.includes("spotify")) return Quickshell.iconPath("spotify", "");
+                            if (identity.includes("firefox")) return Quickshell.iconPath("firefox", "");
+                            if (identity.includes("chrome")) return Quickshell.iconPath("google-chrome", "");
+                            if (identity.includes("chromium")) return Quickshell.iconPath("chromium", "");
+                            if (identity.includes("vlc")) return Quickshell.iconPath("vlc", "");
+                            if (identity.includes("mpv")) return Quickshell.iconPath("mpv", "");
+                            if (identity.includes("youtube")) return Quickshell.iconPath("youtube", "");
+                            
+                            // Try desktop entry icon
+                            const entry = DesktopEntries.byId(de) ?? DesktopEntries.heuristicLookup(de);
+                            if (entry?.icon) return AppSearch.resolveIcon(entry.icon, "");
+                            
+                            // Fallback to identity as icon name
+                            if (identity) return Quickshell.iconPath(identity, "");
+                            
+                            return "";
+                        }
+                        // Only show if loaded successfully
+                        visible: status === Image.Ready
+                    }
+                }
+
+                WText {
+                    Layout.fillWidth: true
+                    text: root.activePlayer?.trackArtist || ""
+                    font.pixelSize: Looks.font.pixelSize.small
+                    color: Looks.colors.fg1
+                    elide: Text.ElideRight
+                    visible: text !== ""
+                }
+            }
+
+            Item { Layout.fillHeight: true }
+
+            // Controls
+            RowLayout {
+                spacing: 4
+
+                MediaBtn {
+                    iconName: "previous"
+                    enabled: MprisController.canGoPrevious
+                    onClicked: MprisController.previous()
+                }
+                MediaBtn {
+                    iconName: root.activePlayer?.isPlaying ? "pause" : "play"
+                    size: 36
+                    iconSize: 18
+                    onClicked: MprisController.togglePlaying()
+                }
+                MediaBtn {
+                    iconName: "next"
+                    enabled: MprisController.canGoNext
+                    onClicked: MprisController.next()
                 }
             }
         }
     }
 
-    component ControlButtonsRow: RowLayout {
-        spacing: 26
-
-        MediaControlButton {
-            iconName: "previous"
-            enabled: root.activePlayer?.canGoPrevious ?? false
-            onClicked: root.activePlayer?.previous()
-        }
-        MediaControlButton {
-            readonly property bool playing: root.activePlayer?.isPlaying ?? false
-            iconName: playing ? "pause" : "play"
-            enabled: (playing && root.activePlayer?.canPause) || (!playing && root.activePlayer?.canPlay)
-            onClicked: root.activePlayer?.togglePlaying()
-        }
-        MediaControlButton {
-            iconName: "next"
-            enabled: root.activePlayer?.canGoNext ?? false
-            onClicked: root.activePlayer?.next()
-        }
-    }
-
-    component MediaControlButton: WBorderlessButton {
-        id: controlButton
-        required property string iconName
-        implicitHeight: 40
-        implicitWidth: 40
-
-        contentItem: Item {
-            FluentIcon {
-                anchors.centerIn: parent
-                icon: controlButton.iconName
-                monochrome: true
-                filled: true
-                implicitSize: 18
-            }
+    component MediaBtn: WBorderlessButton {
+        property string iconName
+        property int size: 32
+        property int iconSize: 14
+        implicitWidth: size
+        implicitHeight: size
+        contentItem: FluentIcon {
+            anchors.centerIn: parent
+            icon: parent.iconName
+            implicitSize: parent.iconSize
         }
     }
 }

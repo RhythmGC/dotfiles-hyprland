@@ -11,7 +11,7 @@ import Quickshell.Wayland
 Scope {
     id: root
     required property Component contentComponent
-    
+
     Loader {
         active: PolkitService.active
         sourceComponent: Variants {
@@ -20,7 +20,7 @@ Scope {
                 id: panelWindow
                 required property var modelData
                 screen: modelData
-                
+
                 anchors {
                     top: true
                     left: true

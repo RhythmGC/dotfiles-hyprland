@@ -10,23 +10,23 @@ import qs.modules.waffle.looks
 Rectangle {
     id: root
 
-    color: "#000000"
-    readonly property bool usePasswordChars: !PolkitService.flow?.responseVisible ?? true
+    color: "black"  // fallback behind wallpaper
+    readonly property bool usePasswordChars: !(PolkitService.flow?.responseVisible ?? false)
 
-    Keys.onPressed: event => { // Esc to close
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape) {
-            PolkitService.cancel();
+            PolkitService.cancel()
         }
     }
 
     StyledImage {
         anchors.fill: parent
-        source: Config.options.background.wallpaperPath
+        source: Config.options?.background?.wallpaperPath ?? ""
         fillMode: Image.PreserveAspectCrop
 
         Rectangle {
             anchors.fill: parent
-            color: ColorUtils.transparentize("#000000", 0.31)
+            color: ColorUtils.transparentize("black", 0.31)  // dark scrim over wallpaper
 
             PolkitDialog {
                 id: dialog
@@ -35,15 +35,15 @@ Rectangle {
                     property real startX: dialog.x
                     property real startY: dialog.y
                     onActiveChanged: {
-                        if (!active) return;
-                        startX = dialog.x;
-                        startY = dialog.y;
+                        if (!active) return
+                        startX = dialog.x
+                        startY = dialog.y
                     }
                     xAxis.onActiveValueChanged: {
-                        dialog.x = Math.round(startX + xAxis.activeValue);
+                        dialog.x = Math.round(startX + xAxis.activeValue)
                     }
                     yAxis.onActiveValueChanged: {
-                        dialog.y = Math.round(startY + yAxis.activeValue);
+                        dialog.y = Math.round(startY + yAxis.activeValue)
                     }
                 }
                 x: Math.round((parent.width - width) / 2)
@@ -77,8 +77,8 @@ Rectangle {
 
                         WAppIcon {
                             iconName: PolkitService.flow?.iconName ?? "window-shield"
-                            fallback: PolkitService.flow?.iconName == "" ? `${Looks.iconsPath}/window-shield` : PolkitService.flow.iconName
-                            isMask: PolkitService.flow?.iconName === ""
+                            fallback: (PolkitService.flow?.iconName ?? "") === "" ? `${Looks.iconsPath}/window-shield` : (PolkitService.flow?.iconName ?? "")
+                            isMask: (PolkitService.flow?.iconName ?? "") === ""
                             tryCustomIcon: false
                         }
                         WText {
@@ -87,13 +87,13 @@ Rectangle {
                             font.pixelSize: Looks.font.pixelSize.larger
                             font.weight: Looks.font.weight.strongest
                             text: {
-                                const iconName = PolkitService.flow?.iconName ?? "";
+                                const iconName = PolkitService.flow?.iconName ?? ""
                                 if (iconName === "")
-                                    return Translation.tr("Command-line-invoked Action");
+                                    return Translation.tr("Command-line-invoked Action")
                                 const desktopEntry = DesktopEntries.applications.values.find(entry => {
-                                    return entry.icon == iconName;
-                                });
-                                return desktopEntry ? desktopEntry.name : Translation.tr("Unknown Application");
+                                    return entry.icon === iconName
+                                })
+                                return desktopEntry ? desktopEntry.name : Translation.tr("Unknown Application")
                             }
                         }
                     }
@@ -114,9 +114,9 @@ Rectangle {
                         echoMode: root.usePasswordChars ? TextInput.Password : TextInput.Normal
                         onAccepted: PolkitService.submit(inputField.text)
 
-                        Keys.onPressed: event => { // Esc to close
+                        Keys.onPressed: event => {
                             if (event.key === Qt.Key_Escape) {
-                                PolkitService.cancel();
+                                PolkitService.cancel()
                             }
                         }
 
@@ -125,9 +125,9 @@ Rectangle {
                             target: PolkitService
                             function onInteractionAvailableChanged() {
                                 if (!PolkitService.interactionAvailable)
-                                    return;
-                                inputField.text = "";
-                                inputField.forceActiveFocus();
+                                    return
+                                inputField.text = ""
+                                inputField.forceActiveFocus()
                             }
                         }
                     }
@@ -135,7 +135,7 @@ Rectangle {
             }
             BodyRectangle {
                 implicitHeight: 80
-                color: Looks.colors.bgPanelFooterBackground
+                color: Looks.colors.bgPanelFooterBase
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 24
@@ -177,7 +177,7 @@ Rectangle {
             implicitHeight: 32
 
             onClicked: {
-                PolkitService.cancel();
+                PolkitService.cancel()
             }
         }
 

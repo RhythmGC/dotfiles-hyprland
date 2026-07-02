@@ -4,11 +4,12 @@ import qs.modules.common.functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 
 TabButton {
     id: root
 
-    property bool toggled: TabBar.tabBar.currentIndex === TabBar.index
+    property bool toggled: TabBar.tabBar?.currentIndex === TabBar.index
     property string buttonIcon
     property real buttonIconRotation: 0
     property string buttonText
@@ -30,6 +31,59 @@ TabButton {
     background: null
     PointingHandInteraction {}
 
+    // Primary colored bubble tooltip that appears to the right when collapsed
+    PopupToolTip {
+        id: hoverBubble
+        delay: 0
+        extraVisibleCondition: !root.expanded
+        anchorEdges: Edges.Right
+        contentItem: Item {
+            id: bubbleContent
+            property bool shown: false
+            implicitWidth: bubbleBackground.implicitWidth
+            implicitHeight: bubbleBackground.implicitHeight
+            opacity: shown ? 1 : 0
+            scale: shown ? 1 : 0.92
+
+            Behavior on opacity {
+                enabled: Appearance.animationsEnabled
+                NumberAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
+            }
+
+            Behavior on scale {
+                enabled: Appearance.animationsEnabled
+                NumberAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
+            }
+
+            Rectangle {
+                id: bubbleBackground
+                color: Appearance.colors.colPrimary
+                radius: Appearance.rounding.full
+                implicitWidth: bubbleText.implicitWidth + 24
+                implicitHeight: root.baseHighlightHeight
+
+                StyledText {
+                    id: bubbleText
+                    anchors.centerIn: parent
+                    text: root.buttonText
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    font.weight: Font.Medium
+                    color: Appearance.colors.colOnPrimary
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
+    }
+
     // Real stuff
     contentItem: Item {
         id: buttonContent
@@ -39,22 +93,42 @@ TabButton {
             left: parent.left
             right: undefined
         }
-        
+
         implicitWidth: root.visualWidth
-        implicitHeight: root.expanded ? itemIconBackground.implicitHeight : itemIconBackground.implicitHeight + itemText.implicitHeight 
+        implicitHeight: root.expanded ? itemIconBackground.implicitHeight : itemIconBackground.implicitHeight + itemText.implicitHeight
 
         Rectangle {
             id: itemBackground
             anchors.top: itemIconBackground.top
             anchors.left: itemIconBackground.left
             anchors.bottom: itemIconBackground.bottom
-            implicitWidth: root.visualWidth
-            radius: Appearance.rounding.full
-            color: toggled ? 
-                root.showToggledHighlight ?
-                    (root.down ? Appearance.colors.colSecondaryContainerActive : root.hovered ? Appearance.colors.colSecondaryContainerHover : Appearance.colors.colSecondaryContainer)
-                    : ColorUtils.transparentize(Appearance.colors.colSecondaryContainer) :
-                (root.down ? Appearance.colors.colLayer1Active : root.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1))
+            // When collapsed, only show icon area; when expanded, show full width with text
+            implicitWidth: root.expanded ? root.visualWidth : root.baseSize
+            radius: Appearance.angelEverywhere ? Appearance.angel.roundingSmall
+                : Appearance.inirEverywhere ? Appearance.inir.roundingSmall : Appearance.rounding.full
+            color: Appearance.angelEverywhere
+                ? (toggled
+                    ? (root.showToggledHighlight
+                        ? (root.down ? Appearance.angel.colGlassCardActive : root.hovered ? Appearance.angel.colGlassCardHover : Appearance.angel.colGlassCard)
+                        : "transparent")
+                    : (root.down ? Appearance.angel.colGlassCardActive : root.hovered ? Appearance.angel.colGlassCardHover : "transparent"))
+                : Appearance.inirEverywhere
+                ? (toggled
+                    ? (root.showToggledHighlight
+                        ? (root.down ? Appearance.inir.colLayer2Active : root.hovered ? Appearance.inir.colLayer2Hover : Appearance.inir.colLayer2)
+                        : "transparent")
+                    : (root.down ? Appearance.inir.colLayer2Active : root.hovered ? Appearance.inir.colLayer2Hover : "transparent"))
+                : Appearance.auroraEverywhere
+                    ? (toggled ?
+                        root.showToggledHighlight ?
+                            (root.down ? Appearance.aurora.colSubSurfaceActive : root.hovered ? Appearance.aurora.colSubSurfaceHover : Appearance.aurora.colElevatedSurface)
+                            : "transparent" :
+                        (root.down ? Appearance.aurora.colSubSurfaceActive : root.hovered ? Appearance.aurora.colSubSurfaceHover : "transparent"))
+                    : (toggled ?
+                        root.showToggledHighlight ?
+                            (root.down ? Appearance.colors.colSecondaryContainerActive : root.hovered ? Appearance.colors.colSecondaryContainerHover : Appearance.colors.colSecondaryContainer)
+                            : (root.down ? Appearance.colors.colLayer1Active : root.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.m3colors.m3primary, 0.92)) :
+                        (root.down ? Appearance.colors.colLayer1Active : root.hovered ? Appearance.colors.colLayer1Hover : "transparent"))
 
             states: State {
                 name: "expanded"
@@ -65,10 +139,6 @@ TabButton {
                     anchors.left: buttonContent.left
                     anchors.bottom: buttonContent.bottom
                 }
-                PropertyChanges {
-                    target: itemBackground
-                    implicitWidth: root.visualWidth
-                }
             }
             transitions: Transition {
                 AnchorAnimation {
@@ -76,9 +146,10 @@ TabButton {
                     easing.type: Appearance.animation.elementMoveFast.type
                     easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
                 }
-                PropertyAnimation {
-                    target: itemBackground
-                    property: "implicitWidth"
+            }
+
+            Behavior on implicitWidth {
+                NumberAnimation {
                     duration: Appearance.animation.elementMove.duration
                     easing.type: Appearance.animation.elementMove.type
                     easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
@@ -86,7 +157,7 @@ TabButton {
             }
 
             Behavior on color {
-                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
             }
         }
 
@@ -104,46 +175,48 @@ TabButton {
                 anchors.centerIn: parent
                 iconSize: 24
                 fill: toggled ? 1 : 0
+                animateFill: true
                 font.weight: (toggled || root.hovered) ? Font.DemiBold : Font.Normal
                 text: buttonIcon
-                color: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer1
+                color: toggled
+                    ? (root.showToggledHighlight ? Appearance.m3colors.m3onSecondaryContainer : Appearance.m3colors.m3primary)
+                    : Appearance.colors.colOnLayer1
 
                 Behavior on color {
-                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                    animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
                 }
             }
         }
 
         StyledText {
             id: itemText
+            // Only show text when expanded - when collapsed, use PopupToolTip instead
+            visible: opacity > 0
+            opacity: root.expanded ? 1 : 0
+            width: root.expanded ? implicitWidth : 0
+            clip: true
             anchors {
-                top: itemIconBackground.bottom
-                topMargin: 2
-                horizontalCenter: itemIconBackground.horizontalCenter
-            }
-            states: State {
-                name: "expanded"
-                when: root.expanded
-                AnchorChanges {
-                    target: itemText
-                    anchors {
-                        top: undefined
-                        horizontalCenter: undefined
-                        left: itemIconBackground.right
-                        verticalCenter: itemIconBackground.verticalCenter
-                    }
-                }
-            }
-            transitions: Transition {
-                AnchorAnimation {
-                    duration: Appearance.animation.elementMoveFast.duration
-                    easing.type: Appearance.animation.elementMoveFast.type
-                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-                }
+                left: itemIconBackground.right
+                verticalCenter: itemIconBackground.verticalCenter
             }
             text: buttonText
-            font.pixelSize: 14
+            font.pixelSize: Appearance.font.pixelSize.small
             color: Appearance.colors.colOnLayer1
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                }
+            }
+            Behavior on width {
+                enabled: Appearance.animationsEnabled
+                NumberAnimation {
+                    duration: Appearance.animation.elementResize.duration
+                    easing.type: Appearance.animation.elementResize.type
+                    easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
+                }
+            }
         }
     }
 

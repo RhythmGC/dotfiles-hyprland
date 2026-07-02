@@ -16,9 +16,27 @@ RippleButton { // Expand button
     Layout.fillHeight: false
 
     buttonRadius: Appearance.rounding.full
-    colBackground: ColorUtils.mix(Appearance?.colors.colLayer2, Appearance?.colors.colLayer2Hover, 0.5)
-    colBackgroundHover: Appearance?.colors.colLayer2Hover ?? "#E5DFED"
-    colRipple: Appearance?.colors.colLayer2Active ?? "#D6CEE2"
+    colBackground: Appearance.angelEverywhere
+        ? Appearance.angel.colGlassCard
+        : Appearance.inirEverywhere 
+        ? Appearance.inir.colLayer2Hover
+        : Appearance.auroraEverywhere 
+        ? Appearance.aurora.colSubSurface
+        : ColorUtils.mix(Appearance?.colors.colLayer2, Appearance?.colors.colLayer2Hover, 0.5)
+    colBackgroundHover: Appearance.angelEverywhere
+        ? Appearance.angel.colGlassCardHover
+        : Appearance.inirEverywhere 
+        ? Appearance.inir.colLayer3Hover
+        : Appearance.auroraEverywhere 
+        ? Appearance.aurora.colSubSurfaceHover
+        : Appearance?.colors.colLayer2Hover ?? "#E5DFED"
+    colRipple: Appearance.angelEverywhere
+        ? Appearance.angel.colGlassCardActive
+        : Appearance.inirEverywhere 
+        ? Appearance.inir.colLayer3Active
+        : Appearance.auroraEverywhere 
+        ? Appearance.aurora.colSubSurfaceActive
+        : Appearance?.colors.colLayer2Active ?? "#D6CEE2"
 
     contentItem: Item {
         anchors.centerIn: parent
@@ -39,7 +57,7 @@ RippleButton { // Expand button
                 color: Appearance.colors.colOnLayer2
                 rotation: expanded ? 180 : 0
                 Behavior on rotation {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
                 }
             }
         }

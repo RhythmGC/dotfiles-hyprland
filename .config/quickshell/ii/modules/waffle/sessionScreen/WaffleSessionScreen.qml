@@ -9,43 +9,35 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 Scope {
     id: root
-    property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
 
     Loader {
         id: sessionLoader
         active: GlobalStates.sessionOpen
-        onActiveChanged: {
-            if (sessionLoader.active) SessionWarnings.refresh();
-        }
 
         Connections {
             target: GlobalStates
             function onScreenLockedChanged() {
                 if (GlobalStates.screenLocked) {
-                    GlobalStates.sessionOpen = false;
+                    GlobalStates.sessionOpen = false
                 }
             }
         }
 
-        sourceComponent: PanelWindow { // Session menu
+        sourceComponent: PanelWindow {
             id: sessionRoot
             visible: sessionLoader.active
-            property string subtitle
-            
-            function hide() {
-                GlobalStates.sessionOpen = false;
+
+            function hide(): void {
+                GlobalStates.sessionOpen = false
             }
 
             exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.namespace: "quickshell:session"
+            WlrLayershell.namespace: "quickshell:wSession"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-            // This is a big surface so we needa carefully choose the transparency,
-            // or we'll get a large scary rgb blob
             color: "#000000"
 
             anchors {
@@ -57,9 +49,9 @@ Scope {
 
             Item {
                 anchors.fill: parent
-                Keys.onPressed: (event) => {
+                Keys.onPressed: event => {
                     if (event.key === Qt.Key_Escape) {
-                        sessionRoot.hide();
+                        sessionRoot.hide()
                     }
                 }
 
@@ -72,9 +64,10 @@ Scope {
 
     IpcHandler {
         target: "session"
+        enabled: Config.options?.panelFamily === "waffle"
 
         function toggle(): void {
-            GlobalStates.sessionOpen = !GlobalStates.sessionOpen;
+            GlobalStates.sessionOpen = !GlobalStates.sessionOpen
         }
 
         function close(): void {
@@ -85,32 +78,4 @@ Scope {
             GlobalStates.sessionOpen = true
         }
     }
-
-    GlobalShortcut {
-        name: "sessionToggle"
-        description: "Toggles session screen on press"
-
-        onPressed: {
-            GlobalStates.sessionOpen = !GlobalStates.sessionOpen;
-        }
-    }
-
-    GlobalShortcut {
-        name: "sessionOpen"
-        description: "Opens session screen on press"
-
-        onPressed: {
-            GlobalStates.sessionOpen = true
-        }
-    }
-
-    GlobalShortcut {
-        name: "sessionClose"
-        description: "Closes session screen on press"
-
-        onPressed: {
-            GlobalStates.sessionOpen = false
-        }
-    }
-
 }

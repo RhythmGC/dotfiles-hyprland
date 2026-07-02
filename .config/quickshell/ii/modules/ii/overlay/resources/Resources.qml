@@ -3,7 +3,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import Qt5Compat.GraphicalEffects
 import qs
 import qs.services
@@ -15,24 +14,36 @@ StyledOverlayWidget {
     id: root
     minimumWidth: 300
     minimumHeight: 200
+
+    Component.onCompleted: ResourceUsage.ensureRunning()
     property list<var> resources: [
         {
             "icon": "planner_review",
             "name": Translation.tr("CPU"),
             "history": ResourceUsage.cpuUsageHistory,
-            "maxAvailableString": ResourceUsage.maxAvailableCpuString
+            "maxAvailableString": ResourceUsage.maxAvailableCpuString,
+            "detailString": Translation.tr("Temp: %1°C").arg(ResourceUsage.cpuTemp)
+        },
+        {
+            "icon": "memory_alt",
+            "name": Translation.tr("GPU"),
+            "history": ResourceUsage.gpuUsageHistory,
+            "maxAvailableString": ResourceUsage.maxAvailableGpuString,
+            "detailString": Translation.tr("Temp: %1°C").arg(ResourceUsage.gpuTemp)
         },
         {
             "icon": "memory",
             "name": Translation.tr("RAM"),
             "history": ResourceUsage.memoryUsageHistory,
-            "maxAvailableString": ResourceUsage.maxAvailableMemoryString
+            "maxAvailableString": ResourceUsage.maxAvailableMemoryString,
+            "detailString": Translation.tr("Used: %1 GB").arg((ResourceUsage.memoryUsed / (1024 * 1024)).toFixed(1))
         },
         {
             "icon": "swap_horiz",
             "name": Translation.tr("Swap"),
             "history": ResourceUsage.swapUsageHistory,
-            "maxAvailableString": ResourceUsage.maxAvailableSwapString
+            "maxAvailableString": ResourceUsage.maxAvailableSwapString,
+            "detailString": Translation.tr("Used: %1 GB").arg((ResourceUsage.swapUsed / (1024 * 1024)).toFixed(1))
         },
     ]
 
@@ -71,6 +82,7 @@ StyledOverlayWidget {
                 Layout.margins: 8
                 history: root.resources[tabBar.currentIndex]?.history ?? []
                 maxAvailableString: root.resources[tabBar.currentIndex]?.maxAvailableString ?? "--"
+                detailString: root.resources[tabBar.currentIndex]?.detailString ?? ""
             }
         }
     }
@@ -79,6 +91,7 @@ StyledOverlayWidget {
         id: resourceSummary
         required property list<real> history
         required property string maxAvailableString
+        required property string detailString
         Layout.fillWidth: true
         Layout.fillHeight: true
         spacing: 12
@@ -101,6 +114,12 @@ StyledOverlayWidget {
                     pixelSize: Appearance.font.pixelSize.smallie
                 }
                 color: Appearance.colors.colSubtext
+            }
+            StyledText {
+                text: resourceSummary.detailString
+                font.pixelSize: Appearance.font.pixelSize.smallie
+                color: Appearance.colors.colSubtext
+                visible: text.length > 0
             }
             Item {
                 Layout.fillHeight: true

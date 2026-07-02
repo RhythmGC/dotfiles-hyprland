@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -11,7 +10,7 @@ Image {
     visible: opacity > 0
     opacity: (status === Image.Ready) ? 1 : 0
     Behavior on opacity {
-        animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveEnter.duration; easing.type: Appearance.animation.elementMoveEnter.type; easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve }
     }
 
     property list<string> fallbacks: []
@@ -22,10 +21,5 @@ Image {
             source = fallbacks[currentFallbackIndex];
             currentFallbackIndex += 1;
         }
-    }
-
-    sourceSize: {
-        const dpr = (QsWindow.window as QsWindow)?.devicePixelRatio ?? 1;
-        return Qt.size(width * dpr, height * dpr);
     }
 }

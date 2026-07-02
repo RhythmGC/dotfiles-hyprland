@@ -5,8 +5,6 @@ import Quickshell
 Singleton {
     id: root
     
-    signal requestCenter(string identifier)
-
     readonly property list<var> availableWidgets: [
         { identifier: "crosshair", materialSymbol: "point_scan" },
         { identifier: "fpsLimiter", materialSymbol: "animation" },
@@ -14,7 +12,9 @@ Singleton {
         { identifier: "recorder", materialSymbol: "screen_record" },
         { identifier: "resources", materialSymbol: "browse_activity" },
         { identifier: "notes", materialSymbol: "note_stack" },
+        { identifier: "discord", materialSymbol: "forum" },
         { identifier: "volumeMixer", materialSymbol: "volume_up" },
+        { identifier: "notifications", materialSymbol: "notifications" },
     ]
     
     readonly property bool hasPinnedWidgets: root.pinnedWidgetIdentifiers.length > 0

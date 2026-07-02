@@ -4,14 +4,16 @@ import QtQuick.Layouts
 import Quickshell
 import qs
 import qs.services
+import qs.services.deferred
 import qs.modules.common
+import qs.modules.common.functions
 import qs.modules.waffle.looks
 
 // TODO: Replace the icon with QMLized svg (with /usr/lib/qt6/bin/svgtoqml) for proper micro-animation
 AppButton {
     id: root
 
-    leftInset: Config.options.waffles.bar.leftAlignApps ? 12 : 0
+    leftInset: (Config.options?.waffles?.bar?.leftAlignApps ?? false) ? 12 : 0
     iconName: down ? "start-here-pressed" : "start-here"
 
     checked: GlobalStates.searchOpen && LauncherSearch.query === ""
@@ -36,19 +38,19 @@ AppButton {
             {
                 text: Translation.tr("Terminal"),
                 action: () => {
-                    Quickshell.execDetached(["bash", "-c", Config.options.apps.terminal]);
+                    AppLauncher.launch("terminal")
                 }
             },
             {
                 text: Translation.tr("Task Manager"),
                 action: () => {
-                    Quickshell.execDetached(["bash", "-c", Config.options.apps.taskManager]);
+                    AppLauncher.launch("taskManager")
                 }
             },
             {
                 text: Translation.tr("Settings"),
                 action: () => {
-                    Quickshell.execDetached(["qs", "-p", Quickshell.shellPath("settings.qml")]);
+                    ShellExec.execDetachedArgs([Quickshell.shellPath("scripts/inir"), "settings"], "Open iNiR settings");
                 }
             },
             {
@@ -60,7 +62,7 @@ AppButton {
             {
                 text: Translation.tr("Search"),
                 action: () => {
-                    Quickshell.execDetached(["qs", "-p", Quickshell.shellPath(""), "ipc", "call", "overview", "toggle"]);
+                    Quickshell.execDetached([Quickshell.shellPath("scripts/inir"), "overview", "toggle"]);
                 }
             },
         ]

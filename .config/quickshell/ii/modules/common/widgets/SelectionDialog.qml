@@ -32,8 +32,15 @@ Item {
 
     Rectangle { // The dialog
         id: dialog
-        color: Appearance.m3colors.m3surfaceContainerHigh
-        radius: Appearance.rounding.normal
+        color: Appearance.angelEverywhere ? Appearance.angel.colGlassPopup
+             : Appearance.inirEverywhere ? Appearance.inir.colLayer2
+             : Appearance.auroraEverywhere ? Appearance.aurora.colDialogSurface 
+             : Appearance.colors.colSurfaceContainerHigh
+        radius: Appearance.angelEverywhere ? Appearance.angel.roundingNormal
+             : Appearance.inirEverywhere ? Appearance.inir.roundingNormal : Appearance.rounding.normal
+        border.width: Appearance.angelEverywhere ? Appearance.angel.cardBorderWidth : 1
+        border.color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                    : Appearance.inirEverywhere ? Appearance.inir.colBorder : "transparent"
         anchors.fill: parent
         anchors.margins: dialogMargin
         implicitHeight: dialogColumnLayout.implicitHeight
@@ -49,13 +56,15 @@ Item {
                 Layout.leftMargin: dialogPadding
                 Layout.rightMargin: dialogPadding
                 Layout.alignment: Qt.AlignLeft
-                color: Appearance.m3colors.m3onSurface
+                color: Appearance.angelEverywhere ? Appearance.angel.colText
+                     : Appearance.inirEverywhere ? Appearance.inir.colLabel : Appearance.m3colors.m3onSurface
                 font.pixelSize: Appearance.font.pixelSize.larger
                 text: root.titleText
             }
 
             Rectangle {
-                color: Appearance.m3colors.m3outline
+                color: Appearance.angelEverywhere ? Appearance.angel.colCardBorder
+                     : Appearance.inirEverywhere ? Appearance.inir.colBorderSubtle : Appearance.m3colors.m3outline
                 implicitHeight: 1
                 Layout.fillWidth: true
                 Layout.leftMargin: dialogPadding

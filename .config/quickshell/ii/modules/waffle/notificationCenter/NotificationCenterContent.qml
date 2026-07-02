@@ -3,7 +3,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Qt.labs.synchronizer
 import qs
 import qs.services
 import qs.modules.common
@@ -13,68 +12,52 @@ import qs.modules.waffle.looks
 WBarAttachedPanelContent {
     id: root
 
-    readonly property bool barAtBottom: Config.options.waffles.bar.bottom
+    readonly property bool barAtBottom: Config.options?.waffles?.bar?.bottom ?? false
     revealFromSides: true
     revealFromLeft: false
 
     property bool collapsed: false
+    readonly property int notificationCount: Notifications.list.length
+    readonly property bool hasNotifications: notificationCount > 0
 
     contentItem: ColumnLayout {
         id: contentLayout
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: parent.top
-            bottom: parent.bottom
-        }
-        spacing: 12
+        spacing: Looks.dp(12)
 
+        // Notification area
         Item {
             id: notificationArea
-            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(Looks.dp(560), notificationPane.implicitHeight)
             implicitWidth: notificationPane.implicitWidth
 
             WPane {
                 id: notificationPane
-                anchors {
-                    bottom: parent.bottom
-                    left: parent.left
-                    right: parent.right
-                }
+                anchors.fill: parent
+                screenX: root.panelScreenX + root.visualMargin
+                screenY: root.panelScreenY + root.visualMargin
+                screenWidth: root._screenW
+                screenHeight: root._screenH
                 contentItem: NotificationPaneContent {
                     implicitWidth: calendarColumnLayout.implicitWidth
-                    implicitHeight: {
-                        if (Notifications.list.length > 0) {
-                            return ((contentLayout.height - calendarPane.height - contentLayout.spacing) - notificationPane.borderWidth * 2)
-                        }
-                        return 230;
-                    }
-                    
-                    Timer {
-                        id: enableTimer
-                        interval: Config.options.hacks.arbitraryRaceConditionDelay
-                        onTriggered: heightBehavior.enabled = true;
-                    }
-                    Behavior on implicitHeight {
-                        id: heightBehavior
-                        enabled: false
-                        Component.onCompleted: {
-                            enableTimer.restart();
-                        }
-                        animation: Looks.transition.enter.createObject(this)
-                    }
                 }
             }
         }
 
+        // Calendar pane
         WPane {
             id: calendarPane
+            Layout.fillWidth: true
+            screenX: root.panelScreenX + root.visualMargin
+            screenY: root.panelScreenY + root.visualMargin + notificationArea.height + Looks.dp(12)
+            screenWidth: root._screenW
+            screenHeight: root._screenH
             contentItem: WPanelPageColumn {
                 id: calendarColumnLayout
                 DateHeader {
                     Layout.fillWidth: true
-                    Synchronizer on collapsed {
-                        property alias source: root.collapsed
-                    }
+                    collapsed: root.collapsed
+                    onCollapsedChanged: if (collapsed !== root.collapsed) root.collapsed = collapsed
                 }
 
                 WPanelSeparator {
@@ -83,9 +66,8 @@ WBarAttachedPanelContent {
 
                 CalendarWidget {
                     Layout.fillWidth: true
-                    Synchronizer on collapsed {
-                        property alias source: root.collapsed
-                    }
+                    collapsed: root.collapsed
+                    onCollapsedChanged: if (collapsed !== root.collapsed) root.collapsed = collapsed
                 }
 
                 WPanelSeparator {}
@@ -94,6 +76,22 @@ WBarAttachedPanelContent {
                     Layout.fillWidth: true
                 }
             }
+        }
+    }
+
+    // Keyboard shortcuts
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Escape) {
+            root.close()
+            event.accepted = true
+        } else if (event.key === Qt.Key_Delete && root.hasNotifications) {
+            // Delete key clears all notifications
+            Notifications.discardAllNotifications()
+            event.accepted = true
+        } else if (event.key === Qt.Key_D && (event.modifiers & Qt.ControlModifier)) {
+            // Ctrl+D toggles Do Not Disturb
+            Notifications.silent = !Notifications.silent
+            event.accepted = true
         }
     }
 }

@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
-import Qt.labs.synchronizer
 import Quickshell
 import qs.services
 import qs.modules.common
@@ -14,6 +13,9 @@ RowLayout {
 
     property bool overflowOpen: false
     property bool dragging: false
+    
+    // Signal to close all tray menus before opening a new one
+    signal closeAllTrayMenus()
 
     Layout.fillHeight: true
     spacing: 0
@@ -21,29 +23,41 @@ RowLayout {
     BarIconButton {
         id: overflowButton
 
-        visible: (TrayService.unpinnedItems.length > 0 || root.dragging)
+        visible: (TrayService.unpinnedItems.length > 0 || root.dragging) && !GameMode.shouldHidePanels
         checked: root.overflowOpen
 
         iconName: "chevron-down"
         iconMonochrome: true
-        iconRotation: (Config.options.waffles.bar.bottom ? 180 : 0) + (root.overflowOpen ? 180 : 0)
+        iconRotation: ((Config.options?.waffles?.bar?.bottom ?? false) ? 180 : 0) + (root.overflowOpen ? 180 : 0)
         Behavior on iconRotation {
-            animation: Looks.transition.rotate.createObject(this)
+            animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.medium : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
         }
 
         onClicked: {
-            root.overflowOpen = !root.overflowOpen;
+            if (!root.overflowOpen) {
+                trayOverflowLayout.active = true;
+                root.overflowOpen = true;
+            } else {
+                trayOverflowLayout.close();
+                root.overflowOpen = false;
+            }
         }
 
         TrayOverflowMenu {
             id: trayOverflowLayout
-            Synchronizer on active {
-                property alias source: root.overflowOpen
+            property var trayRoot: root  // Explicit reference to parent Tray
+            trayParent: trayRoot
+            
+            onActiveChanged: {
+                // Sync state back to parent when popup closes
+                if (!active && trayRoot) {
+                    trayRoot.overflowOpen = false;
+                }
             }
         }
 
         BarToolTip {
-            extraVisibleCondition: overflowButton.shouldShowTooltip
+            extraVisibleCondition: overflowButton.shouldShowTooltip && !root.overflowOpen
             text: Translation.tr("Show hidden icons")
         }
 
@@ -56,14 +70,18 @@ RowLayout {
         }
     }
 
+    ScriptModel {
+        id: trayModel
+        values: TrayService.pinnedItems
+    }
+
     Repeater {
-        model: ScriptModel {
-            values: TrayService.pinnedItems
-        }
+        model: trayModel
         delegate: TrayButton {
             id: trayButton
             required property var modelData
             item: modelData
+            trayParent: root
 
             property real initialX
             property real initialY
@@ -86,7 +104,7 @@ RowLayout {
                 }
                 onReleased: {
                     if (!dragArea.drag.active) {
-                        trayButton.click();
+                        trayButton.clicked();
                     } else {
                         if (pinDropArea.containsDrag && pinDropArea.willPin) {
                             // Quickshell would crash if we don't hide this item first. Took me fucking 3 hours to figure out...

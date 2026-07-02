@@ -1,22 +1,48 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
+import Quickshell
 import org.kde.kirigami as Kirigami
 import qs.services
 import qs.modules.common
+import qs.modules.common.functions
 
-Kirigami.Icon {
+Item {
     id: root
     required property string iconName
     property bool separateLightDark: false
     property bool tryCustomIcon: true
+    property bool monochrome: Config.options?.waffles?.bar?.monochromeIcons ?? false
+    readonly property var currentScreen: root.QsWindow?.window?.screen ?? null
     
-    property real implicitSize: 26
+    property real implicitSize: Looks.scaledBar(Config.options?.waffles?.bar?.iconSize ?? 26, currentScreen)
     implicitWidth: implicitSize
     implicitHeight: implicitSize
 
-    animated: true
-    roundToIconSize: false
-    fallback: root.iconName
-    source: tryCustomIcon ? `${Looks.iconsPath}/${root.iconName}${!root.separateLightDark ? "" : Looks.dark ? "-dark" : "-light"}.svg` : fallback
+    Kirigami.Icon {
+        id: iconWidget
+        anchors.fill: parent
+        animated: true
+        roundToIconSize: true
+        fallback: root.iconName
+        source: root.tryCustomIcon ? `${Looks.iconsPath}/${root.iconName}${!root.separateLightDark ? "" : Looks.dark ? "-dark" : "-light"}.svg` : fallback
+    }
 
-    color: Looks.colors.fg
+    Loader {
+        active: root.monochrome
+        anchors.fill: iconWidget
+        sourceComponent: Item {
+            Desaturate {
+                id: desaturatedIcon
+                visible: false
+                anchors.fill: parent
+                source: iconWidget
+                desaturation: 0.8
+            }
+            ColorOverlay {
+                anchors.fill: desaturatedIcon
+                source: desaturatedIcon
+                color: ColorUtils.transparentize(Looks.colors.accent, 0.9)
+            }
+        }
+    }
 }

@@ -12,17 +12,22 @@ Slider {
     property real trackWidth: 4
     property string tooltipContent: `${Math.round(value * 100)}`
     property bool scrollable: false
+    property bool _userInteracting: false
     stepSize: 0.02
     leftPadding: 0
     rightPadding: 0
 
+    Timer {
+        id: _userInteractingReset
+        interval: 180
+        repeat: false
+        onTriggered: root._userInteracting = false
+    }
+
     implicitHeight: handle.implicitHeight
 
-    Behavior on value { // This makes the adjusted value (like volume) shift smoothly
-        SmoothedAnimation {
-            velocity: Looks.transition.velocity
-        }
-    }
+    // No animation on value - instant response to user input
+    // External changes (volume changed by other app) also instant, which is fine
 
     background: MouseArea {
         id: background
@@ -33,11 +38,15 @@ Slider {
                 event.accepted = false;
                 return;
             }
+            root._userInteracting = true
+            _userInteractingReset.restart()
+
+            const step = root.stepSize > 0 ? root.stepSize : 0.02
             if (event.angleDelta.y > 0) {
-                root.value = Math.min(root.value + root.stepSize, 1)
+                root.value = Math.min(root.value + step, root.to)
                 root.moved()
             } else {
-                root.value = Math.max(root.value - root.stepSize, 0)
+                root.value = Math.max(root.value - step, root.from)
                 root.moved()
             }
         }
@@ -51,8 +60,18 @@ Slider {
             topLeftRadius: root.trackWidth / 2
             bottomLeftRadius: root.trackWidth / 2
             color: Looks.colors.accent
-            implicitHeight: root.trackWidth
+            implicitHeight: root.pressed ? root.trackWidth + 2 : root.trackWidth
             width: background.width * root.visualPosition
+            
+            Behavior on implicitHeight {
+                NumberAnimation {
+                    duration: Looks.transition.enabled ? Looks.transition.duration.fast : 0
+                    easing.type: Easing.OutQuad
+                }
+            }
+            Behavior on color {
+                animation: ColorAnimation { duration: Looks.transition.enabled ? 70 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
+            }
         }
 
         Rectangle {
@@ -64,8 +83,15 @@ Slider {
             topRightRadius: root.trackWidth / 2
             bottomRightRadius: root.trackWidth / 2
             color: Looks.colors.controlBg
-            implicitHeight: root.trackWidth
+            implicitHeight: root.pressed ? root.trackWidth + 2 : root.trackWidth
             width: background.width * (1 - root.visualPosition)
+            
+            Behavior on implicitHeight {
+                NumberAnimation {
+                    duration: Looks.transition.enabled ? Looks.transition.duration.fast : 0
+                    easing.type: Easing.OutQuad
+                }
+            }
         }
     }
 
@@ -89,7 +115,7 @@ Slider {
             color: Looks.colors.accent
 
             Behavior on diameter {
-                animation: Looks.transition.enter.createObject(this)
+                animation: NumberAnimation { duration: Looks.transition.enabled ? Looks.transition.duration.panel : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.decelerate }
             }
         }
 
@@ -98,6 +124,7 @@ Slider {
             extraVisibleCondition: root.pressed
             text: root.tooltipContent
             font.pixelSize: Looks.font.pixelSize.larger
+            font.features: { "tnum": 1 }
             verticalPadding: 3
             horizontalPadding: 8
         }

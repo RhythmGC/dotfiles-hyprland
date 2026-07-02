@@ -23,26 +23,19 @@ Singleton {
     property WifiAccessPoint wifiConnectTarget
     readonly property list<WifiAccessPoint> wifiNetworks: []
     readonly property WifiAccessPoint active: wifiNetworks.find(n => n.active) ?? null
-    readonly property list<var> friendlyWifiNetworks: [...wifiNetworks].sort((a, b) => {
-        if (a.active && !b.active)
-            return -1;
-        if (!a.active && b.active)
-            return 1;
-        return b.strength - a.strength;
-    })
     property string wifiStatus: "disconnected"
 
     property string networkName: ""
     property int networkStrength
     property string materialSymbol: root.ethernet
         ? "lan"
-        : (root.wifiEnabled && root.wifiStatus === "connected")
+        : root.wifiEnabled
             ? (
-                (root.active?.strength ?? 0) > 83 ? "signal_wifi_4_bar" :
-                (root.active?.strength ?? 0) > 67 ? "network_wifi" :
-                (root.active?.strength ?? 0) > 50 ? "network_wifi_3_bar" :
-                (root.active?.strength ?? 0) > 33 ? "network_wifi_2_bar" :
-                (root.active?.strength ?? 0) > 17 ? "network_wifi_1_bar" :
+                Network.networkStrength > 83 ? "signal_wifi_4_bar" :
+                Network.networkStrength > 67 ? "network_wifi" :
+                Network.networkStrength > 50 ? "network_wifi_3_bar" :
+                Network.networkStrength > 33 ? "network_wifi_2_bar" :
+                Network.networkStrength > 17 ? "network_wifi_1_bar" :
                 "signal_wifi_0_bar"
             )
             : (root.wifiStatus === "connecting")
@@ -88,11 +81,7 @@ Singleton {
         // TODO: enterprise wifi with username
         network.askingPassword = false;
         changePasswordProc.exec({
-            "environment": {
-                "PASSWORD": password,
-                "SSID": network.ssid
-            },
-            "command": ["bash", "-c", 'nmcli connection modify "$SSID" wifi-sec.psk "$PASSWORD"']
+            "command": ["nmcli", "connection", "modify", network.ssid, "wifi-sec.psk", password]
         })
     }
 
@@ -152,18 +141,55 @@ Singleton {
         }
     }
 
-    // Status update
+    // Debounce timer for network status updates
+    Timer {
+        id: _updateDebounce
+        interval: 200
+        repeat: false
+        onTriggered: root._doUpdate()
+    }
+
+    // Status update (debounced — nmcli monitor can emit rapid bursts)
     function update() {
+        _updateDebounce.restart();
+    }
+
+    // Actual update logic
+    function _doUpdate() {
         updateConnectionType.startCheck();
         wifiStatusProcess.running = true
         updateNetworkName.running = true;
         updateNetworkStrength.running = true;
     }
 
+    property bool _destroying: false
+
+    Component.onCompleted: {
+        // Kill any orphaned nmcli monitor processes from previous shell instances,
+        // then start the fresh subscriber once cleanup finishes.
+        _cleanupStale.running = true;
+        // Prime initial state once; subsequent updates come from nmcli monitor.
+        Qt.callLater(() => root.update())
+    }
+
+    Component.onDestruction: {
+        root._destroying = true;
+        subscriber.running = false;
+    }
+
+    Process {
+        id: _cleanupStale
+        command: ["pkill", "-f", "nmcli monitor"]
+        running: false
+        onExited: subscriber.running = true
+    }
+
     Process {
         id: subscriber
-        running: true
+        running: false
         command: ["nmcli", "monitor"]
+        // Auto-restart if the monitor process dies (can happen after lockscreen/suspend)
+        onRunningChanged: if (!running && !root._destroying) running = true
         stdout: SplitParser {
             onRead: root.update()
         }
@@ -173,7 +199,7 @@ Singleton {
         id: updateConnectionType
         property string buffer
         command: ["sh", "-c", "nmcli -t -f TYPE,STATE d status && nmcli -t -f CONNECTIVITY g"]
-        running: true
+        running: false
         function startCheck() {
             buffer = "";
             updateConnectionType.running = true;
@@ -222,7 +248,7 @@ Singleton {
     Process {
         id: updateNetworkName
         command: ["sh", "-c", "nmcli -t -f NAME c show --active | head -1"]
-        running: true
+        running: false
         stdout: SplitParser {
             onRead: data => {
                 root.networkName = data;
@@ -232,7 +258,7 @@ Singleton {
 
     Process {
         id: updateNetworkStrength
-        running: true
+        running: false
         command: ["sh", "-c", "nmcli -f IN-USE,SIGNAL,SSID device wifi | awk '/^\\*/{if (NR!=1) {print $2}}'"]
         stdout: SplitParser {
             onRead: data => {
@@ -258,7 +284,7 @@ Singleton {
 
     Process {
         id: getNetworks
-        running: true
+        running: false
         command: ["nmcli", "-g", "ACTIVE,SIGNAL,FREQ,SSID,BSSID,SECURITY", "d", "w"]
         environment: ({
             LANG: "C",

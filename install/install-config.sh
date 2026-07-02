@@ -222,7 +222,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   mkdir -p "$DST_CONFIG"
 
   # Load configuration files/folders to link from items.json
-  json_file="$DOTFILES_DIR/tempScripts/items.json"
+  json_file="$DOTFILES_DIR/Scripts/items.json"
   if [ ! -f "$json_file" ]; then
     error "Configuration items file not found: $json_file"
   fi

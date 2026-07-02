@@ -27,9 +27,10 @@ MaterialShape { // App icon
     ]
     shape: isUrgent ? urgentShapes[Math.floor(Math.random() * urgentShapes.length)] : MaterialShape.Shape.Circle
 
-    color: isUrgent ? Appearance.colors.colPrimaryContainer : Appearance.colors.colSecondaryContainer
+    color: isUrgent ? Appearance.colors.colPrimaryContainer : "transparent"
     Loader {
         id: materialSymbolLoader
+        // Only show MaterialSymbol when there's no appIcon AND no image
         active: root.appIcon == "" && root.image == ""
         anchors.fill: parent
         sourceComponent: MaterialSymbol {
@@ -59,22 +60,36 @@ MaterialShape { // App icon
     }
     Loader {
         id: notifImageLoader
-        active: root.image != ""
+        active: root.image != "" && root.image !== undefined
         anchors.fill: parent
         sourceComponent: Item {
+            id: notifImageContainer
             anchors.fill: parent
-            StyledImage {
+            property bool imageValid: true
+            Image {
                 id: notifImage
                 anchors.fill: parent
                 readonly property int size: parent.width
+                visible: status === Image.Ready
 
-                source: root.image
+                source: notifImageContainer.imageValid ? root.image : ""
                 fillMode: Image.PreserveAspectCrop
                 cache: false
                 antialiasing: true
                 asynchronous: true
 
-                layer.enabled: true
+                width: size
+                height: size
+                sourceSize.width: size
+                sourceSize.height: size
+                onStatusChanged: {
+                    if (status === Image.Error) {
+                        notifImageContainer.imageValid = false
+                        notifImageLoader.active = false
+                    }
+                }
+
+                layer.enabled: status === Image.Ready
                 layer.effect: OpacityMask {
                     maskSource: Rectangle {
                         width: notifImage.size

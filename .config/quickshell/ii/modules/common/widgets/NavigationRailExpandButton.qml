@@ -5,10 +5,9 @@ import qs.modules.common.widgets
 
 RippleButton {
     id: root
-    Layout.alignment: Qt.AlignLeft
+    Layout.alignment: Qt.AlignHCenter
     implicitWidth: 40
     implicitHeight: 40
-    Layout.leftMargin: 8
     downAction: () => {
         parent.expanded = !parent.expanded;
     }
@@ -16,7 +15,7 @@ RippleButton {
 
     rotation: root.parent.expanded ? 0 : -180
     Behavior on rotation {
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
     }
 
     contentItem: MaterialSymbol {

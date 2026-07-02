@@ -16,34 +16,101 @@ Singleton {
     property QtObject transition
     property string iconsPath: `${Directories.assetsPath}/icons/fluent`
     property bool dark: Appearance.m3colors.darkmode
+    property bool auroraEverywhere: {
+        const style = Config.options?.appearance?.globalStyle ?? "material"
+        return style === "aurora" || style === "angel"
+    }
+    property bool useMaterial: Config.options?.waffles?.theming?.useMaterialColors ?? false
+    // Glass mode: aurora/angel active (not iNiR which has its own aesthetic)
+    readonly property bool glassActive: root.auroraEverywhere && !Appearance.inirEverywhere
+    
+    // Font family - reactive property at root level for proper binding updates
+    readonly property string fontFamily: {
+        const f = Config.options?.waffles?.theming?.font?.family;
+        return (f && f.length > 0) ? f : "Noto Sans";
+    }
+    // Font scale - reactive property.
+    // Combines the waffle-specific font fine-tuner (waffles.theming.font.scale)
+    // with the global UI scale (appearance.typography.sizeScale) so the
+    // "Display scaling" slider in Interface settings also affects waffle fonts.
+    readonly property real fontScale: (Config.options?.waffles?.theming?.font?.scale ?? 1.0) * Appearance.fontSizeScale
 
-    readonly property bool transparencyEnabled: Config.options.appearance.transparency.enable
-    property real backgroundTransparency: transparencyEnabled ? 0.16 : 0
-    property real panelBackgroundTransparency: transparencyEnabled ? 0.14 : 0
-    property real panelLayerTransparency: root.dark ? 0.9 : 0.7
-    property real contentTransparency: root.dark ? 0.87 : 0.5
+    readonly property bool transparencyEnabled: Config.options?.appearance?.transparency?.enable ?? false
+    // When glass mode is active, ensure surfaces have enough transparency
+    // so the glass/blur effect is visible beneath the dark base colors
+    property real backgroundTransparency: root.auroraEverywhere
+        ? Math.max(Appearance.backgroundTransparency ?? 0, root.glassActive ? 0.12 : 0)
+        : (transparencyEnabled ? 0.13 : 0)
+    property real panelBackgroundTransparency: root.auroraEverywhere
+        ? Math.max(Appearance.backgroundTransparency ?? 0, root.glassActive ? 0.10 : 0)
+        : (transparencyEnabled ? 0.12 : 0)
+    property real panelLayerTransparency: root.auroraEverywhere ? (Appearance.aurora.popupSurfaceTransparentize ?? 0.5) : (root.dark ? 0.6 : 0.5)
+    property real contentTransparency: root.auroraEverywhere
+        ? Math.max(Appearance.contentTransparency ?? 0, root.glassActive ? 0.15 : 0)
+        : (root.dark ? 0.87 : 0.5)
+    function clamp(value, minimum, maximum) {
+        return Math.max(minimum, Math.min(maximum, value))
+    }
+    function screenScale(screen, minimum, maximum) {
+        minimum = minimum ?? 0.92
+        maximum = maximum ?? 1.08
+        const width = screen?.width ?? 1920
+        const height = screen?.height ?? 1080
+        const shortSide = Math.min(width, height)
+        return root.clamp(shortSide / 1080, minimum, maximum)
+    }
+    function barScale(screen, minimum, maximum) {
+        minimum = minimum ?? 0.9
+        maximum = maximum ?? 1.18
+        const width = screen?.width ?? 1920
+        const height = screen?.height ?? 1080
+        return root.clamp(Math.min(width / 1920, height / 1080), minimum, maximum)
+    }
+    function scaled(value, screen, minimum, maximum) {
+        minimum = minimum ?? 0.92
+        maximum = maximum ?? 1.08
+        return Math.round(value * root.screenScale(screen, minimum, maximum) * Appearance.fontSizeScale)
+    }
+    function scaledBar(value, screen, minimum, maximum) {
+        minimum = minimum ?? 0.9
+        maximum = maximum ?? 1.18
+        return Math.round(value * root.barScale(screen, minimum, maximum) * Appearance.fontSizeScale)
+    }
+    // Scale a raw pixel value by the global UI display scale factor.
+    // Use for layout dimensions (margins, spacing, sizes) that should
+    // respond to the user's "UI scale" setting. Reactive in bindings.
+    function dp(value) {
+        return Math.round(value * Appearance.fontSizeScale)
+    }
     function applyBackgroundTransparency(col) {
         return ColorUtils.applyAlpha(col, 1 - root.backgroundTransparency)
     }
     function applyContentTransparency(col) {
         return ColorUtils.applyAlpha(col, 1 - root.contentTransparency)
     }
+    function ensureMinOpacity(col, minAlpha) {
+        const c = Qt.color(col)
+        if (!c || c.valid === false)
+            return col
+        return Qt.rgba(c.r, c.g, c.b, Math.max(c.a, minAlpha))
+    }
     lightColors: QtObject {
         id: lightColors
+        property color bgPanelFooter: "#EEEEEE"
         property color bgPanelBody: "#F2F2F2"
         property color bgPanelSeparator: "#E0E0E0"
         property color bg0: "#EEEEEE"
-        property color bg0Border: '#BEBEBE'
-        property color bg1Base: "#F7F7F7"
+        property color bg0Border: '#adadad'
         property color bg1: "#F7F7F7"
+        property color bg1Base: "#F7F7F7"
         property color bg1Hover: "#F7F7F7"
         property color bg1Active: '#EFEFEF'
-        property color bg1Border: '#E9E9E9'
+        property color bg1Border: '#d7d7d7'
         property color bg2: "#FBFBFB"
         property color bg2Base: "#FBFBFB"
         property color bg2Hover: '#ffffff'
         property color bg2Active: '#eeeeee'
-        property color bg2Border: '#E0E0E0'
+        property color bg2Border: '#cdcdcd'
         property color subfg: "#5C5C5C"
         property color fg: "#000000"
         property color fg1: "#626262"
@@ -58,20 +125,21 @@ Singleton {
     }
     darkColors: QtObject {
         id: darkColors
-        property color bgPanelBody: '#242424'
+        property color bgPanelFooter: "#1C1C1C"
+        property color bgPanelBody: '#616161'
         property color bgPanelSeparator: "#191919"
         property color bg0: "#1C1C1C"
         property color bg0Border: "#404040"
-        property color bg1Base: '#2C2C2C'
-        property color bg1: '#2C2C2C'
-        property color bg1Hover: "#292929"
-        property color bg1Active: '#252525'
+        property color bg1Base: "#2C2C2C"
+        property color bg1: "#a8a8a8"
+        property color bg1Hover: "#b3b3b3"
+        property color bg1Active: '#727272'
         property color bg1Border: '#bebebe'
         property color bg2Base: "#313131"
-        property color bg2: '#313131'
-        property color bg2Hover: '#363636'
-        property color bg2Active: '#2B2B2B'
-        property color bg2Border: '#404040'
+        property color bg2: '#8a8a8a'
+        property color bg2Hover: '#b1b1b1'
+        property color bg2Active: '#919191'
+        property color bg2Border: '#bdbdbd'
         property color subfg: "#CED1D7"
         property color fg: "#FFFFFF"
         property color fg1: "#D1D1D1"
@@ -86,51 +154,162 @@ Singleton {
     }
     colors: QtObject {
         id: colors
-        // Special
         property color shadow: ColorUtils.transparentize('#161616', 0.62)
         property color ambientShadow: ColorUtils.transparentize("#000000", 0.75)
-        property color bgPanelFooterBase: root.dark ? root.darkColors.bg0 : root.lightColors.bg0
-        property color bgPanelFooterBackground: ColorUtils.transparentize(root.dark ? root.darkColors.bg0 : root.lightColors.bg0, root.panelBackgroundTransparency)
-        property color bgPanelFooter: ColorUtils.transparentize(bgPanelFooterBackground, root.panelLayerTransparency)
-        property color bgPanelBodyBase: root.dark ? root.darkColors.bgPanelBody : root.lightColors.bgPanelBody
-        property color bgPanelBody: ColorUtils.solveOverlayColor(bgPanelFooterBackground,bgPanelBodyBase, 1 - root.panelLayerTransparency)
-        property color bgPanelSeparator: ColorUtils.solveOverlayColor(bgPanelBodyBase, root.dark ? root.darkColors.bgPanelSeparator : root.lightColors.bgPanelSeparator, 1 - root.panelBackgroundTransparency)
-        // Layer 0
-        property color bg0Base: root.dark ? root.darkColors.bg0 : root.lightColors.bg0
-        property color bg0: ColorUtils.transparentize(bg0Base, root.backgroundTransparency)
-        property color bg0Border: ColorUtils.transparentize(root.dark ? root.darkColors.bg0Border : root.lightColors.bg0Border, root.backgroundTransparency)
-        // Layer 1
-        property color bg1Base: root.dark ? root.darkColors.bg1 : root.lightColors.bg1
-        property color bg1: ColorUtils.solveOverlayColor(bg0Base, bg1Base, 1 - root.contentTransparency)
-        property color bg1Hover: ColorUtils.solveOverlayColor(bg0Base, root.dark ? root.darkColors.bg1Hover : root.lightColors.bg1Hover, 1 - root.contentTransparency)
-        property color bg1Active: ColorUtils.solveOverlayColor(bg0Base, root.dark ? root.darkColors.bg1Active : root.lightColors.bg1Active, 1 - root.contentTransparency)
-        property color bg1Border: ColorUtils.solveOverlayColor(bg0Base, root.dark ? root.darkColors.bg1Border : root.lightColors.bg1Border, 1 - root.contentTransparency)
-        // Layer 2
-        property color bg2Base: root.dark ? root.darkColors.bg2 : root.lightColors.bg2
-        property color bg2: ColorUtils.solveOverlayColor(bgPanelBodyBase, bg2Base, 1 - root.contentTransparency)
-        property color bg2Hover: ColorUtils.solveOverlayColor(bgPanelBodyBase, root.dark ? root.darkColors.bg2Hover : root.lightColors.bg2Hover, 1 - root.contentTransparency)
-        property color bg2Active: ColorUtils.solveOverlayColor(bgPanelBodyBase, root.dark ? root.darkColors.bg2Active : root.lightColors.bg2Active, 1 - root.contentTransparency)
-        property color bg2Border: ColorUtils.solveOverlayColor(bgPanelBodyBase, root.dark ? root.darkColors.bg2Border : root.lightColors.bg2Border, 1 - root.contentTransparency)
-        // Foreground / Text
-        property color subfg: root.dark ? root.darkColors.subfg : root.lightColors.subfg
-        property color fg: root.dark ? root.darkColors.fg : root.lightColors.fg
-        property color fg1: root.dark ? root.darkColors.fg1 : root.lightColors.fg1
-        property color inactiveIcon: root.dark ? root.darkColors.inactiveIcon : root.lightColors.inactiveIcon
-        property color link: root.dark ? root.darkColors.link : root.lightColors.link
-        // Controls
-        property color controlBgInactive: root.dark ? root.darkColors.controlBgInactive : root.lightColors.controlBgInactive
-        property color controlBg: root.dark ? root.darkColors.controlBg : root.lightColors.controlBg
-        property color controlBgHover: root.dark ? root.darkColors.controlBgHover : root.lightColors.controlBgHover
-        property color controlFg: root.dark ? root.darkColors.controlFg : root.lightColors.controlFg
-        property color inputBg: root.dark ? root.darkColors.inputBg : root.lightColors.inputBg
-        property color danger: "#C42B1C"
-        property color dangerActive: "#B62D1F"
-        property color warning: "#FF9900"
-        // Accent
+        
+        // Material-aware colors - 3 paths:
+        // 1. useMaterial=true → Material-derived from Appearance.colors.*
+        //    (when glassActive, glass-aware surfaces from angel/aurora palette)
+        // 2. !useMaterial + glassActive + dark → Win11 *Base colors (dark greys: #2C2C2C, #313131)
+        //    with backgroundTransparency. The overlay colors (#a8a8a8, #8a8a8a) are Win11 Mica
+        //    tints designed for 13% opacity — at glass opacity levels they look blindingly bright.
+        // 3. !useMaterial + (!glass || !dark) → original Win11 colors at intended transparency
+        property color bgPanelFooterBase: root.useMaterial
+            ? Appearance.colors.colLayer0
+            : ColorUtils.transparentize(root.dark ? root.darkColors.bgPanelFooter : root.lightColors.bgPanelFooter, root.panelBackgroundTransparency)
+        property color bgPanelFooter: root.useMaterial
+            ? Appearance.colors.colLayer1
+            : ColorUtils.transparentize(root.dark ? root.darkColors.bgPanelFooter : root.lightColors.bgPanelFooter, root.panelLayerTransparency)
+        // bgPanelBody is only used inside WPane-backed panels (BodyRectangle),
+        // so making it transparent when glass+material lets GlassBackground show through
+        property color bgPanelBody: root.glassActive && root.useMaterial
+            ? "transparent"
+            : root.useMaterial
+                ? Appearance.colors.colLayer2
+                : ColorUtils.transparentize(
+                    root.glassActive && root.dark ? root.darkColors.bg2Base : (root.dark ? root.darkColors.bgPanelBody : root.lightColors.bgPanelBody),
+                    root.panelLayerTransparency)
+        property color bgPanelSeparator: root.glassActive && root.useMaterial
+            ? (Appearance.angelEverywhere ? Appearance.angel.colBorderSubtle ?? "transparent" : Appearance.colors.colBorderSubtle ?? "transparent")
+            : root.useMaterial
+                ? Appearance.colors.colOutlineVariant
+                : ColorUtils.transparentize(
+                    root.glassActive && root.dark ? root.darkColors.bg0Border : (root.dark ? root.darkColors.bgPanelSeparator : root.lightColors.bgPanelSeparator),
+                    root.backgroundTransparency)
+        property color bg0Opaque: root.useMaterial
+            ? Appearance.m3colors.m3background
+            : (root.dark ? root.darkColors.bg0 : root.lightColors.bg0)
+        property color bg0: root.useMaterial
+            ? Appearance.colors.colLayer0 
+            : ColorUtils.transparentize(bg0Opaque, root.backgroundTransparency)
+        property color bg0Border: root.glassActive && root.useMaterial
+            ? (Appearance.angelEverywhere ? Appearance.angel.colBorderSubtle ?? "transparent" : Appearance.colors.colBorderSubtle ?? "transparent")
+            : root.useMaterial 
+                ? Appearance.colors.colLayer0Border 
+                : ColorUtils.transparentize(root.dark ? root.darkColors.bg0Border : root.lightColors.bg0Border, root.backgroundTransparency)
+        property color bg1Base: root.useMaterial 
+            ? Appearance.colors.colLayer1 
+            : ColorUtils.transparentize(root.dark ? root.darkColors.bg1Base : root.lightColors.bg1Base, root.backgroundTransparency)
+        property color bg1: root.useMaterial 
+            ? Appearance.colors.colLayer1 
+            : ColorUtils.transparentize(
+                root.glassActive && root.dark ? root.darkColors.bg1Base : (root.dark ? root.darkColors.bg1 : root.lightColors.bg1),
+                root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg1Hover: root.useMaterial 
+            ? Appearance.colors.colLayer1Hover 
+            : ColorUtils.transparentize(
+                root.glassActive && root.dark ? Qt.lighter(root.darkColors.bg1Base, 1.3) : (root.dark ? root.darkColors.bg1Hover : root.lightColors.bg1Hover),
+                root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg1Active: root.useMaterial 
+            ? Appearance.colors.colLayer1Active 
+            : ColorUtils.transparentize(
+                root.glassActive && root.dark ? Qt.darker(root.darkColors.bg1Base, 1.15) : (root.dark ? root.darkColors.bg1Active : root.lightColors.bg1Active),
+                root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg1Border: root.glassActive && root.useMaterial
+            ? (Appearance.angelEverywhere ? Appearance.angel.colBorderSubtle ?? "transparent" : Appearance.colors.colBorderSubtle ?? "transparent")
+            : root.useMaterial 
+                ? Appearance.colors.colOutlineVariant 
+                : ColorUtils.transparentize(
+                    root.glassActive && root.dark ? root.darkColors.bg0Border : (root.dark ? root.darkColors.bg1Border : root.lightColors.bg1Border),
+                    root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg2Base: root.useMaterial 
+            ? Appearance.colors.colLayer2 
+            : ColorUtils.transparentize(root.dark ? root.darkColors.bg2Base : root.lightColors.bg2Base, root.backgroundTransparency)
+        property color bg2: root.useMaterial 
+            ? Appearance.colors.colLayer2 
+            : ColorUtils.transparentize(
+                root.glassActive && root.dark ? root.darkColors.bg2Base : (root.dark ? root.darkColors.bg2 : root.lightColors.bg2),
+                root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg2Hover: root.useMaterial 
+            ? Appearance.colors.colLayer2Hover 
+            : ColorUtils.transparentize(
+                root.glassActive && root.dark ? Qt.lighter(root.darkColors.bg2Base, 1.3) : (root.dark ? root.darkColors.bg2Hover : root.lightColors.bg2Hover),
+                root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg2Active: root.useMaterial 
+            ? Appearance.colors.colLayer2Active 
+            : ColorUtils.transparentize(
+                root.glassActive && root.dark ? Qt.darker(root.darkColors.bg2Base, 1.15) : (root.dark ? root.darkColors.bg2Active : root.lightColors.bg2Active),
+                root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color bg2Border: root.glassActive && root.useMaterial
+            ? (Appearance.angelEverywhere ? Appearance.angel.colBorderSubtle ?? "transparent" : Appearance.colors.colBorderSubtle ?? "transparent")
+            : root.useMaterial 
+                ? Appearance.colors.colOutlineVariant 
+                : ColorUtils.transparentize(
+                    root.glassActive && root.dark ? root.darkColors.bg0Border : (root.dark ? root.darkColors.bg2Border : root.lightColors.bg2Border),
+                    root.glassActive ? root.backgroundTransparency : root.contentTransparency)
+        property color interactiveSurface: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassCard : Appearance.aurora.colSubSurface, 0.72)
+            : bg1
+        property color interactiveSurfaceHover: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassCardHover : Appearance.aurora.colSubSurfaceHover, 0.78)
+            : bg2Hover
+        property color interactiveSurfaceActive: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassCardActive : Appearance.aurora.colSubSurfaceActive, 0.84)
+            : bg2Active
+        property color popupSurface: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassPopup : Appearance.aurora.colPopupSurface, 0.85)
+            : bg2
+        property color popupSurfaceHover: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassPopupHover : Appearance.aurora.colPopupSurfaceHover, 0.88)
+            : bg2Hover
+        property color popupSurfaceActive: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassPopupActive : Appearance.aurora.colPopupSurfaceActive, 0.92)
+            : bg2Active
+        property color tooltipSurface: root.glassActive && root.useMaterial
+            ? root.ensureMinOpacity(Appearance.angelEverywhere ? Appearance.angel.colGlassTooltip : Appearance.aurora.colTooltipSurface, 0.90)
+            : bg2
+        property color tooltipBorder: root.glassActive && root.useMaterial
+            ? (Appearance.angelEverywhere ? Appearance.angel.colBorderSubtle : Appearance.aurora.colTooltipBorder)
+            : bg2Border
+        property color subfg: root.useMaterial 
+            ? Appearance.colors.colSubtext 
+            : (root.dark ? root.darkColors.subfg : root.lightColors.subfg)
+        property color fg: root.useMaterial 
+            ? Appearance.colors.colOnLayer0 
+            : (root.dark ? root.darkColors.fg : root.lightColors.fg)
+        property color fg1: root.useMaterial 
+            ? Appearance.colors.colOnLayer1 
+            : (root.dark ? root.darkColors.fg1 : root.lightColors.fg1)
+        property color inactiveIcon: root.useMaterial 
+            ? Appearance.colors.colOnLayer1Inactive 
+            : (root.dark ? root.darkColors.inactiveIcon : root.lightColors.inactiveIcon)
+        property color controlBgInactive: root.useMaterial 
+            ? Appearance.colors.colSecondaryContainer 
+            : (root.dark ? root.darkColors.controlBgInactive : root.lightColors.controlBgInactive)
+        property color controlBg: root.useMaterial 
+            ? Appearance.colors.colSecondary 
+            : (root.dark ? root.darkColors.controlBg : root.lightColors.controlBg)
+        property color controlBgHover: root.useMaterial 
+            ? Appearance.colors.colSecondaryHover 
+            : (root.dark ? root.darkColors.controlBgHover : root.lightColors.controlBgHover)
+        property color controlFg: root.useMaterial 
+            ? Appearance.colors.colOnSecondary 
+            : (root.dark ? root.darkColors.controlFg : root.lightColors.controlFg)
+        property color inputBg: root.useMaterial 
+            ? Appearance.colors.colLayer1 
+            : (root.dark ? root.darkColors.inputBg : root.lightColors.inputBg)
+        property color link: root.useMaterial 
+            ? Appearance.colors.colPrimary 
+            : (root.dark ? root.darkColors.link : root.lightColors.link)
+        property color danger: Appearance.m3colors.m3error ?? "#C42B1C"
+        property color dangerActive: Qt.darker(danger, 1.1)
+        property color warning: Appearance.m3colors.m3tertiary ?? "#FF9900"
         property color accent: Appearance.colors.colPrimary
         property color accentHover: Appearance.colors.colPrimaryHover
         property color accentActive: Appearance.colors.colPrimaryActive
-        property color accentUnfocused: root.dark ? root.darkColors.accentUnfocused : root.lightColors.accentUnfocused
+        property color accentUnfocused: root.useMaterial 
+            ? Appearance.colors.colOutline 
+            : (root.dark ? root.darkColors.accentUnfocused : root.lightColors.accentUnfocused)
         property color accentFg: ColorUtils.isDark(accent) ? "#FFFFFF" : "#000000"
         property color selection: Appearance.colors.colPrimaryContainer
         property color selectionFg: Appearance.colors.colOnPrimaryContainer
@@ -139,18 +318,25 @@ Singleton {
     radius: QtObject {
         id: radius
         property int none: 0
-        property int small: 2
-        property int medium: 4
-        property int large: 8
-        property int xLarge: 12
+        property int small: root.dp(2)
+        property int medium: root.dp(4)
+        property int large: root.dp(8)
+        property int xLarge: root.dp(12)
     }
 
     font: QtObject {
         id: font
         property QtObject family: QtObject {
-            property string ui: "Noto Sans"
+            // Delegates to root.fontFamily for reactive updates
+            readonly property string ui: root.fontFamily
+            readonly property string monospace: "JetBrainsMono Nerd Font"
         }
-        property QtObject weight: QtObject { // Noto is not Segoe, so we might use slightly different weights
+        property QtObject variableAxes: QtObject {
+            property var ui: ({
+                "wdth": 25
+            })
+        }
+        property QtObject weight: QtObject {
             property int thin: Font.Normal
             property int regular: Font.Medium
             property int strong: Font.DemiBold
@@ -158,109 +344,283 @@ Singleton {
             property int strongest: Font.Bold
         }
         property QtObject pixelSize: QtObject {
-            property real normal: 11
-            property real large: 13
-            property real larger: 15
-            property real xlarger: 17
-        }
-        property QtObject variableAxes: QtObject {
-            property var ui: ({
-                "wdth": 25
-            })
+            property real tiny: Math.round(9 * root.fontScale)
+            property real small: Math.round(10 * root.fontScale)
+            property real normal: Math.round(11 * root.fontScale)
+            property real large: Math.round(13 * root.fontScale)
+            property real larger: Math.round(15 * root.fontScale)
+            property real xlarger: Math.round(17 * root.fontScale)
         }
     }
 
     transition: QtObject {
         id: transition
 
+        // Respect GameMode - disable animations when Appearance says so
+        readonly property bool enabled: Appearance.animationsEnabled
+        
         property int velocity: 850
 
+        // Windows 11 / Fluent Design inspired easing curves
         property QtObject easing: QtObject {
             property QtObject bezierCurve: QtObject {
-                readonly property list<real> easeInOut: [0.42,0.00,0.58,1.00,1,1]
-                readonly property list<real> easeIn: [0,1,1,1,1,1]
-                readonly property list<real> easeOut: [1,0,1,1,1,1]
+                // Standard curves
+                readonly property list<real> easeInOut: [0.42, 0.00, 0.58, 1.00, 1, 1]
+                readonly property list<real> easeIn: [0.42, 0.0, 1.0, 1.0, 1, 1]
+                readonly property list<real> easeOut: [0.0, 0.0, 0.58, 1.0, 1, 1]
+                
+                // Fluent Design curves - Windows 11 style
+                readonly property list<real> decelerate: [0.0, 0.0, 0.0, 1.0, 1, 1]      // Fast start, smooth stop (entries)
+                readonly property list<real> accelerate: [0.7, 0.0, 1.0, 0.5, 1, 1]      // Smooth start, fast end (exits)
+                readonly property list<real> standard: [0.4, 0.0, 0.2, 1.0, 1, 1]        // Balanced movement (Win11)
+                readonly property list<real> emphasize: [0.0, 0.0, 0.2, 1.0, 1, 1]       // Dramatic deceleration
+                readonly property list<real> spring: [0.175, 0.885, 0.32, 1.075, 1, 1]   // Subtle overshoot
+                
+                // New Windows 11 specific curves
+                readonly property list<real> popIn: [0.0, 0.0, 0.0, 1.0, 1, 1]           // Pop-in effect for menus/tooltips
+                readonly property list<real> popOut: [0.5, 0.0, 1.0, 0.5, 1, 1]          // Quick pop-out
+                readonly property list<real> bounce: [0.34, 1.56, 0.64, 1.0, 1, 1]       // Playful bounce
+                readonly property list<real> smooth: [0.25, 0.1, 0.25, 1.0, 1, 1]        // Very smooth, natural
             }
         }
+        
+        // Duration presets (in ms) - tuned for Windows 11 feel
+        property QtObject duration: QtObject {
+            readonly property int instant: 0
+            readonly property int ultraFast: 67      // ~4 frames at 60fps
+            readonly property int fast: 100
+            readonly property int normal: 150
+            readonly property int medium: 200
+            readonly property int slow: 300
+            readonly property int panel: 250         // Slightly faster panels
+            readonly property int overlay: 300
+            readonly property int page: 350          // Page transitions
+            readonly property int chromeHover: 90
+            readonly property int chromePress: 120
+            readonly property int chromeRelease: 170
+            readonly property int chromeMove: 170
+            readonly property int chromePanel: 220
+        }
 
+        // === Basic transitions (improved) ===
+        
         property Component color: Component {
             ColorAnimation {
-                duration: 80
+                duration: transition.enabled ? 70 : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeIn
+                easing.bezierCurve: transition.easing.bezierCurve.standard
             }
         }
 
         property Component opacity: Component {
             NumberAnimation {
-                duration: 120
+                duration: transition.enabled ? transition.duration.normal : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeIn
+                easing.bezierCurve: transition.easing.bezierCurve.standard
             }
         }
 
-        property Component resize: Component { // TODO: better curve needed
+        property Component resize: Component {
             NumberAnimation {
-                duration: 200
+                duration: transition.enabled ? transition.duration.medium : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeIn
+                easing.bezierCurve: transition.easing.bezierCurve.standard
             }
         }
 
         property Component enter: Component {
             NumberAnimation {
-                duration: 250
+                duration: transition.enabled ? transition.duration.panel : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeIn
+                easing.bezierCurve: transition.easing.bezierCurve.decelerate
             }
         }
 
         property Component exit: Component {
             NumberAnimation {
-                duration: 250
+                duration: transition.enabled ? transition.duration.medium : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeOut
+                easing.bezierCurve: transition.easing.bezierCurve.accelerate
             }
         }
 
         property Component move: Component {
             NumberAnimation {
-                duration: 170
+                duration: transition.enabled ? transition.duration.medium : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeInOut
+                easing.bezierCurve: transition.easing.bezierCurve.standard
             }
         }
 
         property Component rotate: Component {
             NumberAnimation {
-                duration: 170
+                duration: transition.enabled ? transition.duration.medium : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeInOut
+                easing.bezierCurve: transition.easing.bezierCurve.standard
             }
         }
 
         property Component anchor: Component {
             AnchorAnimation {
-                duration: 160
+                duration: transition.enabled ? transition.duration.medium : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeIn
+                easing.bezierCurve: transition.easing.bezierCurve.standard
             }
         }
 
         property Component longMovement: Component {
             NumberAnimation {
-                duration: 1000
+                duration: transition.enabled ? 800 : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: transition.easing.bezierCurve.easeIn
+                easing.bezierCurve: transition.easing.bezierCurve.emphasize
             }
         }
 
         property Component scroll: Component {
             NumberAnimation {
-                duration: 250
+                duration: transition.enabled ? transition.duration.slow : 0
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: [0.0, 0.0, 0.25, 1.0, 1, 1]
+                easing.bezierCurve: transition.easing.bezierCurve.decelerate
             }
+        }
+        
+        // === Panel/Overlay transitions (new) ===
+        
+        // For panels sliding in from edges
+        property Component panelSlide: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.panel : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: transition.easing.bezierCurve.decelerate
+            }
+        }
+        
+        // For panel scale animations
+        property Component panelScale: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.panel : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: transition.easing.bezierCurve.spring
+            }
+        }
+        
+        // For panel opacity
+        property Component panelFade: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.medium : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: transition.easing.bezierCurve.standard
+            }
+        }
+        
+        // For overlay backgrounds
+        property Component overlayFade: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.overlay : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: transition.easing.bezierCurve.decelerate
+            }
+        }
+        
+        // === Item/List transitions (new) ===
+        
+        // For list items appearing
+        property Component itemEnter: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.medium : 0
+                easing.type: Easing.OutBack
+                easing.overshoot: 0.3
+            }
+        }
+        
+        // For hover state changes
+        property Component hover: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.normal : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: transition.easing.bezierCurve.standard
+            }
+        }
+        
+        // For press/active state changes
+        property Component press: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.fast : 0
+                easing.type: Easing.OutQuad
+            }
+        }
+        
+        // === Windows 11 specific transitions ===
+        
+        // For menu/popup reveal (scale + fade)
+        property Component menuReveal: Component {
+            ParallelAnimation {
+                NumberAnimation {
+                    property: "opacity"
+                    duration: transition.enabled ? transition.duration.normal : 0
+                    easing.type: Easing.OutQuad
+                }
+                NumberAnimation {
+                    property: "scale"
+                    duration: transition.enabled ? transition.duration.medium : 0
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: transition.easing.bezierCurve.popIn
+                }
+            }
+        }
+        
+        // For button press feedback
+        property Component buttonPress: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.ultraFast : 0
+                easing.type: Easing.OutQuad
+            }
+        }
+        
+        // For smooth value changes (sliders, progress)
+        property Component smoothValue: Component {
+            NumberAnimation {
+                duration: transition.enabled ? transition.duration.medium : 0
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: transition.easing.bezierCurve.smooth
+            }
+        }
+        
+        // For list item stagger animations
+        property Component listItem: Component {
+            SequentialAnimation {
+                PauseAnimation { duration: 0 }  // Will be set by staggerDelay
+                ParallelAnimation {
+                    NumberAnimation {
+                        property: "opacity"
+                        from: 0; to: 1
+                        duration: transition.enabled ? transition.duration.normal : 0
+                        easing.type: Easing.OutQuad
+                    }
+                    NumberAnimation {
+                        property: "y"
+                        from: 8
+                        duration: transition.enabled ? transition.duration.medium : 0
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: transition.easing.bezierCurve.decelerate
+                    }
+                }
+            }
+        }
+        
+        // === Helper functions ===
+        
+        // Calculate stagger delay for list items
+        function staggerDelay(index: int, baseDelay: int): int {
+            if (!enabled) return 0
+            return Math.min(index * baseDelay, 400)  // Cap at 400ms
+        }
+        
+        // Get duration based on distance (for natural feel)
+        function durationForDistance(distance: real, minDuration: int, maxDuration: int): int {
+            if (!enabled) return 0
+            const normalized = Math.min(Math.abs(distance) / 200, 1)
+            return minDuration + (maxDuration - minDuration) * normalized
         }
     }
 }

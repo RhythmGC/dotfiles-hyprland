@@ -68,7 +68,7 @@ ApiStrategy {
             }
 
             let newContent = "";
-
+            
             const responseContent = dataJson.choices[0]?.delta?.content || dataJson.message?.content;
             const responseReasoning = dataJson.choices[0]?.delta?.reasoning || dataJson.choices[0]?.delta?.reasoning_content;
 

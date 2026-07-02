@@ -15,5 +15,4 @@ TextInput {
     }
 
     selectionColor: Looks.colors.selection
-    selectedTextColor: Looks.colors.selectionFg
 }

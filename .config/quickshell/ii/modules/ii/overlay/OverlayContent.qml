@@ -25,7 +25,11 @@ Item {
         scale = 1
     }
     Behavior on scale {
-        animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
+        NumberAnimation {
+            duration: Config.options?.overlay?.animationDurationMs ?? Appearance.animation.elementMoveEnter.duration
+            easing.type: Appearance.animation.elementMoveEnter.type
+            easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve
+        }
     }
 
     Rectangle {
@@ -33,9 +37,15 @@ Item {
         anchors.fill: parent
         color: Appearance.colors.colScrim
         visible: Config.options.overlay.darkenScreen && opacity > 0
-        opacity: (GlobalStates.overlayOpen && root.scale !== initScale) ? 1 : 0
+        opacity: (GlobalStates.overlayOpen && root.scale !== initScale)
+                 ? (Config.options.overlay.scrimDim / 100)
+                 : 0
         Behavior on opacity {
-            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+            animation: NumberAnimation {
+                duration: Config.options.overlay.scrimAnimationDurationMs ?? Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
     }
 

@@ -1,77 +1,58 @@
 pragma ComponentBehavior: Bound
-import Qt.labs.synchronizer
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import qs
 import qs.services
+import qs.services.deferred
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.waffle.looks
-import qs.modules.waffle.startMenu.startPage
-import qs.modules.waffle.startMenu.searchPage
 
 WBarAttachedPanelContent {
     id: root
 
     property bool searching: false
     property string searchText: LauncherSearch.query
+    property bool showAllApps: false
 
-    StartMenuContext {
-        id: context
-    }
+    StartMenuContext { id: context }
 
     Keys.onPressed: event => {
-        // Prevent Esc and Backspace from registering
-        if (event.key === Qt.Key_Escape)
-            return;
+        if (event.key === Qt.Key_Escape) return;
 
-        // Handle Backspace: focus and delete character if not focused
         if (event.key === Qt.Key_Backspace) {
             searchBar.forceFocus();
-            if (event.modifiers & Qt.ControlModifier) {
-                // Delete word before cursor
-                let text = searchBar.text;
-                let pos = searchBar.searchInput.cursorPosition;
-                if (pos > 0) {
-                    // Find the start of the previous word
-                    let left = text.slice(0, pos);
-                    let match = left.match(/(\s*\S+)\s*$/);
-                    let deleteLen = match ? match[0].length : 1;
+            const text = searchBar.text;
+            const pos = searchBar.searchInput?.cursorPosition ?? text.length;
+            if (pos > 0) {
+                if (event.modifiers & Qt.ControlModifier) {
+                    const left = text.slice(0, pos);
+                    const match = left.match(/(\s*\S+)\s*$/);
+                    const deleteLen = match ? match[0].length : 1;
                     searchBar.text = text.slice(0, pos - deleteLen) + text.slice(pos);
-                    searchBar.searchInput.cursorPosition = pos - deleteLen;
-                }
-            } else {
-                // Delete character before cursor if any
-                if (searchBar.searchInput.cursorPosition > 0) {
-                    searchBar.text = searchBar.text.slice(0, searchBar.searchInput.cursorPosition - 1) + searchBar.text.slice(searchBar.searchInput.cursorPosition);
-                    searchBar.searchInput.cursorPosition -= 1;
+                } else {
+                    searchBar.text = text.slice(0, pos - 1) + text.slice(pos);
                 }
             }
-            // Always move cursor to end after programmatic edit
-            searchBar.searchInput.cursorPosition = searchBar.text.length;
             event.accepted = true;
-            // If already focused, let TextField handle it
             return;
         }
 
-        // Only handle visible printable characters (ignore control chars, arrows, etc.)
-        if (event.text && event.text.length === 1 && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) // ignore control chars like Backspace, Tab, etc.
-        {
-            if (!searchBar.searchInput.activeFocus) {
+        if (event.text && event.text.length === 1 && 
+            event.key !== Qt.Key_Enter && event.key !== Qt.Key_Return && 
+            event.key !== Qt.Key_Delete && event.text.charCodeAt(0) >= 0x20) {
+            if (!searchBar.searchInput?.activeFocus) {
                 searchBar.forceFocus();
-                // Insert the character at the cursor position
-                searchBar.text = searchBar.text.slice(0, searchBar.searchInput.cursorPosition) + event.text + searchBar.text.slice(searchBar.searchInput.cursorPosition);
-                searchBar.searchInput.cursorPosition += 1;
+                searchBar.text += event.text;
                 event.accepted = true;
                 context.setCurrentIndex(0);
             }
         }
 
-        // Arrow keys for item navigation
         if (event.key === Qt.Key_Down) {
-            let maxIndex = Math.max(0, LauncherSearch.results.length - 1);
+            const maxIndex = Math.max(0, LauncherSearch.results.length - 1);
             context.setCurrentIndex(Math.min(context.currentIndex + 1, maxIndex));
             event.accepted = true;
         } else if (event.key === Qt.Key_Up) {
@@ -81,46 +62,55 @@ WBarAttachedPanelContent {
     }
 
     contentItem: WPane {
+        screenX: root.panelScreenX + root.visualMargin
+        screenY: root.panelScreenY + root.visualMargin
+        screenWidth: root._screenW
+        screenHeight: root._screenH
         contentItem: WPanelPageColumn {
             SearchBar {
                 id: searchBar
                 Layout.fillWidth: true
-                implicitWidth: 832 // TODO: Make sizes naturally inferred
-                horizontalPadding: 32
-                // verticalPadding: root.searching ? 32 : 16 // TODO: make this not nuke the panel
-                Synchronizer on searching {
-                    property alias target: root.searching
-                }
+                implicitWidth: Looks.dp(600)
+                horizontalPadding: root.searching ? Looks.dp(16) : Looks.dp(24)
+                // searching is read-only in SearchBar (bound to text length), so we only listen to changes
+                onSearchingChanged: if (searching !== root.searching) root.searching = searching
                 focus: true
                 text: root.searchText
-                onTextChanged: {
-                    LauncherSearch.query = text;
-                }
-                onAccepted: {
-                    context.accepted();
-                }
+                onTextChanged: LauncherSearch.query = text
+                onAccepted: context.accepted()
             }
+            
             Item {
-                implicitHeight: root.searching ? 800 : 800 // TODO: Make sizes naturally inferred
+                implicitHeight: Looks.dp(520)
+                implicitWidth: Looks.dp(600)
                 Layout.fillWidth: true
-                Loader {
-                    id: pageContentLoader
+                clip: true
+
+                WPageLoader {
+                    id: startPageLoader
                     anchors.fill: parent
-                    sourceComponent: root.searching ? searchPageComp : startPageComp
+                    shown: !root.searching && !root.showAllApps
+                    sourceComponent: StartPageContent {
+                        onAllAppsClicked: root.showAllApps = true
+                    }
+                }
+
+                WPageLoader {
+                    id: searchPageLoader
+                    anchors.fill: parent
+                    shown: root.searching
+                    sourceComponent: SearchPageContent { context: context }
+                }
+
+                WPageLoader {
+                    id: allAppsLoader
+                    anchors.fill: parent
+                    shown: root.showAllApps
+                    sourceComponent: AllAppsContent { onBack: root.showAllApps = false }
                 }
             }
         }
     }
 
-    Component {
-        id: searchPageComp
-        SearchPageContent {
-            context: context
-        }
-    }
-
-    Component {
-        id: startPageComp
-        StartPageContent {}
-    }
+    Keys.onEscapePressed: root.close()
 }

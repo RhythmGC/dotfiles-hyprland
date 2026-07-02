@@ -4,7 +4,7 @@ import qs.modules.waffle.looks
 
 OSDValue {
     id: root
-    iconName: WIcons.volumeIcon
+    iconName: WIcons.volumeIcon ?? "speaker"
     value: Audio.sink?.audio.volume ?? 0
 
     Connections {

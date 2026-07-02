@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.waffle.looks
@@ -10,8 +11,8 @@ Button {
     id: root
 
     property color colBackground: ColorUtils.transparentize(Looks.colors.bg1)
-    property color colBackgroundHover: Looks.colors.bg2Hover
-    property color colBackgroundActive: Looks.colors.bg2Active
+    property color colBackgroundHover: Looks.colors.interactiveSurfaceHover
+    property color colBackgroundActive: Looks.colors.interactiveSurfaceActive
     property color colBackgroundToggled: Looks.colors.accent
     property color colBackgroundToggledHover: Looks.colors.accentHover
     property color colBackgroundToggledActive: Looks.colors.accentActive
@@ -39,10 +40,9 @@ Button {
         }
     }
     property color fgColor: {
-        if (!root.enabled) return root.colForegroundDisabled
         if (root.checked) return root.colForegroundToggled
         if (root.enabled) return root.colForeground
-        return root.colForeground
+        return root.colForegroundDisabled
     }
     property alias horizontalAlignment: buttonText.horizontalAlignment
     font {
@@ -54,7 +54,7 @@ Button {
     // Hover stuff
     signal hoverTimedOut
     property bool shouldShowTooltip: false
-    ToolTip.delay: 400
+    ToolTip.delay: 200
     property Timer hoverTimer: Timer {
         id: hoverTimer
         running: root.hovered
@@ -100,8 +100,27 @@ Button {
         id: backgroundRect
         radius: Looks.radius.medium
         color: root.color
+        border.width: Looks.glassActive && (root.hovered || root.checked || root.down) ? 1 : 0
+        border.color: Looks.colors.tooltipBorder
+        
+        // Windows 11 style press feedback - subtle but noticeable
+        scale: root.down ? 0.96 : 1.0
+        opacity: root.down ? 0.9 : 1.0
+        
         Behavior on color {
-            animation: Looks.transition.color.createObject(this)
+            animation: ColorAnimation { duration: Looks.transition.enabled ? 70 : 0; easing.type: Easing.BezierSpline; easing.bezierCurve: Looks.transition.easing.bezierCurve.standard }
+        }
+        Behavior on scale {
+            NumberAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.ultraFast : 0
+                easing.type: Easing.OutQuad
+            }
+        }
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Looks.transition.enabled ? Looks.transition.duration.ultraFast : 0
+                easing.type: Easing.OutQuad
+            }
         }
     }
 

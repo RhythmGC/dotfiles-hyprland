@@ -37,7 +37,7 @@ Rectangle {
     rotation: pullRotation + continuousRotation + leapRotation
 
     RotationAnimation on continuousRotation {
-        running: root.loading
+        running: root.loading && Appearance.animationsEnabled
         duration: 12000
         easing.type: Easing.Linear
         loops: Animation.Infinite
@@ -84,6 +84,6 @@ Rectangle {
         }
         color: Appearance.colors.colOnPrimaryContainer
 
-        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+        animation: NumberAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
     }
 }

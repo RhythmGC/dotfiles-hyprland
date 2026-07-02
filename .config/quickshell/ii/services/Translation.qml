@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 pragma Singleton
 
 import QtQuick
@@ -23,7 +24,7 @@ Singleton {
     property string generatedTranslationsDir: Directories.shellConfig + "/translations"
 
     property string languageCode: {
-        var configLang = Config?.options.language.ui ?? "auto";
+        var configLang = Config.options?.language?.ui ?? "auto";
 
         if (configLang !== "auto")
             return configLang;
@@ -55,6 +56,14 @@ Singleton {
         generatedTranslationFileView.reread();
     }
 
+    onAvailableLanguagesChanged: {
+        translationFileView.reread();
+    }
+
+    onAvailableGeneratedLanguagesChanged: {
+        generatedTranslationFileView.reread();
+    }
+
     TranslationReader {
         id: translationFileView
         translationsDir: root.translationsDir
@@ -69,6 +78,7 @@ Singleton {
         id: generatedTranslationFileView
         translationsDir: root.generatedTranslationsDir
         languageCode: root.languageCode
+        isGenerated: true
         onContentLoaded: (data) => {
             root.generatedTranslations = data;
             root.isLoading = false;
@@ -96,14 +106,16 @@ Singleton {
         required property string translationsDir
         signal languagesScanned(var languages)
 
-        command: ["find", translationScanner.translationsDir, "-name", "*.json", "-exec", "basename", "{}", ".json", ";"]
-        running: true
+        command: ["/usr/bin/find", translationScanner.translationsDir, "-name", "*.json", "-exec", "/usr/bin/basename", "{}", ".json", ";"]
+        running: false
 
         stdout: StdioCollector {
             id: languagesCollector
             onStreamFinished: {
-                const output = languagesCollector.text;
-                const files = output.trim().split('\n').map(f => f.trim());
+                const output = languagesCollector.text ?? "";
+                const files = output.trim().length > 0
+                    ? output.trim().split('\n').map(f => f.trim()).filter(f => f.length > 0)
+                    : [];
                 translationScanner.languagesScanned(files);
             }
         }
@@ -115,13 +127,40 @@ Singleton {
         }
     }
 
+    Timer {
+        id: scanDefer
+        interval: 600
+        repeat: false
+        onTriggered: {
+            scanLanguagesProcess.running = true
+            scanGeneratedLanguagesProcess.running = true
+        }
+    }
+
+    Connections {
+        target: Config
+        function onReadyChanged() {
+            if (Config.ready) {
+                scanDefer.start()
+            }
+        }
+    }
+
     component TranslationReader: FileView {
         id: translationReader
         required property string translationsDir
         property string languageCode: root.languageCode
+        property bool isGenerated: false
         signal contentLoaded(var data)
+        printErrors: false
 
         function reread() { // Proper reload in case the file was incorrect before
+            const langs = translationReader.isGenerated ? root.availableGeneratedLanguages : root.availableLanguages;
+            if (!(langs ?? []).includes(translationReader.languageCode)) {
+                translationReader.path = "";
+                translationReader.contentLoaded({});
+                return;
+            }
             translationReader.path = "";
             translationReader.path = `${translationReader.translationsDir}/${translationReader.languageCode}.json`;
             translationReader.reload();

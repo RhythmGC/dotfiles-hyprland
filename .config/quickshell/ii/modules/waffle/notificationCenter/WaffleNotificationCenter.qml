@@ -2,84 +2,90 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
-import qs
 import qs.services
+import qs
 import qs.modules.common
 import qs.modules.common.widgets
 
 Scope {
     id: root
 
+    readonly property bool allowMultiplePanels: Config.options?.waffles?.behavior?.allowMultiplePanels ?? false
+
+    Component.onCompleted: Notifications.ensureInitialized()
+
     Connections {
         target: GlobalStates
+        function onWaffleNotificationCenterOpenChanged() {
+            if (GlobalStates.waffleNotificationCenterOpen) {
+                if (!root.allowMultiplePanels) {
+                    GlobalStates.searchOpen = false
+                    GlobalStates.waffleActionCenterOpen = false
+                }
+                panelLoader.active = true
+            }
+        }
+    }
 
-        function onSidebarRightOpenChanged() {
-            if (GlobalStates.sidebarRightOpen) panelLoader.active = true;
+    // Click-outside-to-close overlay
+    LazyLoader {
+        active: GlobalStates.waffleNotificationCenterOpen
+        component: PanelWindow {
+            anchors { top: true; bottom: true; left: true; right: true }
+            WlrLayershell.namespace: "quickshell:wNotificationCenterBg"
+            WlrLayershell.layer: WlrLayer.Top
+            color: "transparent"
+            MouseArea {
+                anchors.fill: parent
+                onClicked: GlobalStates.waffleNotificationCenterOpen = false
+            }
         }
     }
 
     Loader {
         id: panelLoader
-        active: GlobalStates.sidebarRightOpen
+        active: GlobalStates.waffleNotificationCenterOpen
         sourceComponent: PanelWindow {
             id: panelWindow
             exclusiveZone: 0
             WlrLayershell.namespace: "quickshell:wNotificationCenter"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
             color: "transparent"
 
             anchors {
-                bottom: true
-                top: true
+                bottom: Config.options?.waffles?.bar?.bottom ?? false
+                top: !(Config.options?.waffles?.bar?.bottom ?? false)
                 right: true
             }
 
             implicitWidth: content.implicitWidth
             implicitHeight: content.implicitHeight
 
-            HyprlandFocusGrab {
-                id: focusGrab
-                active: true
-                windows: [panelWindow]
-                onCleared: content.close();
-            }
-
             Connections {
                 target: GlobalStates
-                function onSidebarRightOpenChanged() {
-                    if (!GlobalStates.sidebarRightOpen) content.close();
+                function onWaffleNotificationCenterOpenChanged() {
+                    if (!GlobalStates.waffleNotificationCenterOpen) content.close()
                 }
             }
 
             NotificationCenterContent {
                 id: content
                 anchors.fill: parent
-
                 onClosed: {
-                    GlobalStates.sidebarRightOpen = false;
-                    panelLoader.active = false;
+                    GlobalStates.waffleNotificationCenterOpen = false
+                    panelLoader.active = false
                 }
             }
         }
     }
 
     function toggleOpen() {
-        GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
+        GlobalStates.waffleNotificationCenterOpen = !GlobalStates.waffleNotificationCenterOpen
     }
 
     IpcHandler {
-        target: "sidebarRight"
-
-        function toggle() {
-            root.toggleOpen();
-        }
-    }
-
-    GlobalShortcut {
-        name: "sidebarRightToggle"
-        description: "Toggles notification center on press"
-
-        onPressed: root.toggleOpen();
+        target: "wnotificationCenter"
+        function toggle(): void { root.toggleOpen() }
     }
 }

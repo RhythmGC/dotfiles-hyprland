@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.services
 import qs.modules.common
 import qs.modules.common.functions
@@ -13,4 +14,7 @@ QuickToggleModel {
     toggled: Network.wifiStatus !== "disabled"
     mainAction: () => Network.toggleWifi()
     hasMenu: true
+    altAction: () => {
+        AppLauncher.launchNetworkSettings(Network.ethernet)
+    }
 }

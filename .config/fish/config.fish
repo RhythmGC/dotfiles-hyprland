@@ -91,6 +91,14 @@ if status is-login
     set -Ux XMODIFIERS @im=fcitx
     set -Ux SDL_IM_MODULE fcitx
     set -Ux GLFW_IM_MODULE ibus
+
+    # NVIDIA Wayland & Aquamarine workarounds
+    set -Ux AQ_MGPU_NO_EXPLICIT 1
+    set -Ux AQ_NO_MODIFIERS 1
+    set -Ux GBM_BACKEND nvidia-drm
+    set -Ux __GLX_VENDOR_LIBRARY_NAME nvidia
+    set -Ux LIBVA_DRIVER_NAME nvidia
+    set -Ux WLR_NO_HARDWARE_CURSORS 1
 end
 
 # opencode
@@ -105,3 +113,7 @@ fish_add_path "/home/rhythmgc/.local/bin"
 
 # Pi
 fish_add_path "/home/rhythmgc/.local/share/fnm/node-versions/v24.16.0/installation/bin"
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/rhythmgc/.local/bin" $PATH

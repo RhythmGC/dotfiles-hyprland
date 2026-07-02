@@ -1,95 +1,84 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-QUICKSHELL_CONFIG_NAME="ii"
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
-CONFIG_DIR="$XDG_CONFIG_HOME/quickshell/$QUICKSHELL_CONFIG_NAME"
-CACHE_DIR="$XDG_CACHE_HOME/quickshell"
-STATE_DIR="$XDG_STATE_HOME/quickshell"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/module-runtime.sh"
 
-term_alpha=100 #Set this to < 100 make all your terminals transparent
-# sleep 0 # idk i wanted some delay or colors dont get applied properly
-if [ ! -d "$STATE_DIR"/user/generated ]; then
-  mkdir -p "$STATE_DIR"/user/generated
-fi
-cd "$CONFIG_DIR" || exit
+main() {
+  ensure_generated_dirs
 
-colornames=''
-colorstrings=''
-colorlist=()
-colorvalues=()
+  local manifests=()
+  while IFS= read -r manifest_path; do
+    [[ -n "$manifest_path" ]] || continue
+    manifests+=("$manifest_path")
+  done < <(list_theming_target_manifests)
 
-colornames=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f1)
-colorstrings=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f2 | cut -d ' ' -f2 | cut -d ";" -f1)
-IFS=$'\n'
-colorlist=($colornames)     # Array of color names
-colorvalues=($colorstrings) # Array of color values
-
-apply_kitty() {  
-  # Check if terminal escape sequence template exists
-  if [ ! -f "$SCRIPT_DIR/terminal/kitty-theme.conf" ]; then
-    echo "Template file not found for Kitty theme. Skipping that."
-    return
-  fi
-  # Copy template
-  mkdir -p "$STATE_DIR"/user/generated/terminal
-  cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
-  # Apply colors
-  for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
+  local modules=()
+  local enabled_targets=0
+  local manifest_path target_id module_path
+  for manifest_path in "${manifests[@]}"; do
+    target_manifest_enabled "$manifest_path" || continue
+    enabled_targets=$((enabled_targets + 1))
+    target_id="$(basename "$manifest_path" .json)"
+    module_path="$(resolve_target_module_path "$target_id" || true)"
+    [[ -n "$module_path" ]] || continue
+    modules+=("$module_path")
   done
 
-  # Reload
-  kill -SIGUSR1 $(pidof kitty)
-}
-
-apply_anyterm() {
-  # Check if terminal escape sequence template exists
-  if [ ! -f "$SCRIPT_DIR/terminal/sequences.txt" ]; then
-    echo "Template file not found for Terminal. Skipping that."
-    return
+  if [[ ${#modules[@]} -eq 0 && ${#manifests[@]} -eq 0 ]]; then
+    while IFS= read -r module_path; do
+      [[ -n "$module_path" ]] || continue
+      modules+=("$module_path")
+    done < <(list_theming_modules)
   fi
-  # Copy template
-  mkdir -p "$STATE_DIR"/user/generated/terminal
-  cp "$SCRIPT_DIR/terminal/sequences.txt" "$STATE_DIR"/user/generated/terminal/sequences.txt
-  # Apply colors
-  for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/sequences.txt
-  done
 
-  sed -i "s/\$alpha/$term_alpha/g" "$STATE_DIR/user/generated/terminal/sequences.txt"
+  if [[ ${#modules[@]} -eq 0 && ${#manifests[@]} -gt 0 && "$enabled_targets" -eq 0 ]]; then
+    printf 'No enabled theming targets found in %s\n' "$SCRIPT_DIR/targets" >&2
+    exit 0
+  fi
 
-  for file in /dev/pts/*; do
-    if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
-      {
-      cat "$STATE_DIR"/user/generated/terminal/sequences.txt >"$file"
-      } & disown || true
+  if [[ ${#modules[@]} -eq 0 ]]; then
+    printf 'No theming modules found for enabled targets in %s\n' "$SCRIPT_DIR/modules" >&2
+    exit 1
+  fi
+
+  local cpu_count max_jobs running failed
+  cpu_count="$(nproc 2>/dev/null || printf '4')"
+  max_jobs="${INIR_THEME_MAX_JOBS:-$((cpu_count / 2))}"
+  [[ "$max_jobs" =~ ^[0-9]+$ ]] || max_jobs=2
+  (( max_jobs < 2 )) && max_jobs=2
+  (( max_jobs > 4 )) && max_jobs=4
+
+  run_one_module() {
+    local module_path="$1"
+    if command -v ionice >/dev/null 2>&1; then
+      ionice -c 3 nice -n 10 bash "$module_path"
+    else
+      nice -n 10 bash "$module_path"
+    fi
+  }
+
+  running=0
+  failed=0
+  for module_path in "${modules[@]}"; do
+    run_one_module "$module_path" &
+    running=$((running + 1))
+    if (( running >= max_jobs )); then
+      if ! wait -n; then
+        failed=1
+      fi
+      running=$((running - 1))
     fi
   done
+
+  while (( running > 0 )); do
+    if ! wait -n; then
+      failed=1
+    fi
+    running=$((running - 1))
+  done
+
+  exit "$failed"
 }
 
-apply_term() {
-  apply_kitty
-  apply_anyterm
-}
-
-apply_qt() {
-  sh "$CONFIG_DIR/scripts/kvantum/materialQT.sh"          # generate kvantum theme
-  python "$CONFIG_DIR/scripts/kvantum/changeAdwColors.py" # apply config colors
-}
-
-# Check if terminal theming is enabled in config
-CONFIG_FILE="$XDG_CONFIG_HOME/illogical-impulse/config.json"
-if [ -f "$CONFIG_FILE" ]; then
-  enable_terminal=$(jq -r '.appearance.wallpaperTheming.enableTerminal' "$CONFIG_FILE")
-  if [ "$enable_terminal" = "true" ]; then
-    apply_term &
-  fi
-else
-  echo "Config file not found at $CONFIG_FILE. Applying terminal theming by default."
-  apply_term &
-fi
-
-# apply_qt & # Qt theming is already handled by kde-material-colors
+main "$@"

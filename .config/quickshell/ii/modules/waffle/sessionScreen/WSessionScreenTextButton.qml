@@ -16,20 +16,19 @@ WTextButton {
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            keyboardDown = true;
-            event.accepted = true;
+            keyboardDown = true
+            event.accepted = true
         }
     }
     Keys.onReleased: event => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            keyboardDown = false;
-            root.clicked();
-            event.accepted = true;
+            keyboardDown = false
+            root.clicked()
+            event.accepted = true
         }
     }
 
     contentItem: Item {
-        id: contentItem
         implicitWidth: buttonText.implicitWidth
 
         WText {
@@ -50,6 +49,6 @@ WTextButton {
         }
         color: "transparent"
         border.width: 2
-        border.color: "#ffffff"
+        border.color: "white"  // forced-dark context (scrimmed wallpaper)
     }
 }

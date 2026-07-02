@@ -5,8 +5,9 @@ QtObject {
     enum IconType { Material, Text, System, None }
     enum FontType { Normal, Monospace }
 
-    // General stuff
     property string type: ""
+    property string category: "" // For section grouping in results
+    property string id: "" // App ID for pinning
     property var fontType: LauncherSearchResult.FontType.Normal
     property string name: ""
     property string rawValue: ""
@@ -14,19 +15,13 @@ QtObject {
     property var iconType: LauncherSearchResult.IconType.None
     property string verb: ""
     property bool blurImage: false
-    property var execute: () => {
-        print("Not implemented");
-    }
+    property var execute: () => { console.log("LauncherSearchResult: execute not implemented") }
     property var actions: []
     
-    // Stuff needed for DesktopEntry 
-    property string id: ""
+    // DesktopEntry compatibility
     property bool shown: true
     property string comment: ""
     property bool runInTerminal: false
     property string genericName: ""
     property list<string> keywords: []
-
-    // Extra stuff to allow for more flexibility
-    property string category: type
 }

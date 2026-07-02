@@ -13,7 +13,7 @@ Item {
     id: root
 
     Component.onCompleted: {
-        lockButton.forceActiveFocus();
+        lockButton.forceActiveFocus()
     }
 
     ColumnLayout {
@@ -25,8 +25,8 @@ Item {
             focus: true
             text: Translation.tr("Lock")
             onClicked: {
-                GlobalStates.sessionOpen = false;
-                Session.lock();
+                GlobalStates.sessionOpen = false
+                Session.lock()
             }
             KeyNavigation.up: powerButton
             KeyNavigation.down: signOutButton
@@ -36,22 +36,10 @@ Item {
             focus: true
             text: Translation.tr("Sign out")
             onClicked: {
-                GlobalStates.sessionOpen = false;
-                Session.logout();
+                GlobalStates.sessionOpen = false
+                Session.logout()
             }
             KeyNavigation.up: lockButton
-            KeyNavigation.down: changePasswordButton
-        }
-
-        WSessionScreenTextButton {
-            id: changePasswordButton
-            focus: true
-            text: Translation.tr("Change password")
-            onClicked: {
-                GlobalStates.sessionOpen = false;
-                Session.changePassword();
-            }
-            KeyNavigation.up: signOutButton
             KeyNavigation.down: taskManagerButton
         }
 
@@ -60,8 +48,8 @@ Item {
             focus: true
             text: Translation.tr("Task Manager")
             onClicked: {
-                GlobalStates.sessionOpen = false;
-                Session.launchTaskManager();
+                GlobalStates.sessionOpen = false
+                Session.launchTaskManager()
             }
             KeyNavigation.up: signOutButton
             KeyNavigation.down: cancelButton
@@ -105,15 +93,15 @@ Item {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                keyboardDown = true;
-                event.accepted = true;
+                keyboardDown = true
+                event.accepted = true
             }
         }
         Keys.onReleased: event => {
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                keyboardDown = false;
-                root.clicked();
-                event.accepted = true;
+                keyboardDown = false
+                root.clicked()
+                event.accepted = true
             }
         }
 
@@ -133,7 +121,7 @@ Item {
             radius: cancelButton.background.radius + 4
             color: "transparent"
             border.width: 2
-            border.color: "#ffffff"
+            border.color: "white"  // forced-dark context (scrimmed wallpaper)
         }
     }
 }

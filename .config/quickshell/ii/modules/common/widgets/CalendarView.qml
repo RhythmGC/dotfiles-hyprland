@@ -9,7 +9,6 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
-import qs.modules.waffle.looks
 
 Item {
     id: root
@@ -43,8 +42,7 @@ Item {
     property bool scrolling: false
 
     Behavior on weekDiff {
-        id: weekScrollBehavior
-        animation: Looks.transition.scroll.createObject(this)
+        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
     }
     Timer {
         id: scrollAnimationCheckTimer
@@ -79,7 +77,8 @@ Item {
         // The last day of 3rd week shown is considered the focused month
         const addedTime = (root.paddingWeeks + root.focusedWeekIndex) * root.millisPerWeek
         const dateInTargetWeek = new Date(root.dateInFirstWeek.getTime() + addedTime);
-        return DateUtils.getIthDayDateOfSameWeek(dateInTargetWeek, root.focusDayOfWeekIndex - root.locale.firstDayOfWeek, root.locale.firstdayOfWeek); // 4 = Thursday
+        const fdow = root.locale?.firstDayOfWeek ?? 0;
+        return DateUtils.getIthDayDateOfSameWeek(dateInTargetWeek, root.focusDayOfWeekIndex - fdow, fdow);
     }
     property int focusedMonth: focusedDate.getMonth() + 1 // 0-indexed -> 1-indexed
 
@@ -87,8 +86,7 @@ Item {
     property real verticalPadding: 0
     property real buttonSize: 40
     property real buttonSpacing: 2
-    property real buttonVerticalSpacing: buttonSpacing
-    implicitHeight: (6 * buttonSize) + (5 * buttonVerticalSpacing) + (2 * verticalPadding)
+    implicitHeight: (6 * buttonSize) + (5 * buttonSpacing) + (2 * verticalPadding)
     implicitWidth: weeksColumn.implicitWidth
     clip: true
     
@@ -99,13 +97,13 @@ Item {
             right: parent.right
         }
         y: {
-            const spacePerExtraRow = root.buttonSize + root.buttonVerticalSpacing;
+            const spacePerExtraRow = root.buttonSize + root.buttonSpacing;
             const origin = -(spacePerExtraRow * root.paddingWeeks);
             const diff = root.weekDiff * spacePerExtraRow;
             return origin + (-diff % spacePerExtraRow) + root.verticalPadding;
         }
 
-        spacing: root.buttonVerticalSpacing
+        spacing: root.buttonSpacing
         
         Repeater {
             model: root.totalWeeks

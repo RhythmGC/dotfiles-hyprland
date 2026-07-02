@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Bluetooth
 import qs.services
 import qs.modules.common
@@ -12,7 +13,7 @@ QuickToggleModel {
         (BluetoothStatus.firstActiveDevice?.name ?? Translation.tr("Bluetooth"))
         + (BluetoothStatus.activeDeviceCount > 1 ? ` +${BluetoothStatus.activeDeviceCount - 1}` : "")
     )
-    icon: BluetoothStatus.connected ? "bluetooth_connected" : BluetoothStatus.enabled ? "bluetooth" : "bluetooth_disabled"
+    icon: BluetoothStatus.activeIcon
 
     available: BluetoothStatus.available
     toggled: BluetoothStatus.enabled
@@ -20,4 +21,7 @@ QuickToggleModel {
         Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter?.enabled
     }
     hasMenu: true
+    altAction: () => {
+        AppLauncher.launch("bluetooth")
+    }
 }

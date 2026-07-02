@@ -10,6 +10,7 @@ import qs.modules.common.models.quickToggles
 import qs.modules.common.widgets
 import qs.modules.waffle.looks
 import qs.modules.waffle.actionCenter.bluetooth
+import qs.modules.waffle.actionCenter.hotspot
 import qs.modules.waffle.actionCenter.nightLight
 import qs.modules.waffle.actionCenter.volumeControl
 import qs.modules.waffle.actionCenter.wifi
@@ -30,11 +31,21 @@ DelegateChooser {
         }
     }
     DelegateChoice {
+        roleValue: "audio"
+        ActionCenterToggleButton {
+            toggleModel: AudioToggle {}
+            icon: WIcons.volumeIcon ?? "speaker"
+            menu: Component {
+                VolumeControl {}
+            }
+        }
+    }
+    DelegateChoice {
         roleValue: "bluetooth"
         ActionCenterToggleButton {
             toggleModel: BluetoothToggle {}
             name: toggleModel.statusText
-            icon: WIcons.bluetoothIcon
+            icon: WIcons.bluetoothIcon ?? "bluetooth"
             menu: Component {
                 BluetoothControl {}
             }
@@ -76,6 +87,16 @@ DelegateChooser {
         }
     }
     DelegateChoice {
+        roleValue: "hotspot"
+        ActionCenterToggleButton {
+            toggleModel: HotspotToggle {}
+            icon: "wifi-tethering"
+            menu: Component {
+                HotspotControl {}
+            }
+        }
+    }
+    DelegateChoice {
         roleValue: "idleInhibitor"
         ActionCenterToggleButton {
             toggleModel: IdleInhibitorToggle {}
@@ -86,7 +107,7 @@ DelegateChooser {
         roleValue: "mic"
         ActionCenterToggleButton {
             toggleModel: MicToggle {}
-            icon: WIcons.micIcon
+            icon: WIcons.micIcon ?? "mic"
             menu: Component {
                 VolumeControl {
                     output: false
@@ -106,7 +127,7 @@ DelegateChooser {
         ActionCenterToggleButton {
             toggleModel: NetworkToggle {}
             name: toggleModel.statusText
-            icon: WIcons.internetIcon
+            icon: WIcons.internetIcon ?? "wifi-1"
             menu: Component {
                 WifiControl {}
             }
@@ -116,7 +137,7 @@ DelegateChooser {
         roleValue: "nightLight"
         ActionCenterToggleButton {
             toggleModel: NightLightToggle {}
-            icon: WIcons.nightLightIcon
+            icon: WIcons.nightLightIcon ?? "weather-moon"
             menu: Component {
                 NightLightControl {}
             }
@@ -126,7 +147,7 @@ DelegateChooser {
         roleValue: "notifications"
         ActionCenterToggleButton {
             toggleModel: NotificationToggle {}
-            icon: WIcons.notificationsIcon
+            icon: WIcons.notificationsIcon ?? "alert"
         }
     }
     DelegateChoice {
@@ -140,7 +161,7 @@ DelegateChooser {
         roleValue: "powerProfile"
         ActionCenterToggleButton {
             toggleModel: PowerProfilesToggle {}
-            icon: WIcons.powerProfileIcon
+            icon: WIcons.powerProfileIcon ?? "flash-on"
             name: toggleModel.statusText
         }
     }

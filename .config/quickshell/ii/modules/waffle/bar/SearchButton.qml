@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import qs
 import qs.services
+import qs.services.deferred
 import qs.modules.common
 import qs.modules.waffle.looks
 
@@ -14,7 +15,7 @@ AppButton {
 
     checked: GlobalStates.searchOpen && LauncherSearch.query !== ""
     onClicked: {
-        GlobalStates.searchOpen = !GlobalStates.searchOpen; // For now...
+        GlobalStates.searchOpen = !GlobalStates.searchOpen
     }
 
     BarToolTip {

@@ -9,11 +9,10 @@ ScrollBar {
     policy: ScrollBar.AsNeeded
     topPadding: Appearance.rounding.normal
     bottomPadding: Appearance.rounding.normal
-    active: hovered || pressed
 
     contentItem: Rectangle {
         implicitWidth: 4
-        implicitHeight: root.visualSize
+        implicitHeight: 100
         radius: width / 2
         color: Appearance.colors.colOnSurfaceVariant
         

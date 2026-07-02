@@ -8,12 +8,16 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.waffle.looks
+import qs.modules.waffle.actionCenter
 import qs.modules.waffle.actionCenter.mainPage
 
 WBarAttachedPanelContent {
     id: root
 
-    readonly property bool barAtBottom: Config.options.waffles.bar.bottom
+    revealFromSides: true
+    revealFromLeft: false
+
+    readonly property bool barAtBottom: Config.options?.waffles?.bar?.bottom ?? false
     
     contentItem: ColumnLayout {
         // This somewhat sophisticated anchoring is needed to make opening anim not jump abruptly when stuff appear
@@ -25,15 +29,25 @@ WBarAttachedPanelContent {
             margins: root.visualMargin
             bottomMargin: 0
         }
-        spacing: 12
+        spacing: Looks.dp(12)
 
         WPane {
-            opacity: (MprisController.activePlayer != null && MprisController.isRealPlayer(MprisController.activePlayer)) ? 1 : 0
+            id: mediaPane
+            readonly property bool hasActivePlayer: MprisController.activePlayer != null
+            visible: hasActivePlayer
             Layout.fillWidth: true
+            screenX: root.panelScreenX + root.visualMargin * 2
+            screenY: root.panelScreenY + root.visualMargin * 2
+            screenWidth: root._screenW
+            screenHeight: root._screenH
             contentItem: MediaPaneContent {}
         }
         WPane {
             Layout.fillWidth: true
+            screenX: root.panelScreenX + root.visualMargin * 2
+            screenY: root.panelScreenY + root.visualMargin * 2 + (mediaPane.visible ? mediaPane.height + Looks.dp(12) : 0)
+            screenWidth: root._screenW
+            screenHeight: root._screenH
             contentItem: WStackView {
                 id: stackView
                 implicitWidth: initItem.implicitWidth

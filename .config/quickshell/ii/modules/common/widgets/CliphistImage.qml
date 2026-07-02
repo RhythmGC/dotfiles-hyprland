@@ -1,6 +1,7 @@
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.services
+import qs.services.deferred
 import qs.modules.common.functions
 import Qt5Compat.GraphicalEffects
 import QtQuick
@@ -47,25 +48,35 @@ Rectangle {
     implicitHeight: imageHeight * scale
     implicitWidth: imageWidth * scale
 
+    // Lazy decode: only start when visible (avoids mass-spawning processes)
+    property bool _decoded: false
+    onVisibleChanged: {
+        if (visible && !_decoded && root.entry) {
+            _decoded = true;
+            decodeImageProcess.running = true;
+        }
+    }
     Component.onCompleted: {
-        decodeImageProcess.running = true;
+        if (visible && root.entry) {
+            _decoded = true;
+            decodeImageProcess.running = true;
+        }
     }
 
     Process {
         id: decodeImageProcess
-        command: ["bash", "-c", `[ -f ${imageDecodeFilePath} ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}'`]
+        command: ["/usr/bin/bash", "-c", `[ -f '${imageDecodeFilePath}' ] || echo '${StringUtils.shellSingleQuoteEscape(root.entry)}' | ${Cliphist.cliphistBinary} decode > '${imageDecodeFilePath}'`]
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0) {
                 root.source = imageDecodeFilePath;
             } else {
-                console.error("[CliphistImage] Failed to decode image for entry:", root.entry);
                 root.source = "";
             }
         }
     }
 
     Component.onDestruction: {
-        Quickshell.execDetached(["bash", "-c", `[ -f '${imageDecodeFilePath}' ] && rm -f '${imageDecodeFilePath}'`]);
+        Quickshell.execDetached(["/usr/bin/bash", "-c", `[ -f '${imageDecodeFilePath}' ] && /usr/bin/rm -f '${imageDecodeFilePath}'`]);
     }
 
     layer.enabled: true
@@ -88,6 +99,8 @@ Rectangle {
 
         width: root.imageWidth * root.scale
         height: root.imageHeight * root.scale
+        sourceSize.width: width
+        sourceSize.height: height
     }
 
     Loader {
@@ -97,7 +110,8 @@ Rectangle {
         sourceComponent: GaussianBlur {
             source: image
             radius: 35
-            samples: radius * 2 + 1
+            // See #159 — cap samples to bound fragment shader cost
+            samples: Math.min(33, radius * 2 + 1)
 
             Rectangle {
                 anchors.fill: parent
@@ -113,7 +127,7 @@ Rectangle {
                         visible: width <= image.width
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "visibility_off"
-                        font.pixelSize: 28
+                        font.pixelSize: Appearance.font.pixelSize.huge
                     }
                     StyledText {
                         visible: width <= image.width
