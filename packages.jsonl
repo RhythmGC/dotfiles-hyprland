@@ -21,6 +21,10 @@
 {"name": "waybar", "category": "desktop", "source": "pacman"}
 {"name": "polkit-kde-agent", "category": "desktop", "source": "pacman"}
 {"name": "libappindicator", "category": "desktop", "source": "pacman"}
+{"name": "yt-dlp", "category": "desktop", "source": "pacman"}
+{"name": "mpv", "category": "desktop", "source": "pacman"}
+{"name": "socat", "category": "desktop", "source": "pacman"}
 {"name": "illogical-impulse-quickshell-git", "category": "desktop", "source": "yay"}
 {"name": "matugen-bin", "category": "desktop", "source": "yay"}
 {"name": "vesktop-bin", "category": "vesktop", "source": "yay"}
+

@@ -43,7 +43,12 @@ def find_firefox_profile(base_path):
     """Find the default profile in a Firefox-based browser."""
     base = os.path.expanduser(base_path)
     if not os.path.exists(base):
-        return None
+        if "zen" in base_path:
+            base = os.path.expanduser("~/.config/zen")
+            if not os.path.exists(base):
+                return None
+        else:
+            return None
 
     # Priority: *.default-release, *.default, any with cookies.sqlite
     # Skip backup directories
@@ -75,7 +80,9 @@ def find_chrome_profile(browser_name="google-chrome"):
         "vivaldi": "vivaldi",
         "opera": "opera",
         "edge": "microsoft-edge",
-        "thorium": "thorium"
+        "thorium": "thorium",
+        "youtube-music": "YouTube Music",
+        "pear-desktop": "YouTube Music"
     }
 
     config_dir = config_map.get(browser_name.lower(), browser_name)
@@ -84,11 +91,19 @@ def find_chrome_profile(browser_name="google-chrome"):
     if not os.path.exists(base):
         return None
 
+    # Check root first (for Electron apps like YouTube Music)
+    if os.path.exists(os.path.join(base, "Cookies")):
+        return base
+    if os.path.exists(os.path.join(base, "Network", "Cookies")):
+        return os.path.join(base, "Network")
+
     # Check Default or Profile 1
     for profile in ["Default", "Profile 1"]:
         profile_path = os.path.join(base, profile)
         if os.path.exists(os.path.join(profile_path, "Cookies")):
             return profile_path
+        if os.path.exists(os.path.join(profile_path, "Network", "Cookies")):
+            return os.path.join(profile_path, "Network")
     return None
 
 def is_firefox_fork(browser):
@@ -101,6 +116,9 @@ def get_ytdlp_browser_arg(browser, profile_path=None):
     For Firefox forks, use firefox:/path/to/profile syntax.
     """
     browser = browser.lower()
+
+    if browser in ["youtube-music", "pear-desktop"]:
+        browser = "chromium"
 
     if browser in FIREFOX_FORKS and browser != "firefox":
         # Firefox fork - need to use firefox:path syntax
@@ -124,8 +142,14 @@ def extract_cookies(browser, output_path):
     """
     browser = browser.lower()
 
+    # Find profile path
+    if is_firefox_fork(browser):
+        profile_path = find_firefox_profile(FIREFOX_FORKS.get(browser, "~/.mozilla/firefox"))
+    else:
+        profile_path = find_chrome_profile(browser)
+
     # Get the correct browser argument for yt-dlp
-    browser_arg = get_ytdlp_browser_arg(browser)
+    browser_arg = get_ytdlp_browser_arg(browser, profile_path)
 
     if not browser_arg:
         return False, f"Could not find profile for {browser}"
@@ -187,7 +211,8 @@ def extract_cookies_with_copy(browser, output_path):
             src_cookie = os.path.join(profile_path, "Cookies")
             if os.path.exists(src_cookie):
                 shutil.copy2(src_cookie, temp_dir)
-            browser_arg = f"{browser}:{temp_dir}"
+            ytdlp_browser = "chromium" if browser in ["youtube-music", "pear-desktop"] else browser
+            browser_arg = f"{ytdlp_browser}:{temp_dir}"
 
         cmd = [
             "yt-dlp",
@@ -230,6 +255,7 @@ def verify_connection(output_path):
         "-I", "1",
         "--print", "id",
         "--no-warnings",
+        "--extractor-args", "youtubetab:skip=authcheck",
         "https://www.youtube.com/feed/history"
     ]
 

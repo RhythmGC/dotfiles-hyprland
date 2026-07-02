@@ -208,13 +208,14 @@
             "type": "auto"
         },
         "recentThemes": [
+            "blue-archive",
             "auto",
             "nord",
             "sakura"
         ],
         "shellScale": 1,
         "softenColors": true,
-        "theme": "auto",
+        "theme": "blue-archive",
         "themeSchedule": {
             "dayStart": "06:00",
             "dayTheme": "auto",

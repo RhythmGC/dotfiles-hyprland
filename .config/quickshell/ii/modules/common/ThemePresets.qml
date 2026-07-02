@@ -24,7 +24,8 @@ Singleton {
         { id: "minimal", name: Translation.tr("Minimal"), icon: "remove" },
         { id: "retro", name: Translation.tr("Retro"), icon: "history" },
         { id: "nature", name: Translation.tr("Nature"), icon: "eco" },
-        { id: "neon", name: Translation.tr("Neon"), icon: "bolt" }
+        { id: "neon", name: Translation.tr("Neon"), icon: "bolt" },
+        { id: "bluearchive", name: Translation.tr("BlueArchive"), icon: "school" }
     ]
 
     readonly property var presets: [
@@ -87,6 +88,18 @@ Singleton {
             tags: ["light", "pastel"],
             meta: {
                 roundingScale: 1.15
+            }
+        },
+        {
+            id: "blue-archive",
+            name: "BlueArchive (Arona)",
+            description: "Futuristic academic theme in Arona blue and pastel hues",
+            icon: "school",
+            colors: blueArchiveColors,
+            tags: ["dark", "pastel", "vibrant", "bluearchive"],
+            meta: {
+                roundingScale: 1.1,
+                borderWidthScale: 1.05
             }
         },
         {
@@ -3136,6 +3149,64 @@ Singleton {
         term13: "#a13865",
         term14: "#2993a3",
         term15: "#393a34"
+    })
+
+    // Blue Archive (Arona) - Premium state-of-the-art dark slate-blue theme
+    readonly property var blueArchiveColors: ({
+        darkmode: true,
+        m3background: "#1d273a",
+        m3onBackground: "#eef5ff",
+        m3surface: "#1d273a",
+        m3surfaceDim: "#151c2a",
+        m3surfaceBright: "#27344e",
+        m3surfaceContainerLowest: "#0d121c",
+        m3surfaceContainerLow: "#1d273a",
+        m3surfaceContainer: "#27344e",
+        m3surfaceContainerHigh: "#314262",
+        m3surfaceContainerHighest: "#3b5077",
+        m3onSurface: "#eef5ff",
+        m3surfaceVariant: "#3b5077",
+        m3onSurfaceVariant: "#8fa5c8",
+        m3inverseSurface: "#eef5ff",
+        m3inverseOnSurface: "#1d273a",
+        m3outline: "#3b5077",
+        m3outlineVariant: "#27344e",
+        m3shadow: "#000000",
+        m3scrim: "#000000",
+        m3surfaceTint: "#008be2",
+        m3primary: "#008be2",
+        m3onPrimary: "#ffffff",
+        m3primaryContainer: "#004c7c",
+        m3onPrimaryContainer: "#d0ebff",
+        m3inversePrimary: "#acfcff",
+        m3secondary: "#80d8ff",
+        m3onSecondary: "#1d273a",
+        m3secondaryContainer: "#22384a",
+        m3onSecondaryContainer: "#acfcff",
+        m3tertiary: "#ff69b4",
+        m3onTertiary: "#ffffff",
+        m3tertiaryContainer: "#801d51",
+        m3onTertiaryContainer: "#ffccd9",
+        m3error: "#ff69b4",
+        m3onError: "#ffffff",
+        m3errorContainer: "#801d51",
+        m3onErrorContainer: "#ffccd9",
+        m3primaryFixed: "#008be2",
+        m3primaryFixedDim: "#00629c",
+        m3onPrimaryFixed: "#ffffff",
+        m3onPrimaryFixedVariant: "#27344e",
+        m3secondaryFixed: "#80d8ff",
+        m3secondaryFixedDim: "#00b0ff",
+        m3onSecondaryFixed: "#1d273a",
+        m3onSecondaryFixedVariant: "#27344e",
+        m3tertiaryFixed: "#ff69b4",
+        m3tertiaryFixedDim: "#d81b60",
+        m3onTertiaryFixed: "#ffffff",
+        m3onTertiaryFixedVariant: "#27344e",
+        m3success: "#ffc72c",
+        m3onSuccess: "#1d273a",
+        m3successContainer: "#806000",
+        m3onSuccessContainer: "#fff0b3"
     })
 
     function getPreset(id) {

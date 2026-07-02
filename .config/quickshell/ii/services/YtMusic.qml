@@ -169,7 +169,7 @@ Singleton {
         "vivaldi": { name: "Vivaldi", icon: "music_note", configPath: "~/.config/vivaldi" },
         "opera": { name: "Opera", icon: "radio_button_checked", configPath: "~/.config/opera" },
         "edge": { name: "Edge", icon: "diamond", configPath: "~/.config/microsoft-edge" },
-        "zen": { name: "Zen", icon: "self_improvement", configPath: "~/.zen" },
+        "zen": { name: "Zen", icon: "self_improvement", configPath: "~/.config/zen" },
         "librewolf": { name: "LibreWolf", icon: "pets", configPath: "~/.librewolf" },
         "floorp": { name: "Floorp", icon: "waves", configPath: "~/.floorp" },
         "waterfox": { name: "Waterfox", icon: "water_drop", configPath: "~/.waterfox" }
@@ -1143,7 +1143,7 @@ Singleton {
         command: ["python3", "-c", `
 import sys, os, glob
 browser = '` + _resolveBrowserArgProcQC._browser + `'
-forks = {"zen":"~/.zen","librewolf":"~/.librewolf","floorp":"~/.floorp","waterfox":"~/.waterfox","firefox":"~/.mozilla/firefox"}
+forks = {"zen":"~/.config/zen" if os.path.exists(os.path.expanduser("~/.config/zen")) else "~/.zen","librewolf":"~/.librewolf","floorp":"~/.floorp","waterfox":"~/.waterfox","firefox":"~/.mozilla/firefox"}
 base = os.path.expanduser(forks.get(browser, "~/.mozilla/firefox"))
 if not os.path.exists(base):
     print("")
@@ -1174,17 +1174,27 @@ print("")
     }
 
     // Quick connect check — tries each browser with --cookies-from-browser
+    // Falls back to manual cookie file if browser cookies are locked (e.g., browser running)
     Process {
         id: _quickConnectCheckProc
         property string stdOutput: ""
-        command: ["/usr/bin/yt-dlp",
-            "--cookies-from-browser", root._browserArgForYtdlp,
-            "--flat-playlist",
-            "--no-warnings",
-            "-I", "1",
-            "--print", "id",
-            "https://www.youtube.com/feed/history"
-        ]
+        property bool _triedManual: false
+        command: _triedManual
+            ? ["/usr/bin/yt-dlp",
+                "--cookies", root._cookiesFilePath,
+                "--no-warnings",
+                "--print", "id",
+                "https://www.youtube.com/watch?v=D2H5-_hA05U"
+              ]
+            : ["/usr/bin/yt-dlp",
+                "--cookies-from-browser", root._browserArgForYtdlp,
+                "--flat-playlist",
+                "--no-warnings",
+                "-I", "1",
+                "--print", "id",
+                "--extractor-args", "youtubetab:skip=authcheck",
+                "https://www.youtube.com/feed/history"
+              ]
         
         onStarted: { stdOutput = "" }
         
@@ -1202,11 +1212,28 @@ print("")
                 Config.setNestedValue('sidebar.ytmusic.browser', root.googleBrowser)
                 Config.setNestedValue('sidebar.ytmusic.connected', true)
                 Config.setNestedValue('sidebar.ytmusic.resolvedBrowserArg', root._resolvedBrowserArg)
-                root._log("[YtMusic] QuickConnect succeeded with:", root._browserArgForYtdlp)
-                // Export static cookie file for mpv
-                _exportCookiesProc.running = true
+                if (_triedManual) {
+                    // Connected via manual cookie file — set useManualCookies
+                    root._useManualCookies = true
+                    root.customCookiesPath = root._cookiesFilePath
+                    Config.setNestedValue('sidebar.ytmusic.useManualCookies', true)
+                    Config.setNestedValue('sidebar.ytmusic.cookiesPath', root._cookiesFilePath)
+                    root._log("[YtMusic] QuickConnect succeeded with: manual cookies")
+                } else {
+                    root._log("[YtMusic] QuickConnect succeeded with:", root._browserArgForYtdlp)
+                    // Export static cookie file for mpv
+                    _exportCookiesProc.running = true
+                }
+                _triedManual = false
                 root.fetchUserProfile()
+            } else if (!_triedManual && root._cookiesFilePath !== "") {
+                // cookies-from-browser failed (browser may be running/locking file)
+                // Try manual cookie file as fallback
+                root._log("[YtMusic] cookies-from-browser failed, trying manual cookie file fallback")
+                _triedManual = true
+                _quickConnectCheckProc.running = true
             } else {
+                _triedManual = false
                 // Try next browser
                 root._quickConnectIndex++
                 root._tryNextBrowser()
@@ -1477,8 +1504,8 @@ print("")
     readonly property string _browserArgForYtdlp: root._resolvedBrowserArg || root.googleBrowser
 
     property var _cookieArgs: root._useManualCookies && root.customCookiesPath
-        ? ["--cookies", root.customCookiesPath, "--js-runtimes", "node", "--remote-components", "ejs:github"]
-        : ["--cookies-from-browser", root._browserArgForYtdlp, "--js-runtimes", "node", "--remote-components", "ejs:github"]
+        ? ["--cookies", root.customCookiesPath, "--js-runtimes", "node", "--remote-components", "ejs:github", "--extractor-args", "youtubetab:skip=authcheck"]
+        : ["--cookies-from-browser", root._browserArgForYtdlp, "--js-runtimes", "node", "--remote-components", "ejs:github", "--extractor-args", "youtubetab:skip=authcheck"]
 
     // Static cookie file — used by mpv (which can't use --cookies-from-browser)
     // When user provides a manual cookies file, use that instead of the auto-exported one
@@ -1579,7 +1606,7 @@ print("")
     Process {
         id: _detectBrowsersProc
         command: ["/bin/bash", "-c", `
-            for path in ~/.mozilla/firefox ~/.config/google-chrome ~/.config/chromium ~/.config/BraveSoftware ~/.config/vivaldi ~/.config/opera ~/.config/microsoft-edge ~/.zen ~/.librewolf ~/.floorp ~/.waterfox; do
+            for path in ~/.mozilla/firefox ~/.config/google-chrome ~/.config/chromium ~/.config/BraveSoftware ~/.config/vivaldi ~/.config/opera ~/.config/microsoft-edge ~/.zen ~/.config/zen ~/.librewolf ~/.floorp ~/.waterfox; do
                 [ -d "$path" ] && echo "$path"
             done
         `]
@@ -1638,7 +1665,7 @@ print("")
         command: ["python3", "-c", `
 import sys, os, glob
 browser = '` + root.googleBrowser + `'
-forks = {"zen":"~/.zen","librewolf":"~/.librewolf","floorp":"~/.floorp","waterfox":"~/.waterfox","firefox":"~/.mozilla/firefox"}
+forks = {"zen":"~/.config/zen" if os.path.exists(os.path.expanduser("~/.config/zen")) else "~/.zen","librewolf":"~/.librewolf","floorp":"~/.floorp","waterfox":"~/.waterfox","firefox":"~/.mozilla/firefox"}
 base = os.path.expanduser(forks.get(browser, "~/.mozilla/firefox"))
 if not os.path.exists(base):
     print("")
@@ -1770,14 +1797,23 @@ print("")
         id: _googleCheckProc
         property string errorOutput: ""
         property string stdOutput: ""
-        command: ["/usr/bin/yt-dlp",
-            ...root._cookieArgs,
-            "--flat-playlist",
-            "--no-warnings",
-            "-I", "1",
-            "--print", "id",
-            "https://www.youtube.com/feed/history"
-        ]
+        // Use a known video URL instead of feed/history — feed/history returns 0 items
+        // when using --cookies file (not --cookies-from-browser), causing false failures
+        command: root._useManualCookies
+            ? ["/usr/bin/yt-dlp",
+                ...root._cookieArgs,
+                "--no-warnings",
+                "--print", "id",
+                "https://www.youtube.com/watch?v=D2H5-_hA05U"
+              ]
+            : ["/usr/bin/yt-dlp",
+                ...root._cookieArgs,
+                "--flat-playlist",
+                "--no-warnings",
+                "-I", "1",
+                "--print", "id",
+                "https://www.youtube.com/feed/history"
+              ]
         stdout: SplitParser {
             onRead: line => {
                 _googleCheckProc.stdOutput += line + "\n"

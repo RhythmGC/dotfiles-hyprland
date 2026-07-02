@@ -3,8 +3,8 @@ return {
   dependencies = "rktjmp/lush.nvim",
   priority = 1000,
   config = function()
-    vim.opt.background = "dark"
-    vim.cmd.colorscheme("sakura")
+    -- vim.opt.background = "dark"
+    -- vim.cmd.colorscheme("sakura")
 
     local function vibrant_pink()
       -- Palette phân biệt rõ ràng, tránh loạn màu

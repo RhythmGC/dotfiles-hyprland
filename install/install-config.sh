@@ -199,10 +199,22 @@ read -r use_sddm_theme
 
 # --- Install SDDM Theme if user agrees ---
 if [[ ! "$use_sddm_theme" =~ ^[Nn]$ ]]; then
-  git clone https://github.com/RhythmGC/BlueArchive-SDDM-theme.git
-  cd BlueArchive-SDDM-theme
-  chmod +x ./setup.sh
-  ./setup.sh
+  if [ -d "$DOTFILES_DIR/BlueArchive-SDDM-theme" ]; then
+    info "Installing SDDM Theme from local folder..."
+    (
+      cd "$DOTFILES_DIR/BlueArchive-SDDM-theme"
+      chmod +x ./setup.sh
+      ./setup.sh
+    )
+  else
+    info "Cloning and installing SDDM Theme..."
+    (
+      git clone https://github.com/RhythmGC/BlueArchive-SDDM-theme.git
+      cd BlueArchive-SDDM-theme
+      chmod +x ./setup.sh
+      ./setup.sh
+    )
+  fi
 fi
 
 # --- Configuration Copying ---
@@ -289,6 +301,18 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     else
       info "No display server detected. Vesktop will launch upon next desktop environment startup."
     fi
+  fi
+
+  # Copy Zen Browser extensions
+  if [ -d "$HOME/.config/zen" ] && [ -d "$DOTFILES_DIR/install/zen-extensions" ]; then
+    info "Installing Zen Browser extensions..."
+    for profile_dir in "$HOME/.config/zen/"*Default*/; do
+      if [ -d "$profile_dir" ]; then
+        mkdir -p "${profile_dir}extensions"
+        cp "$DOTFILES_DIR/install/zen-extensions/"*.xpi "${profile_dir}extensions/"
+        success "Copied extensions to profile: $(basename "$profile_dir")"
+      fi
+    done
   fi
 fi
 
