@@ -2287,7 +2287,7 @@ run_update() {
     tui_info "Syncing iNiR..."
 
     II_SOURCE="${REPO_ROOT}"
-    II_TARGET="${XDG_CONFIG_HOME}/quickshell/inir"
+    II_TARGET="${XDG_CONFIG_HOME}/quickshell/ba"
     local legacy_runtime_dir="${XDG_CONFIG_HOME}/quickshell/ii"
 
     for dir in "$XDG_BIN_HOME" "$XDG_CACHE_HOME" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$II_TARGET"; do

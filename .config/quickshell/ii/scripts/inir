@@ -3,7 +3,7 @@ set -euo pipefail
 INIR_NAME="${INIR_CMD:-inir}"
 
 qs_bin="/usr/bin/qs"
-user_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/inir"
+user_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ba"
 system_config_dir="${INIR_SYSTEM_RUNTIME_DIR:-/usr/local/share/quickshell/inir}"
 fallback_system_config_dir="${INIR_FALLBACK_SYSTEM_RUNTIME_DIR:-/usr/share/quickshell/inir}"
 config_dir="${INIR_RUNTIME_DIR:-}"
@@ -2728,8 +2728,8 @@ run_service_command() {
             if [[ "${1:-}" == "--full" ]]; then
                 shift
                 local cfg_path
-                cfg_path="$(readlink -f "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/inir" 2>/dev/null)"
-                [[ -z "$cfg_path" ]] && cfg_path="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/inir"
+                cfg_path="$(readlink -f "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ba" 2>/dev/null)"
+                [[ -z "$cfg_path" ]] && cfg_path="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ba"
                 exec qs -p "$cfg_path" log --rules "*=true" "$@"
             fi
             exec journalctl --user-unit inir.service "$@"
