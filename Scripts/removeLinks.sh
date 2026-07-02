@@ -9,13 +9,13 @@ ITEMS_FILE="$SCRIPT_DIR/items.json"
 DST_CONFIG="$HOME/.config"
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "Thiếu jq. Cài bằng:"
+  echo "Missing jq. Install using:"
   echo "sudo pacman -S jq"
   exit 1
 fi
 
 if [ ! -f "$ITEMS_FILE" ]; then
-  echo "Không tìm thấy: $ITEMS_FILE"
+  echo "Not found: $ITEMS_FILE"
   exit 1
 fi
 
@@ -32,7 +32,7 @@ unlink_item() {
     rm -rf "$dst"
     echo "[removed physical copy] $dst"
   else
-    echo "[skip] Không tồn tại: $dst"
+    echo "[skip] Does not exist: $dst"
   fi
 }
 
@@ -41,5 +41,5 @@ while IFS= read -r item; do
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
 echo
-echo "Xong gỡ bỏ/reset cấu hình."
+echo "Finished removing/resetting configuration."
 

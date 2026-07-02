@@ -10,13 +10,13 @@ SRC_CONFIG="$HOME/.config"
 DST_CONFIG="$DOTFILES/.config"
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "Thiếu jq. Cài bằng:"
+  echo "Missing jq. Install using:"
   echo "sudo pacman -S jq"
   exit 1
 fi
 
 if [ ! -f "$ITEMS_FILE" ]; then
-  echo "Không tìm thấy: $ITEMS_FILE"
+  echo "Not found: $ITEMS_FILE"
   exit 1
 fi
 
@@ -28,15 +28,15 @@ copy_item() {
   local dst="$DST_CONFIG/$item"
 
   if [ ! -e "$src" ]; then
-    echo "[skip] Không tồn tại: $src"
+    echo "[skip] Does not exist: $src"
     return
   fi
 
   mkdir -p "$(dirname "$dst")"
 
-  # Nếu src và dst đang là cùng một file/folder do symlink thì bỏ qua
+  # If src and dst are the same file/folder due to symlink, skip
   if [ -e "$dst" ] && [ "$(readlink -f "$src")" = "$(readlink -f "$dst")" ]; then
-    echo "[skip] Đã link đúng, bỏ qua: $item"
+    echo "[skip] Already linked correctly, skipping: $item"
     return
   fi
 
@@ -55,4 +55,4 @@ while IFS= read -r item; do
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
 echo
-echo "Xong copy config vào: $DST_CONFIG"
+echo "Finished copying config to: $DST_CONFIG"

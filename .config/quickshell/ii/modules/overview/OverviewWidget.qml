@@ -98,9 +98,9 @@ Item {
             root.wheelStepCounter = 0
 
             if (deltaY < 0)
-                Hyprland.dispatch(`workspace r+1`)
+                Hyprland.dispatch("hl.dsp.focus({workspace = 'r+1'})")
             else if (deltaY > 0)
-                Hyprland.dispatch(`workspace r-1`)
+                Hyprland.dispatch("hl.dsp.focus({workspace = 'r-1'})")
         }
     }
 
@@ -211,7 +211,7 @@ Item {
                                     if (root.draggingTargetWorkspace === -1) {
                                         GlobalStates.overviewOpen = false
                                         if (CompositorService.isHyprland)
-                                            Hyprland.dispatch(`workspace ${workspace.workspaceValue}`)
+                                            Hyprland.dispatch("hl.dsp.focus({workspace = " + workspace.workspaceValue + "})")
                                     }
                                 }
                             }

@@ -145,7 +145,7 @@ Item { // Bar content region
                 if (up) NiriService.focusWorkspaceUp();
                 else NiriService.focusWorkspaceDown();
             } else if (CompositorService.isHyprland) {
-                Hyprland.dispatch(up ? "workspace r-1" : "workspace r+1");
+                Hyprland.dispatch(up ? "hl.dsp.focus({workspace = 'r-1'})" : "hl.dsp.focus({workspace = 'r+1'})");
             }
         }
     }

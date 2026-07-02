@@ -83,19 +83,6 @@ else
   fi
 fi
 
-# --- Package Lists ---
-# Standard Official Packages
-core_packages=("jq" "rsync" "curl" "wget" "fastfetch" "fd" "ripgrep" "unzip" "fnm" "pyenv")
-shell_packages=("fish" "starship")
-editor_packages=("neovim" "antigravity-ide")
-desktop_packages=("hyprland" "hyprpaper" "hyprlock" "hypridle" "kitty" "rofi-wayland" "waybar" "polkit-kde-agent")
-
-# AUR Packages
-aur_core=()
-aur_shell=()
-aur_editor=()
-aur_desktop=("illogical-impulse-quickshell-git" "matugen-bin")
-
 # Helper function to check if a package is satisfied
 is_pkg_installed() {
   local pkg="$1"
@@ -112,40 +99,20 @@ is_pkg_installed() {
   return 1
 }
 
-# Helper function to install packages
-install_packages() {
-  local pkgs=("$@")
-  local pacman_pkgs=()
-  local aur_pkgs=()
+# Get selected packages from packages.jsonl
+get_selected_packages() {
+  local source_type="$1"
+  local cats=","
+  if [[ ! "${sel_core:-y}" =~ ^[Nn]$ ]]; then cats+="core,"; fi
+  if [[ ! "${sel_shell:-y}" =~ ^[Nn]$ ]]; then cats+="shell,"; fi
+  if [[ ! "${sel_editor:-y}" =~ ^[Nn]$ ]]; then cats+="editor,"; fi
+  if [[ ! "${sel_desktop:-y}" =~ ^[Nn]$ ]]; then cats+="desktop,"; fi
+  if [[ ! "${sel_vesktop:-y}" =~ ^[Nn]$ ]]; then cats+="vesktop,"; fi
 
-  for pkg in "${pkgs[@]}"; do
-    if is_pkg_installed "$pkg"; then
-      info "Package $pkg is already satisfied -- skipping"
-      continue
-    fi
-
-    # Check if package is AUR package (ends with -bin, -git, or matched)
-    if [[ "$pkg" =~ -(bin|git)$ || "$pkg" == "matugen-bin" || "$pkg" == "vesktop-bin" ]]; then
-      aur_pkgs+=("$pkg")
-    else
-      pacman_pkgs+=("$pkg")
-    fi
-  done
-
-  # Install pacman packages
-  if [ ${#pacman_pkgs[@]} -gt 0 ]; then
-    info "Installing official packages: ${pacman_pkgs[*]}"
-    sudo pacman -S --needed --noconfirm "${pacman_pkgs[@]}"
-  fi
-
-  # Install AUR packages
-  if [ ${#aur_pkgs[@]} -gt 0 ]; then
-    if [ -n "$AUR_HELPER" ]; then
-      info "Installing AUR packages using $AUR_HELPER: ${aur_pkgs[*]}"
-      $AUR_HELPER -S --needed --noconfirm "${aur_pkgs[@]}"
-    else
-      warn "Skipping AUR packages as no AUR helper is available: ${aur_pkgs[*]}"
-    fi
+  if [ -f "$DOTFILES_DIR/packages.jsonl" ]; then
+    jq -r --arg src "$source_type" --arg cats "$cats" \
+      'select(.source == $src and ($cats | contains("," + .category + ","))) | .name' \
+      "$DOTFILES_DIR/packages.jsonl"
   fi
 }
 
@@ -170,34 +137,60 @@ else
   read -r sel_vesktop
 fi
 
-to_install=()
+# Query packages to install
+pacman_pkgs=()
+while IFS= read -r pkg; do
+  if [ -n "$pkg" ]; then
+    if is_pkg_installed "$pkg"; then
+      info "Package $pkg is already satisfied -- skipping"
+    else
+      pacman_pkgs+=("$pkg")
+    fi
+  fi
+done < <(get_selected_packages "pacman")
 
-if [[ ! "$sel_core" =~ ^[Nn]$ ]]; then
-  to_install+=("${core_packages[@]}" "${aur_core[@]}")
-fi
-if [[ ! "$sel_shell" =~ ^[Nn]$ ]]; then
-  to_install+=("${shell_packages[@]}" "${aur_shell[@]}")
-fi
-if [[ ! "$sel_editor" =~ ^[Nn]$ ]]; then
-  to_install+=("${editor_packages[@]}" "${aur_editor[@]}")
-fi
-if [[ ! "$sel_desktop" =~ ^[Nn]$ ]]; then
-  to_install+=("${desktop_packages[@]}" "${aur_desktop[@]}")
-fi
-if [[ ! "$sel_vesktop" =~ ^[Nn]$ ]]; then
-  to_install+=("vesktop-bin")
-fi
+aur_pkgs=()
+while IFS= read -r pkg; do
+  if [ -n "$pkg" ]; then
+    if is_pkg_installed "$pkg"; then
+      info "Package $pkg is already satisfied -- skipping"
+    else
+      aur_pkgs+=("$pkg")
+    fi
+  fi
+done < <(get_selected_packages "yay")
 
-if [ ${#to_install[@]} -gt 0 ]; then
+if [ ${#pacman_pkgs[@]} -gt 0 ] || [ ${#aur_pkgs[@]} -gt 0 ]; then
   info "Starting package installation..."
-  install_packages "${to_install[@]}"
+  
+  # Install pacman packages
+  if [ ${#pacman_pkgs[@]} -gt 0 ]; then
+    info "Installing official packages: ${pacman_pkgs[*]}"
+    sudo pacman -S --needed --noconfirm "${pacman_pkgs[@]}"
+  fi
+
+  # Install AUR packages
+  if [ ${#aur_pkgs[@]} -gt 0 ]; then
+    if [ -n "$AUR_HELPER" ]; then
+      info "Installing AUR packages using $AUR_HELPER: ${aur_pkgs[*]}"
+      $AUR_HELPER -S --needed --noconfirm "${aur_pkgs[@]}"
+    else
+      warn "Skipping AUR packages as no AUR helper is available: ${aur_pkgs[*]}"
+    fi
+  fi
+
   if [[ ! "$sel_extra" =~ ^[Nn]$ ]]; then
     curl -fsSL https://bun.sh/install | bash
     curl -fsSL https://get.pnpm.io/install.sh | sh -
   fi
   success "Package installation complete!"
 else
-  info "No packages selected for installation."
+  info "No packages selected or all selected packages are already satisfied."
+  if [[ ! "$sel_extra" =~ ^[Nn]$ ]]; then
+    curl -fsSL https://bun.sh/install | bash
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
+    success "Extra utilities installation complete!"
+  fi
 fi
 
 # --- Ask for using my SDDM THEME ---

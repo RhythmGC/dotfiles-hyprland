@@ -10,13 +10,13 @@ CHAR_COLOR_FILE="$CONFIG_DIR/characters.jsonc"
 CHAR_FOLDER=$(find "$IMG_DIR" -mindepth 1 -maxdepth 1 -type d | shuf -n 1)
 CHAR_NAME=$(basename "$CHAR_FOLDER")
 
-# Random ảnh
+# Random image
 CHAR_IMG=$(find "$CHAR_FOLDER" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.webp" \) | shuf -n 1)
 
-# Lấy màu từ file jsonc, nếu không có thì default white (7)
+# Get color from jsonc file, defaults to white (7) if not found
 CHAR_COLOR=$(jq -r --arg name "$CHAR_NAME" '.[$name] // "7"' "$CHAR_COLOR_FILE")
 
-# Tạo config tạm bằng jq: set logo + thêm custom module với màu
+# Create temporary config using jq: set logo + add custom module with color
 jq --arg img "$CHAR_IMG" --arg char "$CHAR_NAME" --arg color "$CHAR_COLOR" '
   .logo.source = $img |
   .logo.type = "kitty-direct" |
@@ -30,5 +30,5 @@ jq --arg img "$CHAR_IMG" --arg char "$CHAR_NAME" --arg color "$CHAR_COLOR" '
   ]
 ' "$BASE_CONFIG" >"$TEMP_CONFIG"
 
-# Chạy fastfetch
+# Run fastfetch
 fastfetch -c "$TEMP_CONFIG"

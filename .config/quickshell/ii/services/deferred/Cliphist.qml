@@ -119,13 +119,31 @@ Singleton {
                 deleteProc.stdinEnabled = true
             }
         }
+        stderr: StdioCollector {
+            onRead: (data) => console.log("[Cliphist Delete stderr]", data)
+        }
+        stdout: StdioCollector {
+            onRead: (data) => console.log("[Cliphist Delete stdout]", data)
+        }
         onExited: (exitCode, exitStatus) => {
+            console.log("[Cliphist Delete exited] code:", exitCode, "status:", exitStatus, "entry:", deleteProc.entry.slice(0, 50))
             deleteProc.entry = "";
             root.refresh();
         }
     }
 
     function deleteEntry(entry) {
+        // Optimistic update: instantly remove from the local list to trigger UI update
+        const index = root.entries.indexOf(entry)
+        if (index > -1) {
+            let newEntries = []
+            for (let i = 0; i < root.entries.length; i++) {
+                if (i !== index) {
+                    newEntries.push(root.entries[i])
+                }
+            }
+            root.entries = newEntries
+        }
         deleteProc.deleteEntry(entry);
     }
 

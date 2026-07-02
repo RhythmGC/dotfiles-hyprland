@@ -11,13 +11,13 @@ DST_CONFIG="$HOME/.config"
 BACKUP_DIR="$HOME/.config-backup-dotfiles-$(date +%Y%m%d-%H%M%S)"
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "Thiếu jq. Cài bằng:"
+  echo "Missing jq. Install using:"
   echo "sudo pacman -S jq"
   exit 1
 fi
 
 if [ ! -f "$ITEMS_FILE" ]; then
-  echo "Không tìm thấy: $ITEMS_FILE"
+  echo "Not found: $ITEMS_FILE"
   exit 1
 fi
 
@@ -39,12 +39,12 @@ link_item() {
   local dst="$DST_CONFIG/$item"
 
   if [ ! -e "$src" ]; then
-    echo "[skip] Không tồn tại trong dotfiles: $src"
+    echo "[skip] Does not exist in dotfiles: $src"
     return
   fi
 
   if [ -L "$src" ]; then
-    echo "[error] Source trong dotfiles đang là symlink, bỏ qua để tránh loop: $src"
+    echo "[error] Source in dotfiles is a symlink, skipping to avoid loop: $src"
     return
   fi
 
@@ -52,7 +52,7 @@ link_item() {
 
   if [ -L "$dst" ]; then
     if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      echo "[skip] Đã link đúng: $dst -> $src"
+      echo "[skip] Already linked correctly: $dst -> $src"
       return
     fi
     rm "$dst"
@@ -71,5 +71,5 @@ while IFS= read -r item; do
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
 echo
-echo "Xong tạo symlink."
-echo "Backup nếu có nằm ở: $BACKUP_DIR"
+echo "Finished creating symlinks."
+echo "Backup if any is located at: $BACKUP_DIR"
