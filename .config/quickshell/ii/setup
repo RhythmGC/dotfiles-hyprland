@@ -925,7 +925,7 @@ show_status() {
     fi
 
     local launcher_path
-    launcher_path="$(command -v inir 2>/dev/null || true)"
+    launcher_path="$(command -v ba 2>/dev/null || command -v inir 2>/dev/null || true)"
     if [[ -n "$launcher_path" || -x "${REPO_ROOT}/scripts/inir" ]]; then
         tui_check_ok "Launcher available${launcher_path:+: $launcher_path}"
     else
