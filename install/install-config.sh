@@ -314,6 +314,24 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
       fi
     done
   fi
+
+  # Create CLI wrappers for ba and inir
+  info "Creating system CLI wrappers for 'ba' and 'inir'..."
+  mkdir -p "$HOME/.local/bin"
+  
+  cat << 'EOF' > "$HOME/.local/bin/ba"
+#!/usr/bin/env bash
+exec "$HOME/.config/quickshell/ii/scripts/inir" "$@"
+EOF
+  chmod +x "$HOME/.local/bin/ba"
+
+  cat << 'EOF' > "$HOME/.local/bin/inir"
+#!/usr/bin/env bash
+exec "$HOME/.config/quickshell/ii/scripts/inir" "$@"
+EOF
+  chmod +x "$HOME/.local/bin/inir"
+
+  success "CLI wrappers created in ~/.local/bin/ (ba, inir)"
 fi
 
 # --- Default Shell Verification ---
