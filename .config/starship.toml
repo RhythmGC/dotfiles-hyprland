@@ -20,7 +20,7 @@ symbol = '-'
 style = 'fg:245'
 
 # Replace the "❯" symbol in the prompt with "➜"
-[character]                            # The name of the module we are configuring is "character"
+[character] # The name of the module we are configuring is "character"
 success_symbol = "[ ](bold fg:243)"
 error_symbol = "[ ](bold fg:244)"
 
@@ -31,7 +31,7 @@ disabled = true
 [git_branch]
 style = "bg: 252"
 symbol = "󰘬"
-truncation_length = 12
+truncation_length = 40
 truncation_symbol = ""
 format = " 󰜥 [](bold fg:252)[$symbol $branch(:$remote_branch)](fg:235 bg:252)[ ](bold fg:252)"
 
@@ -57,7 +57,7 @@ deleted = " 🗑 "
 
 [hostname]
 ssh_only = false
-format =  "[•$hostname](bg:252 bold fg:235)[](bold fg:252)"
+format = "[•$hostname](bg:252 bold fg:235)[](bold fg:252)"
 trim_at = ".companyname.com"
 disabled = false
 
@@ -135,3 +135,4 @@ bright_blue = '#80C0F5'
 bright_magenta = '#E980F5'
 bright_cyan = '#80F5EC'
 bright_white = '#EEEFF2'
+
