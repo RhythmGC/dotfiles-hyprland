@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=BlueArchiveOS Shell
+Comment=BlueArchiveOS desktop shell session
+Exec=ba service restart
+Icon=ba
+Terminal=false
+NoDisplay=true
+Categories=System;
