@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+INIR_NAME="${INIR_CMD:-inir}"
 
 qs_bin="/usr/bin/qs"
 user_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/inir"
@@ -68,17 +69,17 @@ source_ipc_registry() {
 }
 
 usage() {
-    cat <<'EOF'
-Usage: inir <command> [options]
+    cat <<EOF
+Usage: ${INIR_NAME} <command> [options]
 
 Quick start:
-  inir run               Start the shell
-  inir settings          Open settings
-  inir welcome           Re-open the welcome wizard (first-run tour)
-  inir restart           Restart the shell
-  inir logs              View runtime logs (--full: all categories, --debug: foreground debug, -f: follow)
-  inir status            Shell status info
-  inir doctor            Health checks
+  ${INIR_NAME} run               Start the shell
+  ${INIR_NAME} settings          Open settings
+  ${INIR_NAME} welcome           Re-open the welcome wizard (first-run tour)
+  ${INIR_NAME} restart           Restart the shell
+  ${INIR_NAME} logs              View runtime logs (--full: all categories, --debug: foreground debug, -f: follow)
+  ${INIR_NAME} status            Shell status info
+  ${INIR_NAME} doctor            Health checks
 
 EOF
 
@@ -86,15 +87,15 @@ EOF
 
     # Dynamic IPC target listing from registry
     if source_ipc_registry 2>/dev/null; then
-        printf 'IPC targets (inir <target> <function>):\n'
+        printf "IPC targets (%s <target> <function>):\n" "${INIR_NAME}"
         _usage_print_targets "  Shared:" "shared"
         _usage_print_targets "  ii panel family:" "ii"
         _usage_print_targets "  waffle panel family:" "waffle"
-        printf '\n  Run '\''inir <target> --help'\'' for available functions.\n\n'
+        printf "\n  Run '%s <target> --help' for available functions.\n\n" "${INIR_NAME}"
     else
-        cat <<'EOF'
-IPC targets (inir <target> <function>):
-  Use 'inir <target> --help' for available functions.
+        cat <<EOF
+IPC targets (${INIR_NAME} <target> <function>):
+  Use '${INIR_NAME} <target> --help' for available functions.
   See docs/IPC.md for the full reference.
 
 EOF
@@ -244,7 +245,7 @@ service_usage() {
     local service_state
     service_state="$(service_link_summary)"
     cat <<EOF
-Usage: inir service <install|uninstall|enable|disable|start|stop|restart|status|logs> [args...]
+Usage: ${INIR_NAME} service <install|uninstall|enable|disable|start|stop|restart|status|logs> [args...]
 
 What it does:
   install     Write the user unit file from the current launcher path
@@ -266,8 +267,8 @@ EOF
 }
 
 repair_usage() {
-    cat <<'EOF'
-Usage: inir repair [-c PATH]
+    cat <<EOF
+Usage: ${INIR_NAME} repair [-c PATH]
 
 What it does:
   1. runs setup doctor inline
@@ -309,25 +310,25 @@ _usage_print_targets() {
 }
 
 usage_short() {
-    cat <<'EOF'
+    cat <<EOF
 Most people only need:
   ./setup install
-  inir run
-  inir settings
-  inir update
-  inir status
-  inir doctor
-  inir overview toggle
-  inir terminal
-  inir browser
-  inir colorpicker
-  inir logs
-  inir repair
-  inir theme list-targets
-  inir theme inspect terminals
-  inir theme doctor
-  inir theme scaffold myapp
-  inir theme apply terminals
+  ${INIR_NAME} run
+  ${INIR_NAME} settings
+  ${INIR_NAME} update
+  ${INIR_NAME} status
+  ${INIR_NAME} doctor
+  ${INIR_NAME} overview toggle
+  ${INIR_NAME} terminal
+  ${INIR_NAME} browser
+  ${INIR_NAME} colorpicker
+  ${INIR_NAME} logs
+  ${INIR_NAME} repair
+  ${INIR_NAME} theme list-targets
+  ${INIR_NAME} theme inspect terminals
+  ${INIR_NAME} theme doctor
+  ${INIR_NAME} theme scaffold myapp
+  ${INIR_NAME} theme apply terminals
   ./setup
 EOF
 }

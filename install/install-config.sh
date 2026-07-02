@@ -321,12 +321,14 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   
   cat << 'EOF' > "$HOME/.local/bin/ba"
 #!/usr/bin/env bash
+export INIR_CMD=ba
 exec "$HOME/.config/quickshell/ii/scripts/inir" "$@"
 EOF
   chmod +x "$HOME/.local/bin/ba"
 
   cat << 'EOF' > "$HOME/.local/bin/inir"
 #!/usr/bin/env bash
+export INIR_CMD=inir
 exec "$HOME/.config/quickshell/ii/scripts/inir" "$@"
 EOF
   chmod +x "$HOME/.local/bin/inir"
