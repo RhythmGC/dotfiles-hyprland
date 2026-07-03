@@ -9,5 +9,5 @@ hl.on("hyprland.start", function ()
 end)
 
 -- NVIDIA Explicit Sync crash workarounds (prevents eglDupNativeFenceFDANDROID crash on Aquamarine)
-hl.env("AQ_MGPU_NO_EXPLICIT", "1")
-hl.env("AQ_NO_MODIFIERS", "1")
+-- hl.env("AQ_MGPU_NO_EXPLICIT", "1")
+-- hl.env("AQ_NO_MODIFIERS", "1")

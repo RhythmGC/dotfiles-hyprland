@@ -93,8 +93,8 @@ if status is-login
     set -Ux GLFW_IM_MODULE ibus
 
     # NVIDIA Wayland & Aquamarine workarounds
-    set -Ux AQ_MGPU_NO_EXPLICIT 1
-    set -Ux AQ_NO_MODIFIERS 1
+    # set -Ux AQ_MGPU_NO_EXPLICIT 1
+    # set -Ux AQ_NO_MODIFIERS 1
     set -Ux GBM_BACKEND nvidia-drm
     set -Ux __GLX_VENDOR_LIBRARY_NAME nvidia
     set -Ux LIBVA_DRIVER_NAME nvidia
