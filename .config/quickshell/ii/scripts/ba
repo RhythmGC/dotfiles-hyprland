@@ -262,7 +262,7 @@ Current service state:
   unit: ${systemd_user_dir}/ba.service
 
 This never falls back to graphical-session.target, because that would be
-stupid and start iNiR under desktops that should not touch it.
+stupid and start BlueArchiveOS under desktops that should not touch it.
 EOF
 }
 
@@ -509,32 +509,32 @@ _inir_run_quickshell_rebuild() {
 
     # Precheck: don't waste 5 minutes rebuilding when nothing is wrong.
     if _inir_quickshell_abi_status; then
-        echo "iNiR: Quickshell/Qt ABI is already compatible — nothing to do." >&2
+        echo "BlueArchiveOS: Quickshell/Qt ABI is already compatible — nothing to do." >&2
         if [[ -n "$_inir_abi_buildtime" ]]; then
             echo "      Build-time Qt: $_inir_abi_buildtime  ≡  Runtime Qt: $_inir_abi_runtime" >&2
         fi
         return 0
     fi
 
-    echo "iNiR: Qt/Quickshell ABI mismatch — $_inir_abi_msg" >&2
+    echo "BlueArchiveOS: Qt/Quickshell ABI mismatch — $_inir_abi_msg" >&2
 
     local kind_pkg cmd
     kind_pkg="$(_inir_quickshell_install_kind)"
     cmd="$(_inir_quickshell_rebuild_cmd "$kind_pkg")"
     if [[ -z "$cmd" ]]; then
-        echo "iNiR: cannot auto-rebuild Quickshell — install kind '${kind_pkg%%:*}' has no automatic path." >&2
+        echo "BlueArchiveOS: cannot auto-rebuild Quickshell — install kind '${kind_pkg%%:*}' has no automatic path." >&2
         echo "      See: https://quickshell.org/docs/master/guide/install-setup" >&2
         return 1
     fi
 
-    echo "iNiR: planned fix → ${cmd//--noconfirm/}" >&2
+    echo "BlueArchiveOS: planned fix → ${cmd//--noconfirm/}" >&2
 
     if [[ "$mode" == "interactive" && -t 0 && -t 1 ]]; then
         local resp
         read -r -p "Run this fix now to rebuild quickshell? [Y/n] " resp || true
         case "${resp:-}" in
             ""|[Yy]*) ;;
-            *) echo "iNiR: rebuild declined." >&2; return 1 ;;
+            *) echo "BlueArchiveOS: rebuild declined." >&2; return 1 ;;
         esac
         # Interactive: strip --noconfirm so the AUR helper shows full progress
         # and prompts naturally. The user already confirmed they want to proceed.
@@ -542,7 +542,7 @@ _inir_run_quickshell_rebuild() {
     fi
 
     echo "" >&2
-    echo "iNiR: rebuilding quickshell against the current Qt version..." >&2
+    echo "BlueArchiveOS: rebuilding quickshell against the current Qt version..." >&2
     echo "      This compiles from source and may take 2-5 minutes." >&2
     echo "      (timeout: 15 minutes to avoid indefinite hangs)" >&2
     echo "" >&2
@@ -556,13 +556,13 @@ _inir_run_quickshell_rebuild() {
 
     if [[ "$rebuild_rc" -eq 124 ]]; then
         echo "" >&2
-        echo "iNiR: rebuild timed out after 15 minutes." >&2
+        echo "BlueArchiveOS: rebuild timed out after 15 minutes." >&2
         echo "      The AUR helper may be waiting for input or the build is stuck." >&2
         echo "      Try manually: ${cmd//--noconfirm /}" >&2
         return 1
     elif [[ "$rebuild_rc" -ne 0 ]]; then
         echo "" >&2
-        echo "iNiR: rebuild failed (exit $rebuild_rc). Try manually:" >&2
+        echo "BlueArchiveOS: rebuild failed (exit $rebuild_rc). Try manually:" >&2
         echo "      ${cmd//--noconfirm /}" >&2
         return 1
     fi
@@ -571,13 +571,13 @@ _inir_run_quickshell_rebuild() {
     rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/inir/abi-check" 2>/dev/null
     if _inir_quickshell_abi_status; then
         echo "" >&2
-        echo "iNiR: Quickshell rebuilt successfully and ABI mismatch is resolved." >&2
+        echo "BlueArchiveOS: Quickshell rebuilt successfully and ABI mismatch is resolved." >&2
         echo "      Run 'ba restart' to apply the new binary." >&2
         return 0
     fi
 
     echo "" >&2
-    echo "iNiR: rebuild finished but ABI mismatch persists — $_inir_abi_msg" >&2
+    echo "BlueArchiveOS: rebuild finished but ABI mismatch persists — $_inir_abi_msg" >&2
     echo "      A stale local binary may be shadowing the system package." >&2
     local stale_qs
     if stale_qs="$(_inir_detect_stale_local_qs)" && [[ -n "$stale_qs" ]]; then
@@ -779,7 +779,7 @@ _inir_doctor_perf() {
             /^Instance / { candidate="" }
             /Process ID:/ { candidate=$3 }
             /Shell ID:[[:space:]]*inir/ { print candidate; exit }
-            /^iNiR/ { found=1 }
+            /^BlueArchiveOS/ { found=1 }
             found && /^[[:space:]]*PID:/ { print $2; exit }
         ')"
     fi
@@ -792,13 +792,13 @@ _inir_doctor_perf() {
         ')"
     fi
     if [[ -z "$pid" ]] || ! [[ -d "/proc/$pid" ]]; then
-        echo "iNiR: no running shell found. Start it with 'inir' or 'ba restart' first." >&2
+        echo "BlueArchiveOS: no running shell found. Start it with 'inir' or 'ba restart' first." >&2
         return 1
     fi
 
     local recommendations=()
 
-    printf '=== iNiR perf snapshot ===\n'
+    printf '=== BlueArchiveOS perf snapshot ===\n'
     printf 'Date:       %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
 
     resolve_config_dir 2>/dev/null || true
@@ -1006,10 +1006,10 @@ _inir_doctor_perf() {
         if [[ "$proc_comm" == "qs" ]]; then
             proc_note="shell"
         elif [[ "$proc_comm" == "awww-daemon" ]]; then
-            proc_note="wallpaper daemon counted under iNiR"
+            proc_note="wallpaper daemon counted under BlueArchiveOS"
             saw_awww=true
         elif [[ "$proc_comm" == "wl-copy" ]]; then
-            proc_note="clipboard helper counted under iNiR"
+            proc_note="clipboard helper counted under BlueArchiveOS"
             saw_wlcopy=true
         elif [[ "$proc_comm" == "cava" ]]; then
             proc_note="audio visualizer helper"
@@ -1020,7 +1020,7 @@ _inir_doctor_perf() {
         elif [[ "$proc_comm" == "bash" ]]; then
             proc_note="shell helper"
         else
-            proc_note="possible launched app/helper inside iNiR cgroup"
+            proc_note="possible launched app/helper inside BlueArchiveOS cgroup"
             saw_possible_app=true
         fi
         if ((${#proc_cmd} > 120)); then
@@ -1038,8 +1038,8 @@ _inir_doctor_perf() {
     else
         printf '  (no processes found under ba.service)\n'
     fi
-    $saw_awww && recommendations+=("awww-daemon is inside ba.service, so cgroup tools count wallpaper daemon memory/CPU as iNiR.")
-    $saw_wlcopy && recommendations+=("wl-copy is inside ba.service; clipboard helpers may appear as iNiR resource usage.")
+    $saw_awww && recommendations+=("awww-daemon is inside ba.service, so cgroup tools count wallpaper daemon memory/CPU as BlueArchiveOS.")
+    $saw_wlcopy && recommendations+=("wl-copy is inside ba.service; clipboard helpers may appear as BlueArchiveOS resource usage.")
     $saw_possible_app && recommendations+=("Non-shell processes are inside ba.service. Check #167 before trusting cgroup-level app totals.")
     printf '\n'
 
@@ -1595,7 +1595,7 @@ apply_qt_logging_rules() {
 resolve_config_dir() {
     if [[ -n "$config_dir" ]]; then
         if [[ ! -f "$config_dir/shell.qml" ]]; then
-            echo "Invalid iNiR config path: $config_dir" >&2
+            echo "Invalid BlueArchiveOS config path: $config_dir" >&2
             exit 1
         fi
         config_dir="$(canonicalize_path "$config_dir")"
@@ -1622,7 +1622,7 @@ resolve_config_dir() {
         fi
     done
 
-    echo "Could not find an iNiR shell payload" >&2
+    echo "Could not find a BlueArchiveOS shell payload" >&2
     exit 1
 }
 
@@ -2042,25 +2042,25 @@ restart_shell() {
 
     if is_inir_service_enabled; then
         ensure_service_unit_available
-        [[ -z "$quiet" ]] && printf 'Restarting iNiR service... '
+        [[ -z "$quiet" ]] && printf 'Restarting BlueArchiveOS service... '
         restart_inir_service_or_fail "$dir" "$quiet"
         return 0
     fi
 
     if has_instances "$dir"; then
-        [[ -z "$quiet" ]] && printf 'Stopping iNiR... '
+        [[ -z "$quiet" ]] && printf 'Stopping BlueArchiveOS... '
         kill_shell "$dir"
         if ! wait_for_stop "$dir"; then
-            echo "Timed out waiting for iNiR to stop" >&2
+            echo "Timed out waiting for BlueArchiveOS to stop" >&2
             exit 1
         fi
         [[ -z "$quiet" ]] && printf 'done.\n'
     fi
 
-    [[ -z "$quiet" ]] && printf 'Starting iNiR... '
+    [[ -z "$quiet" ]] && printf 'Starting BlueArchiveOS... '
     start_background "$dir"
     if ! wait_for_start "$dir"; then
-        echo "Timed out waiting for iNiR to start" >&2
+        echo "Timed out waiting for BlueArchiveOS to start" >&2
         exit 1
     fi
     [[ -z "$quiet" ]] && printf 'done.\n'
@@ -2081,7 +2081,7 @@ open_settings() {
     local dir="$1"
 
     if ! ensure_running_instance "$dir"; then
-        echo "Timed out waiting for iNiR to start" >&2
+        echo "Timed out waiting for BlueArchiveOS to start" >&2
         exit 1
     fi
 
@@ -2251,7 +2251,7 @@ run_repair() {
     apply_shell_scale
     start_background "$dir"
     if ! wait_for_start "$dir"; then
-        echo "Timed out waiting for iNiR to start during repair" >&2
+        echo "Timed out waiting for BlueArchiveOS to start during repair" >&2
         exit 1
     fi
 
@@ -2532,13 +2532,13 @@ restart_inir_service_or_fail() {
     systemctl --user restart ba.service >/dev/null 2>&1 || true
 
     if ! wait_for_start "$dir"; then
-        echo "Timed out waiting for iNiR to start" >&2
+        echo "Timed out waiting for BlueArchiveOS to start" >&2
         report_inir_service_failure
         exit 1
     fi
 
     if ! systemctl --user is-active --quiet ba.service >/dev/null 2>&1; then
-        echo "iNiR service failed to start" >&2
+        echo "BlueArchiveOS service failed to start" >&2
         report_inir_service_failure
         exit 1
     fi
@@ -2825,7 +2825,8 @@ show_version() {
             return
         fi
 
-        printf 'iNiR %s\n' "$live_version"
+        printf 'BlueArchiveOS %s
+' "$live_version"
         printf 'commit: %s\n' "$live_commit"
         printf 'install mode: repo-link\n'
         printf 'update strategy: repo-setup\n'
@@ -2848,7 +2849,8 @@ show_version() {
         fi
 
         if command -v jq >/dev/null 2>&1; then
-            printf 'iNiR %s\n' "$(jq -r '.version // "unknown"' "$version_file")"
+            printf 'BlueArchiveOS %s
+' "$(jq -r '.version // "unknown"' "$version_file")"
             printf 'commit: %s\n' "$(jq -r '.commit // "unknown"' "$version_file")"
             printf 'install mode: %s\n' "$(jq -r '.installMode // .install_mode // "unknown"' "$version_file")"
             printf 'update strategy: %s\n' "$(jq -r '.updateStrategy // .update_strategy // "unknown"' "$version_file")"
@@ -2879,7 +2881,8 @@ show_version() {
         return
     fi
 
-    printf 'iNiR %s\n' "$(tr -d '[:space:]' < "$setup_dir/VERSION")"
+    printf 'BlueArchiveOS %s
+' "$(tr -d '[:space:]' < "$setup_dir/VERSION")"
     printf 'runtime: %s\n' "${runtime_path:-$setup_dir}"
 }
 
@@ -2981,7 +2984,7 @@ run_ipc_target_command() {
 
     resolve_config_dir
     if ! ensure_running_instance_for_ipc "$config_dir" "${1:-}"; then
-        echo "Timed out waiting for iNiR to start" >&2
+        echo "Timed out waiting for BlueArchiveOS to start" >&2
         exit 1
     fi
     # IPC handlers for most panels register ~500ms after shell start (deferred panel
@@ -3066,7 +3069,7 @@ case "$command_name" in
         check_qs_abi
         check_setup_version_sync "$config_dir"
         if has_instances "$config_dir"; then
-            echo "iNiR is already running. Use 'ba restart' to restart." >&2
+            echo "BlueArchiveOS is already running. Use 'ba restart' to restart." >&2
             exit 0
         fi
         start_background "$config_dir"
@@ -3152,12 +3155,12 @@ case "$command_name" in
         check_qs_abi
         check_setup_version_sync "$config_dir"
         if has_instances "$config_dir"; then
-            echo "iNiR is already running. Use 'ba restart' to restart." >&2
+            echo "BlueArchiveOS is already running. Use 'ba restart' to restart." >&2
             exit 0
         fi
         if [[ "$foreground" == true ]] && is_inir_service_active; then
             if ! is_current_process_inir_service; then
-                echo "iNiR is managed by ba.service. Stop it first before running manually." >&2
+                echo "BlueArchiveOS is managed by ba.service. Stop it first before running manually." >&2
                 exit 1
             fi
         fi
@@ -3200,7 +3203,7 @@ case "$command_name" in
         apply_qt_logging_rules
         check_qs_abi
         if restart_inir_service_if_active; then
-            [[ -z "$restart_quiet" ]] && printf 'Restarting iNiR service... '
+            [[ -z "$restart_quiet" ]] && printf 'Restarting BlueArchiveOS service... '
             restart_inir_service_or_fail "$config_dir" "$restart_quiet"
             exit 0
         fi
@@ -3347,7 +3350,7 @@ case "$command_name" in
         fi
         resolve_config_dir
         if ! ensure_running_instance_for_ipc "$config_dir" "${2:-}"; then
-            echo "Timed out waiting for iNiR to start" >&2
+            echo "Timed out waiting for BlueArchiveOS to start" >&2
             exit 1
         fi
         if ! "$qs_bin" -p "$config_dir" ipc call "$@" 2>/dev/null; then
