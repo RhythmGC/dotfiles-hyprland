@@ -248,7 +248,7 @@ ContentPage {
                     }
 
                     StyledText {
-                        text: "[https://github.com/snowarch/inir](https://github.com/snowarch/inir)"
+                        text: "[https://github.com/RhythmGC/dotfiles-hyprland](https://github.com/RhythmGC/dotfiles-hyprland)"
                         font.pixelSize: Appearance.font.pixelSize.small
                         color: Appearance.m3colors.m3primary
                         textFormat: Text.MarkdownText
@@ -272,13 +272,13 @@ ContentPage {
                 RippleButtonWithIcon {
                     materialIcon: "auto_stories"
                     mainText: Translation.tr("Documentation")
-                    onClicked: Qt.openUrlExternally("https://snowarch.github.io/iNiR/docs/")
+                    onClicked: Qt.openUrlExternally("https://github.com/RhythmGC/dotfiles-hyprland/wiki")
                 }
 
                 RippleButtonWithIcon {
                     materialIcon: "bug_report"
                     mainText: Translation.tr("Issues")
-                    onClicked: Qt.openUrlExternally("https://github.com/snowarch/inir/issues")
+                    onClicked: Qt.openUrlExternally("https://github.com/RhythmGC/dotfiles-hyprland/issues")
                 }
 
             }

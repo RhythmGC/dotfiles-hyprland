@@ -121,18 +121,18 @@ WSettingsPage {
         
         WSettingsButton {
             label: Translation.tr("GitHub Repository")
-            description: "github.com/snowarch/inir"
+            description: "github.com/RhythmGC/dotfiles-hyprland"
             icon: "globe-search"
             buttonText: Translation.tr("Open")
-            onButtonClicked: Qt.openUrlExternally("https://github.com/snowarch/inir")
+            onButtonClicked: Qt.openUrlExternally("https://github.com/RhythmGC/dotfiles-hyprland")
         }
 
         WSettingsButton {
             label: Translation.tr("Documentation")
-            description: "snowarch.github.io/iNiR/docs"
+            description: "github.com/RhythmGC/dotfiles-hyprland/wiki"
             icon: "library"
             buttonText: Translation.tr("Open")
-            onButtonClicked: Qt.openUrlExternally("https://snowarch.github.io/iNiR/docs/")
+            onButtonClicked: Qt.openUrlExternally("https://github.com/RhythmGC/dotfiles-hyprland/wiki")
         }
         
         WSettingsButton {
