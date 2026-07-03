@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-INIR_NAME="${INIR_CMD:-inir}"
+INIR_NAME="${INIR_CMD:-ba}"
 
 qs_bin="/usr/bin/qs"
 user_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ba"
@@ -572,7 +572,7 @@ _inir_run_quickshell_rebuild() {
     if _inir_quickshell_abi_status; then
         echo "" >&2
         echo "iNiR: Quickshell rebuilt successfully and ABI mismatch is resolved." >&2
-        echo "      Run 'inir restart' to apply the new binary." >&2
+        echo "      Run 'ba restart' to apply the new binary." >&2
         return 0
     fi
 
@@ -792,7 +792,7 @@ _inir_doctor_perf() {
         ')"
     fi
     if [[ -z "$pid" ]] || ! [[ -d "/proc/$pid" ]]; then
-        echo "iNiR: no running shell found. Start it with 'inir' or 'inir restart' first." >&2
+        echo "iNiR: no running shell found. Start it with 'inir' or 'ba restart' first." >&2
         return 1
     fi
 
@@ -1180,7 +1180,7 @@ check_qs_abi() {
         # and run the fix. Blocking with exit 1 leaves them with no shell at all.
         echo "" >&2
         echo "WARNING: Continuing despite ABI mismatch. Some features may crash." >&2
-        echo "         Fix: inir doctor --fix-abi" >&2
+        echo "         Fix: ${INIR_NAME} doctor --fix-abi" >&2
         echo "" >&2
         return 0
     fi
@@ -1196,7 +1196,7 @@ check_qs_abi() {
         echo "Manual fix: rebuild quickshell from source against the current Qt version." >&2
         echo "            See https://quickshell.org/docs/master/guide/install-setup" >&2
     fi
-    echo "Or run non-interactively: inir doctor --fix-abi --noninteractive" >&2
+    echo "Or run non-interactively: ${INIR_NAME} doctor --fix-abi --noninteractive" >&2
     echo "" >&2
     exit 1
 }
@@ -1236,7 +1236,7 @@ check_setup_version_sync() {
         echo "" >&2
         echo "WARNING: Code version ($code_version) differs from installed version ($installed_version)" >&2
         echo "  This usually means you updated the code (git pull) without running setup." >&2
-        echo "  Run: ./setup update   or   inir update" >&2
+        echo "  Run: ./setup update   or   ${INIR_NAME} update" >&2
         echo "" >&2
     fi
 }
@@ -2214,7 +2214,7 @@ show_logs() {
     # re-impose filtering). Ctrl+C stops it; the normal service can be restarted after.
     if [[ "${1:-}" == "--debug" ]]; then
         echo "Stopping shell and relaunching in foreground with full debug logging." >&2
-        echo "(QS_DEBUG=1, no QT_LOGGING_RULES filtering — Ctrl+C to stop, then 'inir restart')" >&2
+        echo "(QS_DEBUG=1, no QT_LOGGING_RULES filtering — Ctrl+C to stop, then 'ba restart')" >&2
         stop_inir_service_if_active
         kill_shell "$config_dir"
         sleep 1
@@ -2755,7 +2755,7 @@ show_version() {
                 shift
                 ;;
             -h|--help)
-                echo "Usage: inir version [--json]" >&2
+                echo "Usage: ${INIR_NAME} version [--json]" >&2
                 exit 0
                 ;;
             *)
@@ -2897,7 +2897,7 @@ run_theme_command() {
             ;;
         inspect)
             if [[ $# -lt 1 ]]; then
-                echo "Usage: inir theme inspect <target-id>" >&2
+                echo "Usage: ${INIR_NAME} theme inspect <target-id>" >&2
                 exit 1
             fi
             exec python3 "$colors_dir/list-targets.py" inspect "$@"
@@ -2907,21 +2907,21 @@ run_theme_command() {
             ;;
         scaffold)
             if [[ $# -lt 1 ]]; then
-                echo "Usage: inir theme scaffold <target-id> [--label ... --category ... --inputs ...]" >&2
+                echo "Usage: ${INIR_NAME} theme scaffold <target-id> [--label ... --category ... --inputs ...]" >&2
                 exit 1
             fi
             exec python3 "$colors_dir/list-targets.py" scaffold "$@"
             ;;
         apply)
             if [[ $# -eq 0 ]]; then
-                echo "Usage: inir theme apply <target-id ...|all>" >&2
+                echo "Usage: ${INIR_NAME} theme apply <target-id ...|all>" >&2
                 exit 1
             fi
             exec bash "$colors_dir/apply-targets.sh" "$@"
             ;;
         -h|--help|"")
             cat <<'EOF' >&2
-Usage: inir theme <command> [args...]
+Usage: ${INIR_NAME} theme <command> [args...]
 
 Commands:
   list-targets          List declared theming targets
@@ -2958,7 +2958,7 @@ run_ipc_target_command() {
                 if ipc_target_help "$target"; then
                     exit 0
                 fi
-                echo "Usage: inir $target [-c PATH] <function> [args...]" >&2
+                echo "Usage: ${INIR_NAME} $target [-c PATH] <function> [args...]" >&2
                 exit 0
                 ;;
             *)
@@ -2972,7 +2972,7 @@ run_ipc_target_command() {
         if ipc_target_help "$target" 2>/dev/null; then
             exit 1
         fi
-        echo "Usage: inir $target <function> [args...]" >&2
+        echo "Usage: ${INIR_NAME} $target <function> [args...]" >&2
         exit 1
     fi
 
@@ -3066,7 +3066,7 @@ case "$command_name" in
         check_qs_abi
         check_setup_version_sync "$config_dir"
         if has_instances "$config_dir"; then
-            echo "iNiR is already running. Use 'inir restart' to restart." >&2
+            echo "iNiR is already running. Use 'ba restart' to restart." >&2
             exit 0
         fi
         start_background "$config_dir"
@@ -3152,7 +3152,7 @@ case "$command_name" in
         check_qs_abi
         check_setup_version_sync "$config_dir"
         if has_instances "$config_dir"; then
-            echo "iNiR is already running. Use 'inir restart' to restart." >&2
+            echo "iNiR is already running. Use 'ba restart' to restart." >&2
             exit 0
         fi
         if [[ "$foreground" == true ]] && is_inir_service_active; then
@@ -3248,7 +3248,7 @@ case "$command_name" in
                     break
                     ;;
                 -h|--help)
-                    echo "Usage: inir terminal [-c PATH] [args...]" >&2
+                    echo "Usage: ${INIR_NAME} terminal [-c PATH] [args...]" >&2
                     exit 0
                     ;;
                 *)
@@ -3271,7 +3271,7 @@ case "$command_name" in
                     break
                     ;;
                 -h|--help)
-                    echo "Usage: inir browser [-c PATH] [url]" >&2
+                    echo "Usage: ${INIR_NAME} browser [-c PATH] [url]" >&2
                     exit 0
                     ;;
                 *)
@@ -3289,7 +3289,7 @@ case "$command_name" in
                     shift 2
                     ;;
                 -h|--help)
-                    echo "Usage: inir close-window [-c PATH]" >&2
+                    echo "Usage: ${INIR_NAME} close-window [-c PATH]" >&2
                     exit 0
                     ;;
                 *)
@@ -3305,7 +3305,7 @@ case "$command_name" in
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -h|--help)
-                    echo "Usage: inir colorpicker" >&2
+                    echo "Usage: ${INIR_NAME} colorpicker" >&2
                     exit 0
                     ;;
                 *)
@@ -3342,7 +3342,7 @@ case "$command_name" in
             esac
         done
         if [[ $# -lt 2 ]]; then
-            echo "Usage: inir ipc <target> <function> [args...]" >&2
+            echo "Usage: ${INIR_NAME} ipc <target> <function> [args...]" >&2
             exit 1
         fi
         resolve_config_dir
@@ -3617,12 +3617,12 @@ case "$command_name" in
                 fi
                 ;;
             "")
-                printf "Usage: inir completions <bash|zsh|fish>\n\n"
+                printf "Usage: ${INIR_NAME} completions <bash|zsh|fish>\n\n"
                 printf "Print shell completion script to stdout.\n\n"
                 printf "Examples:\n"
                 printf "  eval \"\$(inir completions bash)\"     # Add to .bashrc\n"
-                printf "  inir completions zsh > ~/.zsh/completions/_inir\n"
-                printf "  inir completions fish | source        # Add to config.fish\n"
+                printf "  ${INIR_NAME} completions zsh > ~/.zsh/completions/_inir\n"
+                printf "  ${INIR_NAME} completions fish | source        # Add to config.fish\n"
                 ;;
             *)
                 printf "Unknown shell: '%s'. Supported: bash, zsh, fish\n" "$_comp_shell" >&2
