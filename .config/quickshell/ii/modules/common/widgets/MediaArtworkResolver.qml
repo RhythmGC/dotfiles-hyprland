@@ -30,6 +30,8 @@ QtObject {
     readonly property string artFilePath: root.artFileName.length > 0 ? `${root.cacheDirectory}/${root.artFileName}` : ""
 
     property int _generation: 0
+    property double trackChangeTime: 0
+    property string realExtension: ""
     property int _retryCount: 0
     readonly property int _maxRetries: 3
     property int _localReloadsLeft: 0
@@ -65,7 +67,8 @@ QtObject {
     }
 
     function _cacheFileName(key: string, path: string): string {
-        return `${Qt.md5(key)}${root._imageExtension(path)}`;
+        const ext = root.realExtension.length > 0 ? "." + root.realExtension : root._imageExtension(path);
+        return `${Qt.md5(key)}${ext}`;
     }
 
     function _imageExtension(path: string): string {
@@ -132,6 +135,7 @@ QtObject {
             root.ready = false;
             root.displaySource = "";
         }
+        root.realExtension = "";
         root._pendingDisplaySource = "";
         root._pendingDisplayGeneration = 0;
         root._pendingDisplayChecksLeft = 0;
@@ -170,6 +174,7 @@ QtObject {
             }
 
             localExistsChecker.filePath = root.localFilePath;
+            localExistsChecker.forceAccept = (root._localReloadsLeft === 0);
             localExistsChecker.running = false;
             localExistsChecker.running = true;
             return;
@@ -189,6 +194,7 @@ QtObject {
         if (!root._completed)
             return;
 
+        root.trackChangeTime = Date.now() / 1000;
         root._reset(root.normalizedSourceUrl.length > 0);
         root.refresh();
     }
@@ -197,12 +203,14 @@ QtObject {
         if (!root._completed)
             return;
 
+        root.trackChangeTime = Date.now() / 1000;
         root._reset(false);
         root.refresh();
     }
 
     Component.onCompleted: {
         root._completed = true;
+        root.trackChangeTime = Date.now() / 1000;
         root._localReloadsLeft = root.localReloadPasses;
         root.refresh();
     }
@@ -276,8 +284,65 @@ QtObject {
 
     property var localExistsChecker: Process {
         property string filePath: ""
+        property bool forceAccept: false
+        property string detectedExt: ""
 
-        command: ["/usr/bin/test", "-s", filePath]
+        command: ["/usr/bin/bash", "-c", `
+            path="$1"
+            change_time="$2"
+            force_accept="$3"
+            hash="$4"
+            dir="$5"
+
+            if [ -z "$path" ]; then exit 1; fi
+
+            # Check if cached file already exists
+            if [ -n "$hash" ] && [ -d "$dir" ]; then
+                cached_file=$(find "$dir" -maxdepth 1 -name "\${hash}.*" -size +0 2>/dev/null | head -n 1)
+                if [ -n "$cached_file" ]; then
+                    ext=$(echo "$cached_file" | grep -o -E "\.[a-zA-Z0-9]+$" | tr -d ".")
+                    echo "cached:\${ext:-jpg}"
+                    exit 0
+                fi
+            fi
+
+            [ -s "$path" ] || exit 1
+
+            # Detect actual image format
+            mime=$(/usr/bin/file -b --mime-type "$path" 2>/dev/null)
+            if [ "$mime" = "image/webp" ]; then
+                echo "webp"
+            elif [ "$mime" = "image/jpeg" ]; then
+                echo "jpg"
+            elif [ "$mime" = "image/png" ]; then
+                echo "png"
+            else
+                ext=$(echo "$path" | grep -o -E "\.[a-zA-Z0-9]+$" | tr -d ".")
+                if [ -n "$ext" ]; then
+                    echo "$ext"
+                else
+                    echo "jpg"
+                fi
+            fi
+
+            if [ "$force_accept" = "1" ]; then exit 0; fi
+            mtime=$(/usr/bin/stat -c%Y -- "$path" 2>/dev/null || echo 0)
+            cutoff=$((change_time - 1))
+            if [ "$mtime" -lt "$cutoff" ]; then
+                exit 1
+            fi
+            # Ensure the file size has stabilized
+            size1=$(/usr/bin/stat -c%s -- "$path" 2>/dev/null) || exit 1
+            /usr/bin/sleep 0.15
+            size2=$(/usr/bin/stat -c%s -- "$path" 2>/dev/null) || exit 1
+            [ "$size1" = "$size2" ] || exit 1
+            exit 0
+        `, "_", filePath, Math.floor(root.trackChangeTime).toString(), forceAccept ? "1" : "0", Qt.md5(root.metadataKey), root.cacheDirectory]
+        stdout: SplitParser {
+            onRead: (line) => {
+                localExistsChecker.detectedExt = line.trim()
+            }
+        }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0 && exitCode !== 1)
                 return;
@@ -286,6 +351,16 @@ QtObject {
                 return;
 
             if (exitCode === 0) {
+                if (localExistsChecker.detectedExt.startsWith("cached:")) {
+                    const ext = localExistsChecker.detectedExt.split(":")[1];
+                    root.realExtension = ext;
+                    root._localReloadsLeft = 0;
+                    root._setReadySource(Qt.resolvedUrl(`${root.cacheDirectory}/${Qt.md5(root.metadataKey)}.${ext}`));
+                    return;
+                }
+                if (localExistsChecker.detectedExt.length > 0) {
+                    root.realExtension = localExistsChecker.detectedExt;
+                }
                 root._localReloadsLeft = 0;
                 root._publishLocalFile();
             } else if (root._localReloadsLeft > 0) {

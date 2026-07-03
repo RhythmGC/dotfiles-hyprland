@@ -69,9 +69,7 @@ Scope {
             visible: false
         }
 
-        mask: Region {
-            item: GlobalStates.sidebarRightOpen ? maskItem : null
-        }
+
 
         anchors {
             top: true
@@ -83,7 +81,7 @@ Scope {
         CompositorFocusGrab {
             id: grab
             windows: [ sidebarRoot ]
-            active: CompositorService.isHyprland && sidebarRoot.visible
+            active: CompositorService.isHyprland && sidebarRoot.visible && (Config.options?.sidebar?.focusGrab ?? false)
             onCleared: () => {
                 sidebarRoot.hide()
             }
@@ -91,8 +89,10 @@ Scope {
 
         MouseArea {
             id: backdropClickArea
-            visible: false
             anchors.fill: parent
+            z: -1
+            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+            enabled: GlobalStates.sidebarRightOpen
             onClicked: mouse => {
                 const localPos = mapToItem(sidebarContentLoader, mouse.x, mouse.y)
                 if (localPos.x < 0 || localPos.x > sidebarContentLoader.width

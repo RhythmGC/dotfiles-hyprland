@@ -267,25 +267,12 @@ Singleton {
 		if (name.startsWith('org.mpris.MediaPlayer2.playerctld')) return false;
 		
 		// Handle plasma-browser-integration (KDE Plasma)
-		// Accept browsers playing real media content (YouTube, streaming sites, long-form audio/video)
+		// If we have plasma-browser-integration, we completely ignore built-in browser players to prevent duplicates and stuck tabs
 		if (hasPlasmaIntegration) {
 			const isBrowser = name.startsWith('org.mpris.MediaPlayer2.firefox') ||
 				name.startsWith('org.mpris.MediaPlayer2.chromium') ||
 				name.startsWith('org.mpris.MediaPlayer2.chrome');
-			if (isBrowser) {
-				const trackUrl = player.metadata?.["xesam:url"] ?? "";
-				const hasProgress = (player.position ?? 0) > 0 || (player.length ?? 0) > 0;
-				// Ignore hover/previews: if not playing and no progress/length, skip
-				if (!player.isPlaying && !hasProgress) return false;
-				// Accept known streaming sites
-				if (_isStreamingSite(trackUrl)) return true;
-				// Accept any browser media with sufficient length (> 30s = real content)
-				if ((player.length ?? 0) >= 30) return true;
-				// Accept if actively playing with progress
-				if (player.isPlaying && hasProgress) return true;
-				// Otherwise filter (likely noise)
-				return false;
-			}
+			if (isBrowser) return false;
 		}
 		// plasma-browser-integration publishes its own name
 		if (name === 'org.mpris.MediaPlayer2.plasma-browser-integration') {

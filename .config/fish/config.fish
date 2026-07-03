@@ -46,7 +46,6 @@ if status is-interactive
     alias claẻ clear
     alias clẻa clear
     alias clảe clear
-    alias a antigravity
     alias pamcan pacman
     alias q 'qs -c ii'
     alias ba 'env INIR_CMD=ba ~/.config/quickshell/ii/scripts/ba'
@@ -115,7 +114,6 @@ fish_add_path "/home/rhythmgc/.local/bin"
 # Pi
 fish_add_path "/home/rhythmgc/.local/share/fnm/node-versions/v24.16.0/installation/bin"
 
-
 # Added by Antigravity CLI installer
 set -gx PATH "/home/rhythmgc/.local/bin" $PATH
 if status is-login
@@ -125,3 +123,11 @@ if status is-login
     set -Ux SDL_IM_MODULE fcitx
     set -Ux GLFW_IM_MODULE ibus
 end
+if status is-login
+    set -Ux GTK_IM_MODULE fcitx
+    set -Ux QT_IM_MODULE fcitx
+    set -Ux XMODIFIERS @im=fcitx
+    set -Ux SDL_IM_MODULE fcitx
+    set -Ux GLFW_IM_MODULE ibus
+end
+export YDOTOOL_SOCKET=/run/user/1000/.ydotool_socket

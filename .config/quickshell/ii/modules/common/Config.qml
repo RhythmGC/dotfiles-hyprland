@@ -507,6 +507,8 @@ Singleton {
                 }
                 property list<string> recentThemes: []  // Last 4 used themes
                 property list<string> favoriteThemes: []  // User's favorite themes
+                property list<string> userThemes: []  // Saved custom themes (serialized JSON strings)
+
                 property JsonObject themeSchedule: JsonObject {
                     property bool enabled: false
                     property string dayTheme: "auto"

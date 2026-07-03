@@ -1,30 +1,40 @@
-{"name": "jq", "category": "core", "source": "pacman"}
-{"name": "rsync", "category": "core", "source": "pacman"}
-{"name": "curl", "category": "core", "source": "pacman"}
-{"name": "wget", "category": "core", "source": "pacman"}
-{"name": "fastfetch", "category": "core", "source": "pacman"}
-{"name": "fd", "category": "core", "source": "pacman"}
-{"name": "ripgrep", "category": "core", "source": "pacman"}
-{"name": "unzip", "category": "core", "source": "pacman"}
-{"name": "fnm", "category": "core", "source": "pacman"}
-{"name": "pyenv", "category": "core", "source": "pacman"}
-{"name": "fish", "category": "shell", "source": "pacman"}
-{"name": "starship", "category": "shell", "source": "pacman"}
-{"name": "neovim", "category": "editor", "source": "pacman"}
-{"name": "antigravity-ide", "category": "editor", "source": "pacman"}
-{"name": "hyprland", "category": "desktop", "source": "pacman"}
-{"name": "hyprpaper", "category": "desktop", "source": "pacman"}
-{"name": "hyprlock", "category": "desktop", "source": "pacman"}
-{"name": "hypridle", "category": "desktop", "source": "pacman"}
-{"name": "kitty", "category": "desktop", "source": "pacman"}
-{"name": "rofi-wayland", "category": "desktop", "source": "pacman"}
-{"name": "waybar", "category": "desktop", "source": "pacman"}
-{"name": "polkit-kde-agent", "category": "desktop", "source": "pacman"}
-{"name": "libappindicator", "category": "desktop", "source": "pacman"}
-{"name": "yt-dlp", "category": "desktop", "source": "pacman"}
-{"name": "mpv", "category": "desktop", "source": "pacman"}
-{"name": "socat", "category": "desktop", "source": "pacman"}
-{"name": "illogical-impulse-quickshell-git", "category": "desktop", "source": "yay"}
-{"name": "matugen-bin", "category": "desktop", "source": "yay"}
-{"name": "vesktop-bin", "category": "vesktop", "source": "yay"}
-
+{"name":"jq","category":"core","source":"pacman"}
+{"name":"rsync","category":"core","source":"pacman"}
+{"name":"curl","category":"core","source":"pacman"}
+{"name":"wget","category":"core","source":"pacman"}
+{"name":"fastfetch","category":"core","source":"pacman"}
+{"name":"fd","category":"core","source":"pacman"}
+{"name":"ripgrep","category":"core","source":"pacman"}
+{"name":"unzip","category":"core","source":"pacman"}
+{"name":"fnm","category":"core","source":"pacman"}
+{"name":"pyenv","category":"core","source":"pacman"}
+{"name":"uv","category":"core","source":"pacman"}
+{"name":"bc","category":"core","source":"pacman"}
+{"name":"fish","category":"shell","source":"pacman"}
+{"name":"starship","category":"shell","source":"pacman"}
+{"name":"neovim","category":"editor","source":"pacman"}
+{"name":"hyprland","category":"desktop","source":"pacman"}
+{"name":"hyprpaper","category":"desktop","source":"pacman"}
+{"name":"hyprlock","category":"desktop","source":"pacman"}
+{"name":"hypridle","category":"desktop","source":"pacman"}
+{"name":"kitty","category":"desktop","source":"pacman"}
+{"name":"rofi","category":"desktop","source":"pacman"}
+{"name":"waybar","category":"desktop","source":"pacman"}
+{"name":"polkit-kde-agent","category":"desktop","source":"pacman"}
+{"name":"libappindicator","category":"desktop","source":"pacman"}
+{"name":"yt-dlp","category":"desktop","source":"pacman"}
+{"name":"mpv","category":"desktop","source":"pacman"}
+{"name":"socat","category":"desktop","source":"pacman"}
+{"name":"quickshell-git","category":"desktop","source":"pacman"}
+{"name":"qt6-5compat","category":"desktop","source":"pacman"}
+{"name":"syntax-highlighting","category":"desktop","source":"pacman"}
+{"name":"matugen-bin","category":"desktop","source":"yay"}
+{"name":"vesktop-bin","category":"vesktop","source":"yay"}
+{"name":"grim","category":"desktop","source":"pacman"}
+{"name":"slurp","category":"desktop","source":"pacman"}
+{"name":"wl-clipboard","category":"desktop","source":"pacman"}
+{"name":"cliphist","category":"desktop","source":"pacman"}
+{"name":"ydotool","category":"desktop","source":"pacman"}
+{"name":"plasma-browser-integration","category":"desktop","source":"pacman"}
+{"name":"dolphin","category":"desktop","source":"pacman"}
+{"name":"qt6-imageformats","category":"desktop","source":"pacman"}

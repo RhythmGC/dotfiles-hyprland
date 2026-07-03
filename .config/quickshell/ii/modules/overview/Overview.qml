@@ -60,9 +60,7 @@ Scope {
             WlrLayershell.keyboardFocus: root.shouldShow && !GlobalStates.regionSelectorOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
             color: "transparent"
 
-            mask: Region {
-                item: GlobalStates.overviewOpen ? columnLayout : null
-            }
+
 
             anchors {
                 top: true
@@ -93,8 +91,9 @@ Scope {
 
             MouseArea {
                 id: backdropClickArea
-                visible: false
                 anchors.fill: parent
+                z: -1
+                enabled: GlobalStates.overviewOpen
                 onClicked: mouse => {
                     // Cierra solo si el click es fuera del contenido visible
                     // Check against searchWidget and overviewLoader, not columnLayout

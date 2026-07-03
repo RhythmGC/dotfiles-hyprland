@@ -23,7 +23,15 @@ error() {
 }
 ask() { echo -ne "${CYAN}${BOLD}[?]${NC} $1 "; }
 
+# --- Prevent Running as Root ---
+if [ "$EUID" -eq 0 ]; then
+  echo -e "\033[0;31m\033[1m[ERROR]\033[0;37m Please do NOT run this script as root or with sudo. The installer will prompt for privilege escalation (sudo) when executing commands that require it."
+  exit 1
+fi
+
+
 # --- Banner ---
+
 clear
 echo -e "${MAGENTA}${BOLD}"
 echo "  ██████╗ ██╗  ██╗██╗   ██╗████████╗██╗  ██╗███╗   ███╗ ██████╗  ██████╗"
@@ -59,6 +67,13 @@ if ! command -v git >/dev/null 2>&1; then
   info "Installing git..."
   sudo pacman -S --noconfirm git
 fi
+
+# --- Ensure jq is Configured ---
+if ! command -v jq >/dev/null 2>&1; then
+  info "Installing jq..."
+  sudo pacman -S --noconfirm jq
+fi
+
 
 # --- AUR Helper Detection/Setup ---
 AUR_HELPER=""
@@ -111,7 +126,7 @@ get_selected_packages() {
 
   if [ -f "$DOTFILES_DIR/packages.jsonl" ]; then
     jq -r --arg src "$source_type" --arg cats "$cats" \
-      'select(.source == $src and ($cats | contains("," + .category + ","))) | .name' \
+      '.category as $cat | select(.source == $src and ($cats | contains("," + $cat + ","))) | .name' \
       "$DOTFILES_DIR/packages.jsonl"
   fi
 }
@@ -209,11 +224,14 @@ if [[ ! "$use_sddm_theme" =~ ^[Nn]$ ]]; then
   else
     info "Cloning and installing SDDM Theme..."
     (
-      git clone https://github.com/RhythmGC/BlueArchive-SDDM-theme.git
-      cd BlueArchive-SDDM-theme
+      git clone https://github.com/RhythmGC/BlueArchive-SDDM-theme.git /tmp/BlueArchive-SDDM-theme
+      cd /tmp/BlueArchive-SDDM-theme
       chmod +x ./setup.sh
       ./setup.sh
+      cd ..
+      rm -rf /tmp/BlueArchive-SDDM-theme
     )
+
   fi
 fi
 
@@ -232,17 +250,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     error "Configuration items file not found: $json_file"
   fi
 
-  if ! command -v jq >/dev/null 2>&1; then
-    if command -v pacman >/dev/null 2>&1; then
-      info "Installing jq to parse configuration items..."
-      sudo pacman -S --needed --noconfirm jq
-    else
-      error "jq is not installed and package manager (pacman) was not found. Please install jq manually."
-    fi
-  fi
-
   mapfile -t config_items < <(jq -r '.[]' "$json_file")
-
   backup_created=false
 
   for item in "${config_items[@]}"; do
@@ -256,6 +264,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     fi
 
     info "Processing: $item"
+
 
     # Check if target destination already exists
     if [ -e "$local_dst" ] || [ -L "$local_dst" ]; then
@@ -289,7 +298,112 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   fi
   success "Configurations copied successfully!"
 
+  # Initialize Quickshell virtual environment and Python dependencies
+  venv_dir="$HOME/.local/state/quickshell/.venv"
+  req_file="$DST_CONFIG/quickshell/ii/sdata/uv/requirements.txt"
+  if [ -f "$req_file" ] && command -v uv > /dev/null 2>&1; then
+    info "Setting up Quickshell Python virtual environment and dependencies..."
+    mkdir -p "$(dirname "$venv_dir")"
+    uv venv --prompt ii-venv "$venv_dir"
+    uv pip install --python "$venv_dir" -r "$req_file"
+    success "Quickshell virtual environment and Python dependencies initialized successfully!"
+  fi
+
+  # --- Clipboard: ensure wl-clipboard + cliphist are installed ---
+  clipboard_pkgs=()
+  if ! command -v wl-copy > /dev/null 2>&1; then
+    clipboard_pkgs+=(wl-clipboard)
+  fi
+  if ! command -v cliphist > /dev/null 2>&1; then
+    clipboard_pkgs+=(cliphist)
+  fi
+  if [ ${#clipboard_pkgs[@]} -gt 0 ]; then
+    info "Installing clipboard tools: ${clipboard_pkgs[*]}"
+    sudo pacman -S --needed --noconfirm "${clipboard_pkgs[@]}"
+    success "Clipboard tools installed!"
+  else
+    info "Clipboard tools already installed — skipping."
+  fi
+
+  # --- Clipboard: set up systemd user services for cliphist daemons ---
+  info "Setting up cliphist systemd user services..."
+  mkdir -p "$HOME/.config/systemd/user"
+
+  cat > "$HOME/.config/systemd/user/cliphist-text.service" << 'SVCEOF'
+[Unit]
+Description=Clipboard history manager (text) - cliphist
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/bash -c 'wl-paste --type text --watch bash -c "cliphist store && qs -c ii ipc call cliphistService update"'
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=graphical-session.target
+SVCEOF
+
+  cat > "$HOME/.config/systemd/user/cliphist-image.service" << 'SVCEOF'
+[Unit]
+Description=Clipboard history manager (image) - cliphist
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/bash -c 'wl-paste --type image --watch bash -c "cliphist store && qs -c ii ipc call cliphistService update"'
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=graphical-session.target
+SVCEOF
+
+  systemctl --user daemon-reload
+  systemctl --user enable cliphist-text.service cliphist-image.service
+
+  # --- ydotool: needed for clipboard paste-on-select feature ---
+  if ! command -v ydotool > /dev/null 2>&1; then
+    info "Installing ydotool (required for clipboard paste)..."
+    sudo pacman -S --needed --noconfirm ydotool
+    success "ydotool installed!"
+  else
+    info "ydotool already installed — skipping."
+  fi
+
+  # Add user to input group (required for ydotool to work)
+  if ! groups | grep -q "\binput\b"; then
+    info "Adding $USER to the 'input' group for ydotool..."
+    sudo usermod -aG input "$USER"
+    warn "Group change takes effect on next login."
+  fi
+
+  uid=$(id -u)
+  cat > "$HOME/.config/systemd/user/ydotoold.service" << SVCEOF
+[Unit]
+Description=ydotoold - ydotool daemon
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/ydotoold --socket-path /run/user/${uid}/.ydotool_socket --socket-perm 0660
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=graphical-session.target
+SVCEOF
+
+  systemctl --user daemon-reload
+  systemctl --user enable ydotoold.service
+
+  # Start daemons immediately if a Wayland session is active
+  if [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    systemctl --user restart cliphist-text.service cliphist-image.service ydotoold.service || true
+    success "Clipboard history daemons started! Press Super+V to view history."
+  else
+    info "Clipboard daemons will auto-start on next graphical login (Super+V to open history)."
+  fi
+
   # Restart Vesktop to apply new settings
+
   if command -v vesktop >/dev/null 2>&1; then
     info "Restarting Vesktop to apply new configurations..."
     pkill -f vesktop || killall vesktop || true
@@ -306,6 +420,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   # Copy Zen Browser extensions
   if [ -d "$HOME/.config/zen" ] && [ -d "$DOTFILES_DIR/install/zen-extensions" ]; then
     info "Installing Zen Browser extensions..."
+    shopt -s nullglob
     for profile_dir in "$HOME/.config/zen/"*Default*/; do
       if [ -d "$profile_dir" ]; then
         mkdir -p "${profile_dir}extensions"
@@ -313,10 +428,12 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
         success "Copied extensions to profile: $(basename "$profile_dir")"
       fi
     done
+    shopt -u nullglob
   fi
 
   # Create system CLI wrapper for ba
   info "Creating system CLI wrapper for 'ba'..."
+
   mkdir -p "$HOME/.local/bin"
   
   cat << 'EOF' > "$HOME/.local/bin/ba"
@@ -327,6 +444,42 @@ EOF
   chmod +x "$HOME/.local/bin/ba"
 
   success "CLI wrapper created: ~/.local/bin/ba"
+
+  # --- Plasma Browser Integration: fix Wayland hangs outside Plasma ---
+  if pacman -Qs plasma-browser-integration > /dev/null 2>&1; then
+    info "Configuring plasma-browser-integration XCB wrapper..."
+    mkdir -p "$HOME/.local/bin"
+    cat << 'EOF' > "$HOME/.local/bin/plasma-browser-integration-host-wrapper"
+#!/bin/bash
+export QT_QPA_PLATFORM=xcb
+exec /usr/bin/plasma-browser-integration-host "$@"
+EOF
+    chmod +x "$HOME/.local/bin/plasma-browser-integration-host-wrapper"
+
+    # Setup user-level manifest
+    mkdir -p "$HOME/.mozilla/native-messaging-hosts"
+    cat << 'EOF' > "$HOME/.mozilla/native-messaging-hosts/org.kde.plasma.browser_integration.json"
+{
+    "name": "org.kde.plasma.browser_integration",
+    "description": "Native connector for KDE Plasma",
+    "path": "$HOME/.local/bin/plasma-browser-integration-host-wrapper",
+    "type": "stdio",
+    "allowed_extensions": [
+        "plasma-browser-integration@kde.org"
+    ]
+}
+EOF
+    # Expand $HOME inside path
+    sed -i "s|\$HOME|$HOME|g" "$HOME/.mozilla/native-messaging-hosts/org.kde.plasma.browser_integration.json"
+
+    # Setup Zen Browser-specific manifest if installed
+    if [ -d "/opt/zen-browser-bin" ]; then
+      sudo mkdir -p /opt/zen-browser-bin/native-messaging-hosts
+      sudo cp "$HOME/.mozilla/native-messaging-hosts/org.kde.plasma.browser_integration.json" \
+        /opt/zen-browser-bin/native-messaging-hosts/org.kde.plasma.browser_integration.json
+    fi
+    success "plasma-browser-integration configured successfully!"
+  fi
 fi
 
 # --- Default Shell Verification ---

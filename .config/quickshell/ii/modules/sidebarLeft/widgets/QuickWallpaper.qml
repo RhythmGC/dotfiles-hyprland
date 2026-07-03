@@ -110,7 +110,10 @@ Item {
                     onClicked: {
                         if (root.wallpapersList.length === 0) return
                         const randomIndex = Math.floor(Math.random() * root.wallpapersList.length)
-                        Wallpapers.select(root.wallpapersList[randomIndex])
+                        const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
+                            ? WallpaperListener.getMonitorName(screen)
+                            : ""
+                        Wallpapers.select(root.wallpapersList[randomIndex], Appearance.m3colors.darkmode, monName)
                     }
                     contentItem: Item {
                         MaterialSymbol {
@@ -288,7 +291,12 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: Wallpapers.select(wallpaperDelegate.filePath)
+                                onClicked: {
+                                    const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
+                                        ? WallpaperListener.getMonitorName(screen)
+                                        : ""
+                                    Wallpapers.select(wallpaperDelegate.filePath, Appearance.m3colors.darkmode, monName)
+                                }
                             }
                         }
                     }

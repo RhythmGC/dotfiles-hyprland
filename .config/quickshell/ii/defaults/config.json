@@ -79,6 +79,8 @@
         "fakeScreenRounding": 0,
         "recentThemes": [],
         "favoriteThemes": [],
+        "userThemes": [],
+
         "globalStyleCornerStyles": {
             "material": 1,
             "cards": 3,

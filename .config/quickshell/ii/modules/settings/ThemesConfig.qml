@@ -17,7 +17,129 @@ ContentPage {
     settingsPageIndex: 4
     settingsPageName: Translation.tr("Themes")
 
+    property string themeSaveStatus: "" // "", "saved", "error"
+    property var selectedSaveTags: []
+
+    Timer {
+        id: themeSaveStatusTimer
+        interval: 2000
+        onTriggered: root.themeSaveStatus = ""
+    }
+
+    function toggleSaveTag(tagId) {
+        if (selectedSaveTags.includes(tagId)) {
+            selectedSaveTags = selectedSaveTags.filter(t => t !== tagId);
+        } else {
+            selectedSaveTags = [...selectedSaveTags, tagId];
+        }
+    }
+
+    function saveActiveTheme(name) {
+        if (!name) return;
+        root.themeSaveStatus = "saving";
+        const themeId = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+        
+        const themeColors = {
+            darkmode: Appearance.m3colors.darkmode,
+            transparent: Appearance.m3colors.transparent ?? false,
+            m3background: Appearance.m3colors.m3background.toString(),
+            m3onBackground: Appearance.m3colors.m3onBackground.toString(),
+            m3surface: Appearance.m3colors.m3surface.toString(),
+            m3surfaceDim: Appearance.m3colors.m3surfaceDim.toString(),
+            m3surfaceBright: Appearance.m3colors.m3surfaceBright.toString(),
+            m3surfaceContainerLowest: Appearance.m3colors.m3surfaceContainerLowest.toString(),
+            m3surfaceContainerLow: Appearance.m3colors.m3surfaceContainerLow.toString(),
+            m3surfaceContainer: Appearance.m3colors.m3surfaceContainer.toString(),
+            m3surfaceContainerHigh: Appearance.m3colors.m3surfaceContainerHigh.toString(),
+            m3surfaceContainerHighest: Appearance.m3colors.m3surfaceContainerHighest.toString(),
+            m3onSurface: Appearance.m3colors.m3onSurface.toString(),
+            m3surfaceVariant: Appearance.m3colors.m3surfaceVariant.toString(),
+            m3onSurfaceVariant: Appearance.m3colors.m3onSurfaceVariant.toString(),
+            m3inverseSurface: Appearance.m3colors.m3inverseSurface.toString(),
+            m3inverseOnSurface: Appearance.m3colors.m3inverseOnSurface.toString(),
+            m3outline: Appearance.m3colors.m3outline.toString(),
+            m3outlineVariant: Appearance.m3colors.m3outlineVariant.toString(),
+            m3shadow: Appearance.m3colors.m3shadow.toString(),
+            m3scrim: Appearance.m3colors.m3scrim.toString(),
+            m3surfaceTint: Appearance.m3colors.m3surfaceTint.toString(),
+            m3primary: Appearance.m3colors.m3primary.toString(),
+            m3onPrimary: Appearance.m3colors.m3onPrimary.toString(),
+            m3primaryContainer: Appearance.m3colors.m3primaryContainer.toString(),
+            m3onPrimaryContainer: Appearance.m3colors.m3onPrimaryContainer.toString(),
+            m3inversePrimary: Appearance.m3colors.m3inversePrimary.toString(),
+            m3secondary: Appearance.m3colors.m3secondary.toString(),
+            m3onSecondary: Appearance.m3colors.m3onSecondary.toString(),
+            m3secondaryContainer: Appearance.m3colors.m3secondaryContainer.toString(),
+            m3onSecondaryContainer: Appearance.m3colors.m3onSecondaryContainer.toString(),
+            m3tertiary: Appearance.m3colors.m3tertiary.toString(),
+            m3onTertiary: Appearance.m3colors.m3onTertiary.toString(),
+            m3tertiaryContainer: Appearance.m3colors.m3tertiaryContainer.toString(),
+            m3onTertiaryContainer: Appearance.m3colors.m3onTertiaryContainer.toString(),
+            m3error: Appearance.m3colors.m3error.toString(),
+            m3onError: Appearance.m3colors.m3onError.toString(),
+            m3errorContainer: Appearance.m3colors.m3errorContainer.toString(),
+            m3onErrorContainer: Appearance.m3colors.m3onErrorContainer.toString(),
+            m3primaryFixed: Appearance.m3colors.m3primaryFixed.toString(),
+            m3primaryFixedDim: Appearance.m3colors.m3primaryFixedDim.toString(),
+            m3onPrimaryFixed: Appearance.m3colors.m3onPrimaryFixed.toString(),
+            m3onPrimaryFixedVariant: Appearance.m3colors.m3onPrimaryFixedVariant.toString(),
+            m3secondaryFixed: Appearance.m3colors.m3secondaryFixed.toString(),
+            m3secondaryFixedDim: Appearance.m3colors.m3secondaryFixedDim.toString(),
+            m3onSecondaryFixed: Appearance.m3colors.m3onSecondaryFixed.toString(),
+            m3onSecondaryFixedVariant: Appearance.m3colors.m3onSecondaryFixedVariant.toString(),
+            m3tertiaryFixed: Appearance.m3colors.m3tertiaryFixed.toString(),
+            m3tertiaryFixedDim: Appearance.m3colors.m3tertiaryFixedDim.toString(),
+            m3onTertiaryFixed: Appearance.m3colors.m3onTertiaryFixed.toString(),
+            m3onTertiaryFixedVariant: Appearance.m3colors.m3onTertiaryFixedVariant.toString(),
+            m3success: Appearance.m3colors.m3success.toString(),
+            m3onSuccess: Appearance.m3colors.m3onSuccess.toString(),
+            m3successContainer: Appearance.m3colors.m3successContainer.toString(),
+            m3onSuccessContainer: Appearance.m3colors.m3onSuccessContainer.toString()
+        };
+
+        const themeData = {
+            id: themeId,
+            name: name,
+            colors: themeColors,
+            tags: ["custom", ...root.selectedSaveTags]
+        };
+
+        let currentThemes = Config.options?.appearance?.userThemes ?? [];
+        let filtered = [];
+        for (let i = 0; i < currentThemes.length; i++) {
+            try {
+                const parsed = JSON.parse(currentThemes[i]);
+                if (parsed.id !== themeId) {
+                    filtered.push(currentThemes[i]);
+                }
+            } catch (e) {}
+        }
+        filtered.push(JSON.stringify(themeData));
+        Config.setNestedValue("appearance.userThemes", filtered);
+        root.themeSaveStatus = "saved";
+        root.selectedSaveTags = [];
+        themeSaveStatusTimer.restart();
+    }
+
+    function deleteActiveTheme(themeId) {
+        let currentThemes = Config.options?.appearance?.userThemes ?? [];
+        let filtered = [];
+        for (let i = 0; i < currentThemes.length; i++) {
+            try {
+                const parsed = JSON.parse(currentThemes[i]);
+                if (parsed.id !== themeId) {
+                    filtered.push(currentThemes[i]);
+                }
+            } catch (e) {}
+        }
+        Config.setNestedValue("appearance.userThemes", filtered);
+        if (Config.options?.appearance?.theme === themeId) {
+            ThemeService.setTheme("auto");
+        }
+    }
+
     function isFontInstalled(fontName) {
+
         if (!fontName || fontName.trim() === "") return false
         var testFont = Qt.font({ family: fontName, pixelSize: 12 })
         return testFont.family.toLowerCase() === fontName.toLowerCase()
@@ -535,6 +657,205 @@ ContentPage {
             }
         }
     }
+
+    // Save Current Theme Section
+    SettingsCardSection {
+        expanded: true
+        icon: "bookmark"
+        title: Translation.tr("Save Active Theme")
+
+        SettingsGroup {
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                StyledText {
+                    text: Translation.tr("Save the currently active color palette (including wallpaper-generated colors) as a custom theme preset.")
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: Appearance.colors.colSubtext
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 40
+                        radius: Appearance.rounding.small
+                        color: Appearance.colors.colLayer2
+                        border.width: saveActiveNameInput.activeFocus ? 2 : 0
+                        border.color: Appearance.colors.colPrimary
+
+                        TextInput {
+                            id: saveActiveNameInput
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            verticalAlignment: TextInput.AlignVCenter
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnLayer2
+                            clip: true
+
+                            Text {
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                text: Translation.tr("Enter theme name...")
+                                font: parent.font
+                                color: Appearance.colors.colSubtext
+                                visible: !parent.text && !parent.activeFocus
+                            }
+
+                            Keys.onReturnPressed: {
+                                if (saveActiveNameInput.text.trim().length > 0) {
+                                    root.saveActiveTheme(saveActiveNameInput.text.trim())
+                                    saveActiveNameInput.text = ""
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        implicitWidth: 40
+                        implicitHeight: 40
+                        radius: Appearance.rounding.small
+                        color: saveActiveNameInput.text.trim().length > 0 
+                            ? Appearance.colors.colPrimary 
+                            : Appearance.colors.colLayer2
+                        
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: root.themeSaveStatus === "saved" ? "check" : "save"
+                            iconSize: 20
+                            color: saveActiveNameInput.text.trim().length > 0 || root.themeSaveStatus === "saved"
+                                ? (root.themeSaveStatus === "saved" ? Appearance.colors.colSuccess : Appearance.colors.colOnPrimary)
+                                : Appearance.colors.colSubtext
+                        }
+                        
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: saveActiveNameInput.text.trim().length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                const name = saveActiveNameInput.text.trim()
+                                if (!name) return
+                                root.saveActiveTheme(name)
+                                saveActiveNameInput.text = ""
+                            }
+                        }
+                    }
+                }
+
+                // Theme tags selection
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    StyledText {
+                        text: Translation.tr("Theme Tags (Optional)")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.Medium
+                        color: Appearance.colors.colSubtext
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 4
+
+                        Repeater {
+                            model: ThemePresets.availableTags
+
+                            Rectangle {
+                                required property var modelData
+
+                                readonly property bool isSelected: root.selectedSaveTags.includes(modelData.id)
+
+                                width: tagSelectRow.implicitWidth + 12
+                                height: 24
+                                radius: 12
+                                color: isSelected 
+                                    ? Appearance.colors.colPrimaryContainer
+                                    : saveTagMouse.containsMouse ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer2
+
+                                RowLayout {
+                                    id: tagSelectRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+
+                                    MaterialSymbol {
+                                        text: modelData.icon
+                                        iconSize: 12
+                                        color: parent.parent.isSelected ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnLayer2
+                                    }
+
+                                    StyledText {
+                                        text: modelData.name
+                                        font.pixelSize: Appearance.font.pixelSize.smallest
+                                        color: parent.parent.isSelected ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnLayer2
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: saveTagMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleSaveTag(modelData.id)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Saved themes quick list (only user-saved custom ones)
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    visible: {
+                        const userThemesRaw = Config.options?.appearance?.userThemes ?? [];
+                        return userThemesRaw.length > 0;
+                    }
+
+                    StyledText {
+                        text: Translation.tr("Your Saved Themes")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        font.weight: Font.Medium
+                        color: Appearance.colors.colSubtext
+                        Layout.topMargin: 8
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Repeater {
+                            model: {
+                                let list = [];
+                                const userThemesRaw = Config.options?.appearance?.userThemes ?? [];
+                                for (let i = 0; i < userThemesRaw.length; i++) {
+                                    try {
+                                        const parsed = JSON.parse(userThemesRaw[i]);
+                                        list.push(parsed);
+                                    } catch(e) {}
+                                }
+                                return list;
+                            }
+
+                            InputChip {
+                                required property var modelData
+                                text: modelData.name
+                                chipIcon: "palette"
+                                onActivated: ThemeService.setTheme(modelData.id)
+                                onRemoved: root.deleteActiveTheme(modelData.id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     // Scheme Variant Section
     SettingsCardSection {

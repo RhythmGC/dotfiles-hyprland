@@ -28,11 +28,12 @@ Singleton {
         { id: "bluearchive", name: Translation.tr("BlueArchive"), icon: "school" }
     ]
 
-    readonly property var presets: [
+    readonly property var builtInPresets: [
         {
             id: "auto",
             name: "Auto (Wallpaper)",
             description: "Colors generated from your wallpaper",
+
             icon: "wallpaper",
             colors: null,
             tags: []
@@ -3209,7 +3210,56 @@ Singleton {
         m3onSuccessContainer: "#fff0b3"
     })
 
+    readonly property var presets: {
+        let list = [];
+        
+        list.push({
+            id: "auto",
+            name: "Auto (Wallpaper)",
+            description: "Colors generated from your wallpaper",
+            icon: "wallpaper",
+            colors: null,
+            tags: []
+        });
+        
+        list.push({
+            id: "custom",
+            name: "Custom",
+            description: "Your personalized color palette",
+            icon: "edit",
+            colors: "custom",
+            tags: []
+        });
+
+        const userThemesRaw = Config.options?.appearance?.userThemes ?? [];
+        for (let i = 0; i < userThemesRaw.length; i++) {
+            try {
+                const parsed = JSON.parse(userThemesRaw[i]);
+                list.push({
+                    id: parsed.id,
+                    name: parsed.name,
+                    description: parsed.description ?? Translation.tr("User-saved custom theme"),
+                    icon: parsed.icon ?? "favorite",
+                    colors: parsed.colors,
+                    tags: parsed.tags ?? ["custom"]
+                });
+            } catch (e) {
+                console.error("[ThemePresets] Failed to parse user theme:", e);
+            }
+        }
+
+        for (let i = 0; i < builtInPresets.length; i++) {
+            const p = builtInPresets[i];
+            if (p.id !== "auto" && p.id !== "custom") {
+                list.push(p);
+            }
+        }
+
+        return list;
+    }
+
     function getPreset(id) {
+
         for (let i = 0; i < presets.length; i++) {
             if (presets[i].id === id) return presets[i];
         }
@@ -3249,7 +3299,7 @@ Singleton {
         var cSource = preset.colors === "custom" ? (Config.options?.appearance?.customTheme ?? {}) : preset.colors;
         
         // Soften colors for built-in presets (not custom) if enabled in config
-        var shouldSoften = (Config.options?.appearance?.softenColors ?? true) && (id !== "custom");
+        var shouldSoften = (Config.options?.appearance?.softenColors ?? true) && (id !== "custom") && !(preset.tags && preset.tags.includes("custom"));
         var c = shouldSoften ? softenColors(cSource) : cSource;
 
         const m3 = Appearance.m3colors;
@@ -3875,7 +3925,7 @@ Singleton {
         
         // Apply preview (no external apps)
         var cSource = preset.colors === "custom" ? Config.options?.appearance?.customTheme : preset.colors;
-        var shouldSoften = (Config.options?.appearance?.softenColors ?? true) && (id !== "custom");
+        var shouldSoften = (Config.options?.appearance?.softenColors ?? true) && (id !== "custom") && !(preset.tags && preset.tags.includes("custom"));
         var c = shouldSoften ? softenColors(cSource) : cSource;
         
         applyColorsToAppearance(c);

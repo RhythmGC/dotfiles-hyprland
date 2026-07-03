@@ -19,6 +19,7 @@ Item {
         target: GlobalStates
         function onSidebarLeftOpenChanged() {
             if (!GlobalStates.sidebarLeftOpen && root.editing) {
+                Notepad.setTextValue(root.draft)
                 root.editing = false
                 textArea.focus = false
             }

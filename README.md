@@ -85,6 +85,6 @@ This system utilizes **Matugen** to read colors from your active desktop wallpap
 
 All configurations and scripts are open-source. Feel free to fork, modify, and integrate elements of these dotfiles into your own setup.
 
-This dotfiles setup is currently based on [End-4's dots-hyprland](https://github.com/end-4/dots-hyprland). If you find this setup useful, consider visiting the original repository and giving End-4 a star.
+This dotfiles setup is currently based on [End-4's dots-hyprland](https://github.com/end-4/dots-hyprland) and [iNiR](https://github.com/snowarch/iNiR). If you find this setup useful, consider visiting the original repository and giving End-4 and Snowarch a star.
 
 *Elevate your Linux desktop experience!*
