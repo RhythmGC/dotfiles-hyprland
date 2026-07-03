@@ -144,8 +144,8 @@ ContentPage {
                         height: 60
                         sourceSize.width: 60
                         sourceSize.height: 60
-                        source: Quickshell.shellPath("assets/icons/sf.svg")
-                        fillMode: Image.PreserveAspectFit
+                        source: "https://github.com/RhythmGC.png"
+                        fillMode: Image.PreserveAspectCrop
                         layer.enabled: Appearance.effectsEnabled
 
                         layer.effect: MultiEffect {
