@@ -46,7 +46,7 @@ WSettingsPage {
                 spacing: 4
                 
                 WText {
-                    text: "iNiR"
+                    text: "BlueArchiveOS"
                     font.pixelSize: Looks.font.pixelSize.xlarger * 1.4
                     font.weight: Looks.font.weight.stronger
                 }

@@ -69,7 +69,7 @@ Singleton {
 
     // Global style - centralized style detection (reactive bindings)
     readonly property string globalStyle: Config?.options?.appearance?.globalStyle ?? "material"
-    readonly property bool inirEverywhere: globalStyle === "inir"
+    readonly property bool inirEverywhere: globalStyle === "ba"
     // angelEverywhere - flagship neo-brutalism glass style (superset of aurora)
     readonly property bool angelEverywhere: globalStyle === "angel"
     // auroraEverywhere controls blur/glass backgrounds — angel inherits aurora blur
@@ -380,7 +380,7 @@ Singleton {
     // 2. Theme requests mono (Matrix, Vesper) -> Monospace
     // 3. Theme requests serif (Angel) -> Serif (if mapped)
     // 4. Default -> Config Main Font
-    readonly property bool _forceMono: globalStyle === "inir" || _themeMeta.fontStyle === "mono"
+    readonly property bool _forceMono: globalStyle === "ba" || _themeMeta.fontStyle === "mono"
     readonly property string _angelFont: "Oxanium"
     readonly property bool _useAngelFont: globalStyle === "angel"
     

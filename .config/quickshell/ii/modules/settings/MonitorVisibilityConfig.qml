@@ -368,7 +368,7 @@ ContentPage {
             NoticeBox {
                 Layout.fillWidth: true
                 materialIcon: "info"
-                text: Translation.tr("This page controls where iNiR shell surfaces appear. It does not change monitor resolution, scale, rotation, or physical output layout.")
+                text: Translation.tr("This page controls where BlueArchiveOS shell surfaces appear. It does not change monitor resolution, scale, rotation, or physical output layout.")
             }
 
             ContentSubsection {

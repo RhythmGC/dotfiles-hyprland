@@ -1341,7 +1341,7 @@ ContentPage {
                     }
                 }
 
-                if (styleId === "inir") {
+                if (styleId === "ba") {
                     return {
                         "dock.cardStyle": false,
                         "sidebar.cardStyle": false,
@@ -1389,7 +1389,7 @@ ContentPage {
                         { displayName: Translation.tr("Material"), icon: "tune", value: "material" },
                         { displayName: Translation.tr("Cards"), icon: "branding_watermark", value: "cards" },
                         { displayName: Translation.tr("Aurora"), icon: "blur_on", value: "aurora" },
-                        { displayName: Translation.tr("Inir"), icon: "terminal", value: "inir" },
+                        { displayName: Translation.tr("Inir"), icon: "terminal", value: "ba" },
                         { displayName: Translation.tr("Angel"), icon: "raven", value: "angel" }
                     ]
                 }

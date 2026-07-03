@@ -416,7 +416,7 @@ Item {
                         buttonRadius: root.angelStyle ? Appearance.angel.roundingSmall : 16
                         colBackground: "transparent"
                         colBackgroundHover: root.colCardHover
-                        onClicked: Quickshell.execDetached([Quickshell.shellPath("scripts/inir"), "settings"])
+                        onClicked: Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "settings"])
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
                             text: "settings"

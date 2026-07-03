@@ -118,7 +118,7 @@ ContentPage {
     SettingsCardSection {
         expanded: false
         icon: "deployed_code"
-        title: "iNiR"
+        title: "BlueArchiveOS"
 
         SettingsGroup {
             RowLayout {
@@ -210,7 +210,7 @@ ContentPage {
                     Layout.alignment: Qt.AlignVCenter
 
                     StyledText {
-                        text: "iNiR"
+                        text: "BlueArchiveOS"
                         font.pixelSize: Appearance.font.pixelSize.title
                     }
 

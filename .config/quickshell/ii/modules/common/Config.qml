@@ -429,7 +429,7 @@ Singleton {
 
             property JsonObject appearance: JsonObject {
                 property string theme: "auto" // Theme preset ID: "auto" for wallpaper-based, or preset name like "gruvbox-dark", "catppuccin-mocha", "custom", etc.
-                property string globalStyle: "material" // "material" | "cards" | "aurora" | "inir" | "angel"
+                property string globalStyle: "material" // "material" | "cards" | "aurora" | "ba" | "angel"
                 property JsonObject aurora: JsonObject {
                     property JsonObject transparency: JsonObject {
                         property real overlay: 0.38       // Main panels
@@ -1152,7 +1152,7 @@ Singleton {
                 property int customRounding: -1 // -1: use global theme rounding | 0+: override bar rounding (px)
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property bool borderless: false // true for no grouping of items
-                property string topLeftIcon: "distro" // Options: "distro" or any icon name in ~/.config/quickshell/inir/assets/icons
+                property string topLeftIcon: "distro" // Options: "distro" or any icon name in ~/.config/quickshell/ba/assets/icons
                 property bool showBackground: true
                 property bool showScrollHints: true // Show brightness/volume scroll hints on hover
                 property string leftScrollAction: "brightness" // "brightness", "volume", "workspace", "none"
@@ -1467,8 +1467,8 @@ Singleton {
             }
 
             property JsonObject hotspot: JsonObject {
-                property string ssid: "iNiR Hotspot"
-                property string password: "inirhotspot"
+                property string ssid: "ba Hotspot"
+                property string password: "bahotspot"
                 property string band: "bg" // "bg" = 2.4GHz, "a" = 5GHz
             }
 

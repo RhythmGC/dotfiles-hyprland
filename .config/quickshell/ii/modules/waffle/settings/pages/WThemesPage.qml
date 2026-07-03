@@ -574,7 +574,7 @@ WSettingsPage {
                     displayName: Translation.tr("Aurora")
                 },
                 {
-                    value: "inir",
+                    value: "ba",
                     displayName: Translation.tr("Inir")
                 },
                 {

@@ -117,9 +117,9 @@ Scope {
         { pageIndex: 15, pageName: overlayPages[15].name, section: Translation.tr("Material shell surfaces"), label: Translation.tr("Bar, dock, and media controls"), description: Translation.tr("Choose which monitors show Material shell surfaces"), keywords: ["monitor", "visibility", "bar", "dock", "media", "workspace", "secondary"] },
         { pageIndex: 15, pageName: overlayPages[15].name, section: Translation.tr("Shared popups and widgets"), label: Translation.tr("Shared popups and widgets"), description: Translation.tr("Choose which monitors show notifications, OSD, and desktop widgets"), keywords: ["monitor", "visibility", "notifications", "osd", "widgets", "secondary", "workspace"] },
         // Themes (page 4)
-        { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Global Style"), description: Translation.tr("Material, Cards, Aurora glass effect, Inir TUI style"), keywords: ["global", "style", "aurora", "inir", "material", "cards", "glass", "tui", "transparency", "blur"] },
+        { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Global Style"), description: Translation.tr("Material, Cards, Aurora glass effect, Ba TUI style"), keywords: ["global", "style", "aurora", "ba", "material", "cards", "glass", "tui", "transparency", "blur"] },
         { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Aurora"), description: Translation.tr("Glass effect with wallpaper blur behind panels"), keywords: ["aurora", "glass", "blur", "transparency", "style", "translucent"] },
-        { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Inir"), description: Translation.tr("TUI-inspired style with accent borders"), keywords: ["inir", "tui", "terminal", "borders", "style", "minimal"] },
+        { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Ba"), description: Translation.tr("TUI-inspired style with accent borders"), keywords: ["ba", "tui", "terminal", "borders", "style", "minimal"] },
         { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Material"), description: Translation.tr("Material Design solid backgrounds"), keywords: ["material", "solid", "style", "default", "google"] },
         { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Global Style"), label: Translation.tr("Cards"), description: Translation.tr("Card-style elevated containers"), keywords: ["cards", "card", "style", "elevated", "shadow"] },
         { pageIndex: 4, pageName: overlayPages[4].name, section: Translation.tr("Theme Presets"), label: Translation.tr("Theme Presets"), description: Translation.tr("Predefined color themes like Gruvbox, Catppuccin, Nord, Dracula"), keywords: ["theme", "preset", "gruvbox", "catppuccin", "nord", "dracula", "material", "colors", "palette", "monokai", "solarized", "tokyo", "night", "everforest", "rose", "pine"] },
@@ -1006,7 +1006,7 @@ Scope {
                             buttonRadius: Appearance.rounding.full
                             implicitWidth: 36
                             implicitHeight: 36
-                            onClicked: Quickshell.execDetached([Quickshell.shellPath("scripts/inir"), "lock", "activate"])
+                            onClicked: Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "lock", "activate"])
                             contentItem: MaterialSymbol {
                                 anchors.centerIn: parent
                                 horizontalAlignment: Text.AlignHCenter
@@ -1297,7 +1297,7 @@ Scope {
                                     // component (timers and all), so a deferred restart
                                     // never gets to fire.  The spawned process survives
                                     // independently of our QML scope.
-                                    Quickshell.execDetached([Quickshell.shellPath("scripts/inir"), "settings-window"])
+                                    Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "settings-window"])
                                     Config.setNestedValue("settingsUi.overlayMode", false)
                                     GlobalStates.settingsOverlayOpen = false
                                 }

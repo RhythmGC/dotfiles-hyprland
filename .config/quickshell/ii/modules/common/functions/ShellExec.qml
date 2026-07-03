@@ -57,7 +57,7 @@ Singleton {
             fi
             exec "$@"
         `
-        Quickshell.execDetached([root.bashPath, "-lc", script, "inir-scope", root.systemdRunPath, desc, ...argv])
+        Quickshell.execDetached([root.bashPath, "-lc", script, "ba-scope", root.systemdRunPath, desc, ...argv])
     }
 
     function execCmd(cmd: string): void {

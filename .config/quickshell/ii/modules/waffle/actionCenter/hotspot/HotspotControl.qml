@@ -81,8 +81,8 @@ Item {
                             }
                             WTextField {
                                 Layout.fillWidth: true
-                                placeholderText: "iNiR Hotspot"
-                                text: Config.options?.hotspot?.ssid ?? "iNiR Hotspot"
+                                placeholderText: "ba Hotspot"
+                                text: Config.options?.hotspot?.ssid ?? "ba Hotspot"
                                 onTextEdited: Config.setNestedValue("hotspot.ssid", text)
                             }
                         }
@@ -100,8 +100,8 @@ Item {
                             }
                             WTextField {
                                 Layout.fillWidth: true
-                                placeholderText: "inirhotspot"
-                                text: Config.options?.hotspot?.password ?? "inirhotspot"
+                                placeholderText: "bahotspot"
+                                text: Config.options?.hotspot?.password ?? "bahotspot"
                                 echoMode: TextInput.Password
                                 onTextEdited: Config.setNestedValue("hotspot.password", text)
                             }

@@ -112,7 +112,7 @@ Item {
                         GlobalStates.settingsOverlayRequestedPage = 14
                         GlobalStates.settingsOverlayOpen = true
                     } else {
-                        Quickshell.execDetached(["/usr/bin/env", "QS_SETTINGS_PAGE=14", Quickshell.shellPath("scripts/inir"), "settings-window"])
+                        Quickshell.execDetached(["/usr/bin/env", "QS_SETTINGS_PAGE=14", Quickshell.shellPath("scripts/ba"), "settings-window"])
                     }
                 }
                 contentItem: MaterialSymbol { anchors.centerIn: parent; text: "settings"; iconSize: 18; color: Appearance.colors.colOnLayer1 }
@@ -295,7 +295,7 @@ Item {
                     }
                     StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "~/.config/inir/widgets/"
+                        text: "~/.config/ba/widgets/"
                         color: ColorUtils.applyAlpha(Appearance.colors.colOnLayer1, 0.2)
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         font.family: Appearance.font.family.monospace

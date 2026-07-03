@@ -78,7 +78,7 @@ ColumnLayout {
         case "convert":
             if (convertSource === "custom")
                 GowallService.convertCustomTheme(sourcePath, customThemeName.trim(), customColors, selectedFormat)
-            else if (convertSource === "inir")
+            else if (convertSource === "ba")
                 GowallService.convertCurrentTheme(sourcePath, selectedFormat)
             else if (selectedTheme.length > 0)
                 GowallService.convertTheme(sourcePath, selectedTheme, selectedFormat)
@@ -233,7 +233,7 @@ ColumnLayout {
             onSelected: newValue => { root.convertSource = newValue }
             options: [
                 { displayName: Translation.tr("Built-in theme"), icon: "style", value: "builtin" },
-                { displayName: Translation.tr("Current iNiR theme"), icon: "palette", value: "inir" },
+                { displayName: Translation.tr("Current BlueArchiveOS theme"), icon: "palette", value: "ba" },
                 { displayName: Translation.tr("Custom palette"), icon: "edit", value: "custom" }
             ]
         }
@@ -334,13 +334,13 @@ ColumnLayout {
     }
 
     ContentSubsection {
-        visible: GowallService.available && root.operationMode === "convert" && root.convertSource === "inir"
-        title: Translation.tr("Current iNiR palette")
+        visible: GowallService.available && root.operationMode === "convert" && root.convertSource === "ba"
+        title: Translation.tr("Current BlueArchiveOS palette")
 
         StyledText {
             Layout.fillWidth: true
             visible: !GowallService.hasCurrentThemePalette
-            text: Translation.tr("The current iNiR Material You palette is not available yet. Regenerate your wallpaper colors and try again.")
+            text: Translation.tr("The current BlueArchiveOS Material You palette is not available yet. Regenerate your wallpaper colors and try again.")
             font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colSubtext
             wrapMode: Text.WordWrap

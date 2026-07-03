@@ -1132,7 +1132,7 @@ Scope {
                 closeOnHoverLost: true
                 model: [
                     { text: Translation.tr("Settings"), iconName: "settings", monochromeIcon: true,
-                        action: () => { Quickshell.execDetached([Quickshell.shellPath("scripts/inir"), "settings"]) } },
+                        action: () => { Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "settings"]) } },
                     { type: "separator" },
                     { text: Translation.tr("Change wallpaper"), iconName: "image", monochromeIcon: true,
                         action: () => { GlobalActions.runLauncher(["wallpaperSelector", "toggle"]) } },
@@ -1604,7 +1604,7 @@ Scope {
                                         GlobalStates.settingsOverlayRequestedPage = 14
                                         GlobalStates.settingsOverlayOpen = true
                                     } else {
-                                        Quickshell.execDetached(["/usr/bin/env", "QS_SETTINGS_PAGE=14", Quickshell.shellPath("scripts/inir"), "settings-window"])
+                                        Quickshell.execDetached(["/usr/bin/env", "QS_SETTINGS_PAGE=14", Quickshell.shellPath("scripts/ba"), "settings-window"])
                                     }
                                 }
                                 contentItem: MaterialSymbol {
