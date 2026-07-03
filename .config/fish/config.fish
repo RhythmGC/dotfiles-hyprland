@@ -49,8 +49,7 @@ if status is-interactive
     alias a antigravity
     alias pamcan pacman
     alias q 'qs -c ii'
-    alias ba '~/.config/quickshell/ii/scripts/inir'
-    alias inir '~/.config/quickshell/ii/scripts/inir'
+    alias ba '~/.config/quickshell/ii/scripts/ba'
     alias stfu 'shutdown now'
     function n
         if test (count $argv) -eq 0
