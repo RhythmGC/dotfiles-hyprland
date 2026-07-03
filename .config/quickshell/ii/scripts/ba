@@ -1627,7 +1627,7 @@ resolve_config_dir() {
 }
 
 list_instances() {
-    "$qs_bin" -p "$1" list 2>/dev/null || true
+    "$qs_bin" list -p "$1" 2>/dev/null || true
 }
 
 has_instances() {
@@ -2003,7 +2003,7 @@ kill_shell() {
     # qs kill only kills one instance per invocation — loop until all are gone.
     local attempts=0
     while (( attempts < 10 )); do
-        "$qs_bin" -p "$dir" kill >/dev/null 2>&1 || break
+        "$qs_bin" kill -p "$dir" >/dev/null 2>&1 || break
         attempts=$((attempts + 1))
         sleep 0.2
     done
@@ -2069,7 +2069,7 @@ restart_shell() {
         # Brief pause to let QML initialization settle before checking logs
         sleep 1
         local errors
-        errors="$("$qs_bin" -p "$dir" log 2>/dev/null | grep -iE 'error|ReferenceError|TypeError|binding loop' | tail -10 || true)"
+        errors="$("$qs_bin" log -p "$dir" 2>/dev/null | grep -iE 'error|ReferenceError|TypeError|binding loop' | tail -10 || true)"
         if [[ -n "$errors" ]]; then
             printf '\n\033[33m── errors in recent logs ──\033[0m\n'
             printf '%s\n' "$errors"
@@ -2085,7 +2085,7 @@ open_settings() {
         exit 1
     fi
 
-    exec "$qs_bin" -p "$dir" ipc call settings open
+    exec "$qs_bin" ipc -p "$dir" call settings open
 }
 
 open_detached_qml_window() {
@@ -2227,10 +2227,10 @@ show_logs() {
     # including the kf.*/qt.qml.*/dbus.properties categories hidden by the default view.
     if [[ "${1:-}" == "--full" ]]; then
         shift
-        exec "$qs_bin" -p "$config_dir" log --rules "*=true" "$@"
+        exec "$qs_bin" log -p "$config_dir" --rules "*=true" "$@"
     fi
 
-    "$qs_bin" -p "$config_dir" log | tail -50
+    "$qs_bin" log -p "$config_dir" | tail -50
 }
 
 run_repair() {
@@ -2259,7 +2259,7 @@ run_repair() {
     printf '\n== recent logs ==\n'
     show_logs
     printf '\n== filtered errors ==\n'
-    "$qs_bin" -p "$dir" log | grep -iE 'error|ReferenceError|TypeError|binding loop' | tail -80 || true
+    "$qs_bin" log -p "$dir" | grep -iE 'error|ReferenceError|TypeError|binding loop' | tail -80 || true
 }
 
 run_local_test() {
@@ -2990,9 +2990,9 @@ run_ipc_target_command() {
     # IPC handlers for most panels register ~500ms after shell start (deferred panel
     # loading at boot). If the first call fails while the shell is still initializing,
     # retry once after a brief wait before giving up.
-    if ! "$qs_bin" -p "$config_dir" ipc call "$target" "$@" 2>/dev/null; then
+    if ! "$qs_bin" ipc -p "$config_dir" call "$target" "$@" 2>/dev/null; then
         has_instances "$config_dir" && sleep 0.5
-        exec "$qs_bin" -p "$config_dir" ipc call "$target" "$@"
+        exec "$qs_bin" ipc -p "$config_dir" call "$target" "$@"
     fi
 }
 
@@ -3353,9 +3353,9 @@ case "$command_name" in
             echo "Timed out waiting for BlueArchiveOS to start" >&2
             exit 1
         fi
-        if ! "$qs_bin" -p "$config_dir" ipc call "$@" 2>/dev/null; then
+        if ! "$qs_bin" ipc -p "$config_dir" call "$@" 2>/dev/null; then
             has_instances "$config_dir" && sleep 0.5
-            exec "$qs_bin" -p "$config_dir" ipc call "$@"
+            exec "$qs_bin" ipc -p "$config_dir" call "$@"
         fi
         ;;
     settings|open)

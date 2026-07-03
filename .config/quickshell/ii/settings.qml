@@ -101,7 +101,7 @@ ApplicationWindow {
             name: Translation.tr("Compositor"),
             icon: "desktop_windows",
             essential: false,
-            component: "modules/settings/NiriConfig.qml"
+            component: CompositorService.isNiri ? "modules/settings/NiriConfig.qml" : "modules/settings/HyprlandConfig.qml"
         },
         {
             name: Translation.tr("About"),

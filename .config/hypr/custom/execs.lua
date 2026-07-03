@@ -1,11 +1,11 @@
 local function exec_once(cmd, check_proc)
-    check_proc = check_proc or cmd:match("^([^ ]+)")
-    local handle = io.popen("pgrep -f " .. check_proc .. " >/dev/null && echo 'running' || echo ''")
-    local result = handle:read("*a")
-    handle:close()
-    if not result:find("running") then
-        hl.exec_cmd(cmd)
-    end
+	check_proc = check_proc or cmd:match("^([^ ]+)")
+	local handle = io.popen("pgrep -f " .. check_proc .. " >/dev/null && echo 'running' || echo ''")
+	local result = handle:read("*a")
+	handle:close()
+	if not result:find("running") then
+		hl.exec_cmd(cmd)
+	end
 end
 
 exec_once("9router -d", "9router")

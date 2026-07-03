@@ -221,4 +221,42 @@ Singleton {
             screenZoom = Math.max(screenZoom - 0.4, 1)
         }
 	}
+
+    function closeAllOverlays() {
+        overviewOpen = false
+        sidebarLeftOpen = false
+        sidebarRightOpen = false
+        controlPanelOpen = false
+        altSwitcherOpen = false
+        clipboardOpen = false
+        settingsOverlayOpen = false
+        cheatsheetOpen = false
+        coverflowSelectorOpen = false
+        wallpaperSelectorOpen = false
+
+        searchOpen = false
+        waffleActionCenterOpen = false
+        waffleNotificationCenterOpen = false
+        waffleWidgetsOpen = false
+        waffleClipboardOpen = false
+        waffleTaskViewOpen = false
+    }
+
+    Connections {
+        target: CompositorService.isHyprland ? Hyprland : null
+        ignoreUnknownSignals: true
+        function onRawEvent(event) {
+            if (event.name === "workspace" || event.name === "activespecial") {
+                root.closeAllOverlays()
+            }
+        }
+    }
+
+    Connections {
+        target: CompositorService.isNiri ? NiriService : null
+        ignoreUnknownSignals: true
+        function onFocusedWorkspaceIndexChanged() {
+            root.closeAllOverlays()
+        }
+    }
 }

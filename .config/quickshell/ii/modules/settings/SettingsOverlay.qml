@@ -1968,7 +1968,7 @@ Scope {
             icon: "desktop_windows",
             desc: Translation.tr("Display, input, layout"),
             essential: false,
-            component: Quickshell.shellPath("modules/settings/NiriConfig.qml")
+            component: CompositorService.isNiri ? Quickshell.shellPath("modules/settings/NiriConfig.qml") : Quickshell.shellPath("modules/settings/HyprlandConfig.qml")
         },
         {
             name: Translation.tr("About"),
