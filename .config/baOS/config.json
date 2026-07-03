@@ -103,11 +103,11 @@
         "aurora": {
             "customPreset": "",
             "transparency": {
-                "layer": 0.4,
-                "overlay": 0.38,
-                "popup": 0.42,
-                "subSurface": 0.52,
-                "tooltip": 0.35
+                "layer": 0.28,
+                "overlay": 0.25,
+                "popup": 0.3,
+                "subSurface": 0.35,
+                "tooltip": 0.25
             }
         },
         "cava": {
@@ -194,7 +194,7 @@
         "extraBackgroundTint": true,
         "fakeScreenRounding": 2,
         "favoriteThemes": [],
-        "globalStyle": "material",
+        "globalStyle": "aurora",
         "globalStyleCornerStyles": {
             "angel": 1,
             "aurora": 0,
@@ -208,14 +208,14 @@
             "type": "auto"
         },
         "recentThemes": [
+            "bluearchive-dark--arona-",
             "blue-archive",
             "auto",
-            "nord",
-            "sakura"
+            "nord"
         ],
         "shellScale": 1,
         "softenColors": true,
-        "theme": "blue-archive",
+        "theme": "bluearchive-dark--arona-",
         "themeSchedule": {
             "dayStart": "06:00",
             "dayTheme": "auto",
@@ -227,7 +227,7 @@
             "automatic": true,
             "backgroundTransparency": 0.9,
             "contentTransparency": 0.9,
-            "enable": false
+            "enable": true
         },
         "typography": {
             "mainFont": "Google Sans Flex",
@@ -241,6 +241,10 @@
                 "wght": 300
             }
         },
+        "userThemes": [
+            "{\"id\":\"bluearchive-dark--hina-\",\"name\":\"BlueArchive Dark (Hina)\",\"colors\":{\"darkmode\":true,\"transparent\":false,\"m3background\":\"#100e0e\",\"m3onBackground\":\"#ede3e3\",\"m3surface\":\"#100e0e\",\"m3surfaceDim\":\"#100e0e\",\"m3surfaceBright\":\"#312b2b\",\"m3surfaceContainerLowest\":\"#000000\",\"m3surfaceContainerLow\":\"#151313\",\"m3surfaceContainer\":\"#1c1919\",\"m3surfaceContainerHigh\":\"#231f1f\",\"m3surfaceContainerHighest\":\"#2a2525\",\"m3onSurface\":\"#ede3e3\",\"m3surfaceVariant\":\"#2a2525\",\"m3onSurfaceVariant\":\"#b2a9a9\",\"m3inverseSurface\":\"#fff8f7\",\"m3inverseOnSurface\":\"#585454\",\"m3outline\":\"#7b7474\",\"m3outlineVariant\":\"#4d4647\",\"m3shadow\":\"#000000\",\"m3scrim\":\"#000000\",\"m3surfaceTint\":\"#d6c2c4\",\"m3primary\":\"#d6c2c4\",\"m3onPrimary\":\"#4b3d3f\",\"m3primaryContainer\":\"#524345\",\"m3onPrimaryContainer\":\"#e0cbce\",\"m3inversePrimary\":\"#6b5b5d\",\"m3secondary\":\"#a69b9c\",\"m3onSecondary\":\"#251f1f\",\"m3secondaryContainer\":\"#413a3a\",\"m3onSecondaryContainer\":\"#c8bdbd\",\"m3tertiary\":\"#ffebf8\",\"m3onTertiary\":\"#6d5267\",\"m3tertiaryContainer\":\"#fcd8f3\",\"m3onTertiaryContainer\":\"#644a5f\",\"m3error\":\"#ee7d77\",\"m3onError\":\"#490106\",\"m3errorContainer\":\"#7f2927\",\"m3onErrorContainer\":\"#ff9993\",\"m3primaryFixed\":\"#f3dde0\",\"m3primaryFixedDim\":\"#e5cfd2\",\"m3onPrimaryFixed\":\"#4a3c3e\",\"m3onPrimaryFixedVariant\":\"#67585a\",\"m3secondaryFixed\":\"#ece0e0\",\"m3secondaryFixedDim\":\"#ded2d2\",\"m3onSecondaryFixed\":\"#453d3e\",\"m3onSecondaryFixedVariant\":\"#62595a\",\"m3tertiaryFixed\":\"#fcd8f3\",\"m3tertiaryFixedDim\":\"#edcae4\",\"m3onTertiaryFixed\":\"#50374c\",\"m3onTertiaryFixedVariant\":\"#6e5369\",\"m3success\":\"#b5ccba\",\"m3onSuccess\":\"#213528\",\"m3successContainer\":\"#374b3e\",\"m3onSuccessContainer\":\"#d1e9d6\"},\"tags\":[\"custom\",\"bluearchive\",\"dark\"]}",
+            "{\"id\":\"bluearchive-dark--arona-\",\"name\":\"BlueArchive Dark (Arona)\",\"colors\":{\"darkmode\":true,\"transparent\":false,\"m3background\":\"#111415\",\"m3onBackground\":\"#e1e2e3\",\"m3surface\":\"#111415\",\"m3surfaceDim\":\"#111415\",\"m3surfaceBright\":\"#37393a\",\"m3surfaceContainerLowest\":\"#0c0f0f\",\"m3surfaceContainerLow\":\"#191c1d\",\"m3surfaceContainer\":\"#1d2021\",\"m3surfaceContainerHigh\":\"#282a2b\",\"m3surfaceContainerHighest\":\"#333536\",\"m3onSurface\":\"#e1e2e3\",\"m3surfaceVariant\":\"#424849\",\"m3onSurfaceVariant\":\"#c2c8c9\",\"m3inverseSurface\":\"#e1e2e3\",\"m3inverseOnSurface\":\"#2e3132\",\"m3outline\":\"#8c9293\",\"m3outlineVariant\":\"#424849\",\"m3shadow\":\"#000000\",\"m3scrim\":\"#000000\",\"m3surfaceTint\":\"#99cfdb\",\"m3primary\":\"#b9e6f0\",\"m3onPrimary\":\"#1f3338\",\"m3primaryContainer\":\"#95cbd7\",\"m3onPrimaryContainer\":\"#36545b\",\"m3inversePrimary\":\"#40646b\",\"m3secondary\":\"#b6cbcf\",\"m3onSecondary\":\"#213437\",\"m3secondaryContainer\":\"#394c51\",\"m3onSecondaryContainer\":\"#a7bcc0\",\"m3tertiary\":\"#ebd8f0\",\"m3onTertiary\":\"#3d274a\",\"m3tertiaryContainer\":\"#d5b8e3\",\"m3onTertiaryContainer\":\"#5e476b\",\"m3error\":\"#eabcb6\",\"m3onError\":\"#591c18\",\"m3errorContainer\":\"#7d2b25\",\"m3onErrorContainer\":\"#f4dddb\",\"m3primaryFixed\":\"#c3e9f2\",\"m3primaryFixedDim\":\"#99cfdb\",\"m3onPrimaryFixed\":\"#101d21\",\"m3onPrimaryFixedVariant\":\"#2f4b50\",\"m3secondaryFixed\":\"#d1e6eb\",\"m3secondaryFixedDim\":\"#b6cbcf\",\"m3onSecondaryFixed\":\"#101d21\",\"m3onSecondaryFixedVariant\":\"#37494e\",\"m3tertiaryFixed\":\"#eeddf2\",\"m3tertiaryFixedDim\":\"#d8bde5\",\"m3onTertiaryFixed\":\"#271234\",\"m3onTertiaryFixedVariant\":\"#553e62\",\"m3success\":\"#b5ccba\",\"m3onSuccess\":\"#213528\",\"m3successContainer\":\"#374b3e\",\"m3onSuccessContainer\":\"#d1e9d6\"},\"tags\":[\"custom\",\"bluearchive\",\"dark\"]}"
+        ],
         "wallpaperTheming": {
             "autoDarkLightMode": false,
             "colorStrength": 1,
@@ -274,15 +278,15 @@
             "terminals": {
                 "alacritty": true,
                 "btop": true,
-                "foot": true,
-                "ghostty": true,
+                "foot": false,
+                "ghostty": false,
                 "kitty": true,
-                "konsole": true,
+                "konsole": false,
                 "lazygit": true,
                 "omp": true,
                 "starship": true,
-                "wezterm": true,
-                "yazi": true
+                "wezterm": false,
+                "yazi": false
             },
             "useBackdropForColors": true,
             "vscodeEditors": {
@@ -305,7 +309,7 @@
     },
     "apps": {
         "bluetooth": "kcmshell6 kcm_bluetooth",
-        "browser": "firefox",
+        "browser": "zen-browser",
         "discord": "discord",
         "manageUser": "kcmshell6 kcm_users",
         "network": "kcmshell6 kcm_networkmanagement",
@@ -418,11 +422,11 @@
             "enable": true,
             "type": "crossfade"
         },
-        "wallpaperPath": "/home/rhythmgc/Wallpapers/random_wallpaper_bluearchive.png",
+        "wallpaperPath": "/home/rhythmgc/Wallpapers/konachan-354743_blue_archive.png",
         "wallpapersByMonitor": [
             {
                 "monitor": "DP-1",
-                "path": "/home/rhythmgc/Wallpapers/konachan-386309_blue_archive.png",
+                "path": "/home/rhythmgc/Wallpapers/konachan-354743_blue_archive.png",
                 "workspaceFirst": 1,
                 "workspaceLast": 10
             }
@@ -1251,7 +1255,7 @@
         "weeb": 1
     },
     "powerProfiles": {
-        "preferredProfile": "",
+        "preferredProfile": "performance",
         "restoreOnStart": true
     },
     "regionSelector": {
