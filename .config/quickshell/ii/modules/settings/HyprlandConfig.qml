@@ -22,6 +22,8 @@ ContentPage {
     HyprlandConfigOption { id: roundingOpt; key: "decoration:rounding" }
     HyprlandConfigOption { id: shadowOpt; key: "decoration:shadow:enabled" }
     HyprlandConfigOption { id: blurOpt; key: "decoration:blur:enabled" }
+    HyprlandConfigOption { id: activeOpacityOpt; key: "decoration:active_opacity" }
+    HyprlandConfigOption { id: inactiveOpacityOpt; key: "decoration:inactive_opacity" }
     HyprlandConfigOption { id: sensitivityOpt; key: "input:sensitivity" }
     HyprlandConfigOption { id: followMouseOpt; key: "input:follow_mouse" }
     HyprlandConfigOption { id: tapToClickOpt; key: "input:touchpad:tap-to-click" }
@@ -78,6 +80,8 @@ ContentPage {
                     roundingOpt.reset()
                     shadowOpt.reset()
                     blurOpt.reset()
+                    activeOpacityOpt.reset()
+                    inactiveOpacityOpt.reset()
                     followMouseOpt.reset()
                     tapToClickOpt.reset()
                     naturalScrollOpt.reset()
@@ -239,6 +243,47 @@ ContentPage {
 
             SettingsDivider {}
 
+            ContentSubsection {
+                title: Translation.tr("Window Opacity")
+                tooltip: Translation.tr("Opacity of active (focused) and inactive (unfocused) windows.")
+
+                ConfigRow {
+                    uniform: true
+                    ConfigSpinBox {
+                        text: Translation.tr("Active Opacity (%)")
+                        value: activeOpacityOpt.value !== undefined ? Math.round(activeOpacityOpt.value * 100) : 100
+                        from: 10
+                        to: 100
+                        stepSize: 5
+                        onValueChanged: {
+                            if (activeOpacityOpt.value !== undefined) {
+                                const floatValue = value / 100.0
+                                if (Math.abs(activeOpacityOpt.value - floatValue) > 0.01) {
+                                    activeOpacityOpt.setValue(floatValue)
+                                }
+                            }
+                        }
+                    }
+                    ConfigSpinBox {
+                        text: Translation.tr("Inactive Opacity (%)")
+                        value: inactiveOpacityOpt.value !== undefined ? Math.round(inactiveOpacityOpt.value * 100) : 100
+                        from: 10
+                        to: 100
+                        stepSize: 5
+                        onValueChanged: {
+                            if (inactiveOpacityOpt.value !== undefined) {
+                                const floatValue = value / 100.0
+                                if (Math.abs(inactiveOpacityOpt.value - floatValue) > 0.01) {
+                                    inactiveOpacityOpt.setValue(floatValue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsDivider {}
+
             RippleButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 34
@@ -249,6 +294,8 @@ ContentPage {
                     roundingOpt.reset()
                     shadowOpt.reset()
                     blurOpt.reset()
+                    activeOpacityOpt.reset()
+                    inactiveOpacityOpt.reset()
                 }
                 contentItem: RowLayout {
                     anchors.centerIn: parent

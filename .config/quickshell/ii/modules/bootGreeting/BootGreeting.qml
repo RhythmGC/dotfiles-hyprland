@@ -203,7 +203,7 @@ Scope {
                 text: DateTime.time
                 font {
                     family: Appearance.font.family.numbers
-                    pixelSize: 96
+                    pixelSize: 120
                     weight: Font.Light
                 }
                 color: Appearance.colors.colOnLayer0
@@ -235,7 +235,7 @@ Scope {
                 text: root.greeting
                 font {
                     family: Appearance.font.family.title
-                    pixelSize: Appearance.font.pixelSize.hugeass
+                    pixelSize: Math.round(Appearance.font.pixelSize.hugeass * 1.25)
                     weight: Font.Normal
                 }
                 color: Appearance.colors.colPrimary
@@ -269,7 +269,7 @@ Scope {
                 text: DateTime.date
                 font {
                     family: Appearance.font.family.main
-                    pixelSize: Appearance.font.pixelSize.larger
+                    pixelSize: Math.round(Appearance.font.pixelSize.larger * 1.25)
                     weight: Font.Normal
                     capitalization: Font.Capitalize
                 }
@@ -324,17 +324,17 @@ Scope {
 
                 MaterialSymbol {
                     text: Icons.getWeatherIcon(Weather.data?.wCode, Weather.isNightNow()) ?? "thermostat"
-                    iconSize: 22
+                    iconSize: 28
                     color: Appearance.colors.colOnLayer0
                 }
                 StyledText {
                     text: Weather.data?.temp ?? ""
-                    font.pixelSize: Appearance.font.pixelSize.large
+                    font.pixelSize: Math.round(Appearance.font.pixelSize.large * 1.25)
                     color: Appearance.colors.colOnLayer0
                 }
                 StyledText {
                     text: Weather.data?.description ?? ""
-                    font.pixelSize: Appearance.font.pixelSize.normal
+                    font.pixelSize: Math.round(Appearance.font.pixelSize.normal * 1.25)
                     color: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.3)
                 }
             }
@@ -344,7 +344,7 @@ Scope {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 40
                 text: Translation.tr("Click or press any key to continue")
-                font.pixelSize: Appearance.font.pixelSize.small
+                font.pixelSize: Math.round(Appearance.font.pixelSize.small * 1.2)
                 color: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 0.5)
 
                 opacity: root._cascade >= 5 ? 0.7 : 0.0

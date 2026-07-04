@@ -102,6 +102,18 @@ Button {
     implicitWidth: root.rowHeight * modelData.aspect_ratio
     implicitHeight: root.rowHeight
 
+    onClicked: {
+        GlobalStates.superReleaseMightTrigger = false;
+        GlobalStates.overviewOpen = false;
+
+        const targetPath = root.imageData.is_nsfw ? root.nsfwPath : root.downloadPath;
+        const localPath = `${targetPath}/${root.fileName}`;
+        const mode = Appearance.m3colors.darkmode ? "dark" : "light";
+        Quickshell.execDetached(["/usr/bin/bash", "-c",
+            `mkdir -p '${targetPath}' && curl -sSL '${root.imageData.file_url}' -o '${localPath}' && '${Directories.wallpaperSwitchScriptPath}' --image '${localPath}' --mode '${mode}'`
+        ])
+    }
+
     background: Rectangle {
         implicitWidth: root.rowHeight * modelData.aspect_ratio
         implicitHeight: root.rowHeight

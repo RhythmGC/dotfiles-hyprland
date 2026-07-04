@@ -33,6 +33,13 @@ Singleton {
 
     function _restartSwayidle() {
         _stopSwayidle()
+        if (CompositorService.isHyprland) {
+            if (inhibit) {
+                Quickshell.execDetached(["/usr/bin/pkill", "-STOP", "hypridle"])
+            } else {
+                Quickshell.execDetached(["/usr/bin/pkill", "-CONT", "hypridle"])
+            }
+        }
         if (!inhibit) _startSwayidleDelayed.start()
     }
 
@@ -98,5 +105,10 @@ Singleton {
         }
     }
 
-    Component.onDestruction: _stopSwayidle()
+    Component.onDestruction: {
+        _stopSwayidle()
+        if (CompositorService.isHyprland) {
+            Quickshell.execDetached(["/usr/bin/pkill", "-CONT", "hypridle"])
+        }
+    }
 }

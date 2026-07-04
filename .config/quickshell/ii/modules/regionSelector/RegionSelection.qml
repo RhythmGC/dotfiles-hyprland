@@ -87,7 +87,7 @@ PanelWindow {
     readonly property var layers: useNiri ? ({}) : HyprlandData.layers
     readonly property real falsePositivePreventionRatio: 0.5
 
-    readonly property var hyprlandMonitor: CompositorService.isHyprland ? null : null // Disabled for Niri
+    readonly property var hyprlandMonitor: CompositorService.isHyprland ? (HyprlandData.monitors.find(m => m.name === screen.name) || null) : null
     readonly property real monitorScale: root.useNiri
         ? ((NiriService.displayScales && NiriService.displayScales[screen.name] !== undefined)
             ? NiriService.displayScales[screen.name]

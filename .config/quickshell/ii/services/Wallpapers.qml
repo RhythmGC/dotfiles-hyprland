@@ -545,6 +545,7 @@ Singleton {
             // Per-monitor: update config directly in QML to avoid race condition
             // (switchwall.sh and QML both write config.json — the 50ms write timer causes data loss)
             updatePerMonitorConfig(normalizedPath, monitorName)
+            root._queueWallpaperScript(normalizedPath, darkMode, true)
             root.changed()
             return
         }

@@ -18,7 +18,6 @@ Singleton {
 
     // Reactive properties that trigger refresh
     readonly property bool multiMonitorEnabled: Config.options?.background?.multiMonitor?.enable ?? false
-    readonly property var wallpapersByMonitorRef: Config.options?.background?.wallpapersByMonitor ?? []
     readonly property string globalWallpaperPath: Config.options?.background?.wallpaperPath ?? ""
     readonly property bool globalAnimationEnabled: Config.options?.background?.enableAnimation ?? true
     readonly property string globalFillMode: Config.options?.background?.fillMode ?? "fill"
@@ -119,7 +118,8 @@ Singleton {
             }
         } else {
             const byMonitorMap = {}
-            for (const entry of wallpapersByMonitorRef) {
+            const configArray = Config.options?.background?.wallpapersByMonitor ?? []
+            for (const entry of configArray) {
                 if (entry && entry.monitor) {
                     const p = entry.path ?? ""
                     byMonitorMap[entry.monitor] = {
@@ -179,10 +179,7 @@ Singleton {
         refresh()
     }
 
-    onWallpapersByMonitorRefChanged: {
-        _log("[WallpaperListener] Wallpapers by monitor config changed")
-        refresh()
-    }
+
 
     onGlobalWallpaperPathChanged: {
         _log("[WallpaperListener] Global wallpaper path changed:", globalWallpaperPath)

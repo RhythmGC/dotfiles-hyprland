@@ -8,6 +8,11 @@ MIGRATION_REQUIRED=true
 
 migration_check() {
   local xdg_config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+  
+  if [[ -f "${xdg_config_home}/systemd/user/ba.service" ]]; then
+    return 1
+  fi
+
   local startup_cfg="${xdg_config_home}/niri/config.d/50-startup.kdl"
   local monolithic_cfg="${xdg_config_home}/niri/config.kdl"
   local service_file="${xdg_config_home}/systemd/user/inir.service"

@@ -955,11 +955,13 @@ show_status() {
         tui_check_warn "Runtime metadata missing"
     fi
 
-    # Check Niri
+    # Check Niri/Hyprland
     if [[ -n "$NIRI_SOCKET" ]]; then
         tui_check_ok "Niri compositor detected"
+    elif [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        tui_check_ok "Hyprland compositor detected"
     else
-        tui_check_warn "Not running in Niri session"
+        tui_check_warn "Neither Niri nor Hyprland session detected"
     fi
 
     # Pending migrations

@@ -207,7 +207,12 @@ Item {
                         required property int index
                         required property string modelData
                         readonly property string filePath: modelData
-                        readonly property bool isCurrentWallpaper: Wallpapers.isCurrentWallpaperPath(filePath, "main", "")
+                        readonly property bool isCurrentWallpaper: {
+                            const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
+                                ? WallpaperListener.getMonitorName(screen)
+                                : ""
+                            return Wallpapers.isCurrentWallpaperPath(filePath, "main", monName)
+                        }
                         readonly property bool isHovered: mouseArea.containsMouse
 
                         width: root.itemWidth
@@ -292,6 +297,8 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
+                                    GlobalStates.superReleaseMightTrigger = false;
+                                    GlobalStates.overviewOpen = false;
                                     const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
                                         ? WallpaperListener.getMonitorName(screen)
                                         : ""

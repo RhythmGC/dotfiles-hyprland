@@ -38,3 +38,11 @@
 {"name":"plasma-browser-integration","category":"desktop","source":"pacman"}
 {"name":"dolphin","category":"desktop","source":"pacman"}
 {"name":"qt6-imageformats","category":"desktop","source":"pacman"}
+{"name":"gowall-bin","category":"desktop","source":"yay"}
+{"name":"awww","category":"desktop","source":"pacman"}
+{"name":"darkly-bin","category":"desktop","source":"yay"}
+{"name":"papirus-icon-theme","category":"desktop","source":"pacman"}
+{"name":"fuzzel","category":"desktop","source":"pacman"}
+{"name":"hyprsunset","category":"desktop","source":"pacman"}
+{"name":"hyprpicker","category":"desktop","source":"pacman"}
+{"name":"brightnessctl","category":"desktop","source":"pacman"}

@@ -12,7 +12,7 @@ end
 
 -- Bar, wallpaper
 hl.exec_cmd("$HOME/.config/hypr/hyprland/scripts/start_geoclue_agent.sh")
-exec_once("qs -c ii", "qs")
+-- exec_once("qs -c ii", "quickshell")
 hl.exec_cmd("$HOME/.config/hypr/custom/scripts/__restore_video_wallpaper.sh")
 
 -- Core components (authentication, lock screen, notification daemon)

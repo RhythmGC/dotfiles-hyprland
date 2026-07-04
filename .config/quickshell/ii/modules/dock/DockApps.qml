@@ -583,6 +583,13 @@ Item {
         }
     }
 
+    Connections {
+        target: AppSearch
+        function onListChanged() {
+            root.rebuildDockItems()
+        }
+    }
+
     Component.onCompleted: rebuildDockItems()
 
     StyledListView {

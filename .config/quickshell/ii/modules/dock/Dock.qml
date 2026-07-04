@@ -15,6 +15,7 @@ import Quickshell.Io
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
+import Quickshell.Hyprland
 
 Scope {
     id: root
@@ -69,7 +70,12 @@ Scope {
                 screen: panelLoader.modelData
                 visible: !GlobalStates.screenLocked && !GameMode.shouldHidePanels && !GlobalStates.widgetEditMode
 
-                property bool reveal: !GlobalStates.coverflowSelectorOpen && GlobalStates.shellEntryReady && (root.pinned || (Config.options?.dock?.hoverToReveal && dockMouseArea.containsMouse) || (dockApps?.requestDockShow || dockAppsVertical?.requestDockShow) || (Config.options?.dock?.showOnDesktop !== false && !ToplevelManager.activeToplevel?.activated))
+                readonly property HyprlandMonitor hlMonitor: CompositorService.isHyprland ? Hyprland.monitorFor(dockRoot.screen) : null
+                readonly property int activeWorkspaceId: (hlMonitor && hlMonitor.activeWorkspace) ? hlMonitor.activeWorkspace.id : 0
+                readonly property bool hasWindowsOnWorkspace: CompositorService.isHyprland ? (HyprlandData.windowList.some(w => w.workspace.id === activeWorkspaceId)) : false
+                readonly property bool isDesktopActive: CompositorService.isHyprland ? !hasWindowsOnWorkspace : !ToplevelManager.activeToplevel?.activated
+
+                property bool reveal: !GlobalStates.coverflowSelectorOpen && GlobalStates.shellEntryReady && (root.pinned || (Config.options?.dock?.hoverToReveal && dockMouseArea.containsMouse) || (dockApps?.requestDockShow || dockAppsVertical?.requestDockShow) || (Config.options?.dock?.showOnDesktop !== false && isDesktopActive))
 
                 readonly property real dockHeight: Config.options?.dock?.height ?? 70
 

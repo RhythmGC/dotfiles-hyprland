@@ -298,6 +298,46 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   fi
   success "Configurations copied successfully!"
 
+  # --- KDE/Qt Theming Setup ---
+  echo -e "\n${BOLD}=== KDE/Qt Theming Setup ===${NC}"
+
+  # Install papirus-folders script (for dynamic folder icon recoloring)
+  if ! command -v papirus-folders > /dev/null 2>&1; then
+    info "Installing papirus-folders script (folder icon recoloring)..."
+    sudo curl -fsSL https://raw.githubusercontent.com/PapirusDevelopmentTeam/papirus-folders/master/papirus-folders \
+      -o /usr/local/bin/papirus-folders && sudo chmod +x /usr/local/bin/papirus-folders
+    success "papirus-folders installed!"
+  else
+    info "papirus-folders already installed — skipping."
+  fi
+
+  # Add sudoers rule so papirus-folders can recolor icons without a password prompt
+  if [ ! -f /etc/sudoers.d/papirus-folders ]; then
+    info "Adding sudoers rule for papirus-folders (passwordless icon recoloring)..."
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/local/bin/papirus-folders" | sudo tee /etc/sudoers.d/papirus-folders > /dev/null
+    sudo chmod 440 /etc/sudoers.d/papirus-folders
+    success "Sudoers rule added: /etc/sudoers.d/papirus-folders"
+  else
+    info "Sudoers rule for papirus-folders already exists — skipping."
+  fi
+
+  # Set initial KDE theming: Papirus-Dark icon theme, Darkly widget style & color scheme
+  if command -v kwriteconfig6 > /dev/null 2>&1; then
+    info "Configuring initial KDE theming (Papirus-Dark icons, Darkly colors)..."
+    kwriteconfig6 --file kdeglobals --group Icons   --key Theme       Papirus-Dark 2>/dev/null || true
+    kwriteconfig6 --file kdeglobals --group KDE     --key widgetStyle Darkly       2>/dev/null || true
+    kwriteconfig6 --file kdeglobals --group General --key ColorScheme Darkly        2>/dev/null || true
+    success "KDE theming configured!"
+  fi
+
+  # Apply initial wallpaper-based colors (generates Darkly.colors + recolors Papirus folders)
+  theme_script="$DST_CONFIG/quickshell/ii/scripts/colors/apply-gtk-theme.sh"
+  if [ -f "$theme_script" ]; then
+    info "Applying initial wallpaper-based theme colors..."
+    bash "$theme_script" 2>/dev/null || true
+    success "Initial theme applied!"
+  fi
+
   # Initialize Quickshell virtual environment and Python dependencies
   venv_dir="$HOME/.local/state/quickshell/.venv"
   req_file="$DST_CONFIG/quickshell/ii/sdata/uv/requirements.txt"
@@ -479,6 +519,14 @@ EOF
         /opt/zen-browser-bin/native-messaging-hosts/org.kde.plasma.browser_integration.json
     fi
     success "plasma-browser-integration configured successfully!"
+  fi
+
+  # --- Brave Browser Policy Directory ---
+  if command -v brave > /dev/null 2>&1 || pacman -Qs brave-bin > /dev/null 2>&1; then
+    info "Setting up Brave browser policy directory..."
+    sudo mkdir -p /etc/brave/policies/managed
+    sudo chmod a+rw /etc/brave/policies/managed
+    success "Brave policy directory configured: /etc/brave/policies/managed"
   fi
 fi
 

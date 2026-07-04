@@ -368,6 +368,7 @@ ForegroundVisited=${PRIMARY}
 
 [General]
 ColorScheme=Darkly
+AccentColor=$(hex_to_rgb "$PRIMARY")
 ${font_name:+fixed=${mono_name:-$font_name},${mono_size:-$font_size},-1,5,50,0,0,0,0,0}
 ${font_name:+font=${font_name},${font_size},-1,5,50,0,0,0,0,0}
 ${font_name:+menuFont=${font_name},${font_size},-1,5,50,0,0,0,0,0}
@@ -576,6 +577,7 @@ ForegroundVisited=${primary_rgb}
 [General]
 ColorScheme=Darkly
 Name=Darkly
+AccentColor=${primary_rgb}
 shadeSortColumn=true
 
 [KDE]
@@ -598,6 +600,78 @@ if [[ "$enable_qt_apps" != "false" ]]; then
     # Generate Darkly color scheme for Qt style
     mkdir -p "$(dirname "$DARKLY_COLORS")"
     generate_darkly_colors > "$DARKLY_COLORS"
+    cp "$DARKLY_COLORS" "${DARKLY_COLORS%.colors}.colorscheme"
+
+    # Notify KDE/Qt applications (like Dolphin) to reload kdeglobals colors live
+    if command -v plasma-apply-colorscheme &>/dev/null; then
+        plasma-apply-colorscheme BreezeDark >/dev/null 2>&1 || true
+        plasma-apply-colorscheme Darkly >/dev/null 2>&1 || true
+    else
+        dbus-send --session --type=signal /KGlobalSettings org.kde.KGlobalSettings.notifyChange int32:0 int32:0 2>/dev/null || true
+    fi
+fi
+
+# Recolor Papirus folder icons to match the wallpaper accent color
+if command -v papirus-folders &>/dev/null && [[ -d /usr/share/icons/Papirus-Dark || -d ~/.local/share/icons/Papirus-Dark ]]; then
+    # Map PRIMARY hex color to closest Papirus folder color name using HSL hue
+    hex_to_papirus_color() {
+        local hex="${1#\#}"
+        local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+        # Compute max, min for saturation check
+        local max=$r; (( g > max )) && max=$g; (( b > max )) && max=$b
+        local min=$r; (( g < min )) && min=$g; (( b < min )) && min=$b
+        local delta=$(( max - min ))
+        # Low saturation → grey/bluegrey
+        if (( delta < 20 )); then
+            if (( max > 180 )); then echo "white"
+            elif (( max < 60 )); then echo "black"
+            else echo "grey"; fi
+            return
+        fi
+        # Compute hue (0–360 scaled as integer * 60 / delta)
+        local hue=0
+        if (( max == r )); then
+            hue=$(( (60 * (g - b) / delta + 360) % 360 ))
+        elif (( max == g )); then
+            hue=$(( 60 * (b - r) / delta + 120 ))
+        else
+            hue=$(( 60 * (r - g) / delta + 240 ))
+        fi
+        # Map hue to papirus color names
+        if   (( hue <  15 || hue >= 345 )); then echo "red"
+        elif (( hue <  35 )); then echo "orange"
+        elif (( hue <  65 )); then echo "yellow"
+        elif (( hue < 150 )); then echo "green"
+        elif (( hue < 185 )); then echo "teal"
+        elif (( hue < 210 )); then echo "cyan"
+        elif (( hue < 245 )); then echo "blue"
+        elif (( hue < 285 )); then echo "violet"
+        elif (( hue < 315 )); then echo "purple"
+        elif (( hue < 345 )); then echo "pink"
+        else echo "violet"; fi
+    }
+    papirus_color=$(hex_to_papirus_color "$PRIMARY")
+    papirus-folders -C "$papirus_color" --theme Papirus-Dark >/dev/null 2>&1 || true
+
+    # Update icon theme in kdeglobals to Papirus-Dark
+    kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
+
+    # Rebuild icon cache so running apps pick up the new folder colors immediately
+    kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+
+    # Restart Dolphin in background so it reloads the new icons
+    if pgrep -x dolphin &>/dev/null; then
+        pkill -x dolphin 2>/dev/null || true
+        sleep 0.5
+        dolphin &>/dev/null &
+        disown
+    fi
+
+    # Re-trigger KDE reload so running apps (Dolphin) pick up the new icon theme
+    if command -v plasma-apply-colorscheme &>/dev/null; then
+        plasma-apply-colorscheme BreezeDark >/dev/null 2>&1 || true
+        plasma-apply-colorscheme Darkly >/dev/null 2>&1 || true
+    fi
 fi
 
 # Generate Pywalfox colors for Firefox theming

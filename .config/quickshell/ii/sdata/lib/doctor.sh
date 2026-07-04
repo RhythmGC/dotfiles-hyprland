@@ -713,8 +713,10 @@ _try_install_font_package() {
 check_niri_running() {
     if [[ -n "$NIRI_SOCKET" && -S "$NIRI_SOCKET" ]]; then
         doctor_pass "Niri compositor running"
+    elif [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        doctor_pass "Hyprland compositor running"
     else
-        doctor_fail "Niri not detected (run inside Niri session)"
+        doctor_fail "Neither Niri nor Hyprland detected (run inside a session)"
     fi
 }
 
@@ -1608,7 +1610,7 @@ run_doctor_with_fixes() {
     _doctor_run_step 9  $total_steps "Checking version tracking"     check_version_tracking
     _doctor_run_step 10 $total_steps "Checking file manifest"        check_manifest
     _doctor_run_step 11 $total_steps "Checking user service"         check_service_unit_health
-    _doctor_run_step 12 $total_steps "Checking Niri compositor"      check_niri_running
+    _doctor_run_step 12 $total_steps "Checking compositor"           check_niri_running
     _doctor_run_step 13 $total_steps "Checking Python packages"      check_python_packages
     _doctor_run_step 14 $total_steps "Checking stale local quickshell" check_stale_local_quickshell
 
