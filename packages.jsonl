@@ -46,3 +46,4 @@
 {"name":"hyprsunset","category":"desktop","source":"pacman"}
 {"name":"hyprpicker","category":"desktop","source":"pacman"}
 {"name":"brightnessctl","category":"desktop","source":"pacman"}
+{"name":"xdg-desktop-portal-hyprland","category":"desktop","source":"pacman"}

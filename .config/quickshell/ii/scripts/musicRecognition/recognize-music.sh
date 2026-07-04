@@ -8,7 +8,7 @@ MIN_VALID_RESULT_LENGTH=300
 SOURCE_TYPE="monitor"  # monitor | input
 TMP_PATH="/tmp/quickshell/media/songrec"
 TMP_RAW="$TMP_PATH/recording.raw"
-TMP_MP3="$TMP_PATH/recording.mp3"
+TMP_WAV="$TMP_PATH/recording.wav"
 
 while getopts "i:t:s:" opt; do
   case $opt in
@@ -36,7 +36,7 @@ if [ -z "$MONITOR_SOURCE" ] || ! /usr/bin/pactl list short sources | /usr/bin/gr
 fi
 
 cleanup() {
-    /usr/bin/rm -f "$TMP_RAW" "$TMP_MP3"
+    /usr/bin/rm -f "$TMP_RAW" "$TMP_WAV"
     /usr/bin/pkill -P $$ parec >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -54,8 +54,8 @@ while true; do
         exit 0
     fi
 
-    /usr/bin/ffmpeg -f s16le -ar 44100 -ac 2 -i "$TMP_RAW" -acodec libmp3lame -y -hide_banner -loglevel error "$TMP_MP3" 2>/dev/null
-    RESULT=$(/usr/bin/songrec recognize -j "$TMP_MP3" 2>/dev/null || true)
+    /usr/bin/ffmpeg -f s16le -ar 44100 -ac 2 -i "$TMP_RAW" -acodec pcm_s16le -y -hide_banner -loglevel error "$TMP_WAV" 2>/dev/null
+    RESULT=$(/usr/bin/songrec recognize -j "$TMP_WAV" 2>/dev/null || true)
 
     if echo "$RESULT" | /usr/bin/grep -q '"matches"[[:space:]]*:[[:space:]]*\[' && [ ${#RESULT} -gt $MIN_VALID_RESULT_LENGTH ]; then
         echo "$RESULT"

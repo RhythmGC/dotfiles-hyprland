@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import qs.modules.common
 import qs.services
+import qs.services.deferred
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
@@ -233,6 +234,7 @@ Singleton {
         cheatsheetOpen = false
         coverflowSelectorOpen = false
         wallpaperSelectorOpen = false
+        mediaControlsOpen = false
 
         searchOpen = false
         waffleActionCenterOpen = false
@@ -240,6 +242,10 @@ Singleton {
         waffleWidgetsOpen = false
         waffleClipboardOpen = false
         waffleTaskViewOpen = false
+
+        if (SongRec.running) {
+            SongRec.toggleRunning(false)
+        }
     }
 
     Connections {

@@ -30,6 +30,8 @@ Scope {
         : Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? GlobalStates.primaryScreen
     property var targetScreen: screenFromList(Config.options?.media?.screenList ?? [], focusedScreen)
 
+
+
     function screenFromList(list, preferred) {
         if (!list || list.length === 0)
             return preferred ?? GlobalStates.primaryScreen
@@ -75,7 +77,7 @@ Scope {
             color: "transparent"
             WlrLayershell.namespace: "quickshell:mediaControls"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: GlobalStates.mediaControlsOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: GlobalStates.mediaControlsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
             anchors {
                 top: true
@@ -128,38 +130,51 @@ Scope {
                 readonly property real screenH: mediaControlsRoot.screen?.height ?? 1080
                 readonly property real targetY: screenH - height - root.dockHeight - root.dockMargin - 5
 
-                y: screenH + 50
-                opacity: 0
-                scale: 0.9
+                y: GlobalStates.mediaControlsOpen ? targetY : screenH + 50
+                opacity: GlobalStates.mediaControlsOpen ? 1 : 0
+                scale: GlobalStates.mediaControlsOpen ? 1 : 0.9
                 transformOrigin: Item.Bottom
 
-                states: State {
-                    name: "visible"
-                    when: GlobalStates.mediaControlsOpen
-                    PropertyChanges {
-                        target: cardArea
-                        y: cardArea.targetY
-                        opacity: 1
-                        scale: 1
+                Behavior on y {
+                    enabled: Appearance.animationsEnabled
+                    NumberAnimation {
+                        duration: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementMoveEnter.duration 
+                            : Appearance.animation.elementMoveExit.duration
+                        easing.type: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementMoveEnter.type 
+                            : Appearance.animation.elementMoveExit.type
+                        easing.bezierCurve: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementMoveEnter.bezierCurve 
+                            : Appearance.animation.elementMoveExit.bezierCurve
                     }
                 }
-
-                transitions: [
-                    Transition {
-                        to: "visible"
-                        enabled: Appearance.animationsEnabled
-                        NumberAnimation { properties: "y"; duration: Appearance.animation.elementMoveEnter.duration; easing.type: Appearance.animation.elementMoveEnter.type; easing.bezierCurve: Appearance.animation.elementMoveEnter.bezierCurve }
-                        NumberAnimation { properties: "opacity"; duration: Appearance.animation.elementMoveExit.duration; easing.type: Appearance.animation.elementMoveExit.type; easing.bezierCurve: Appearance.animation.elementMoveExit.bezierCurve }
-                        NumberAnimation { properties: "scale"; duration: Appearance.animation.elementResize.duration; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
-                    },
-                    Transition {
-                        from: "visible"
-                        enabled: Appearance.animationsEnabled
-                        NumberAnimation { properties: "y"; duration: Appearance.animation.elementMoveExit.duration; easing.type: Appearance.animation.elementMoveExit.type; easing.bezierCurve: Appearance.animation.elementMoveExit.bezierCurve }
-                        NumberAnimation { properties: "opacity"; duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
-                        NumberAnimation { properties: "scale"; duration: Appearance.animation.elementMoveExit.duration; easing.type: Easing.InBack; easing.overshoot: 1.0 }
+                Behavior on opacity {
+                    enabled: Appearance.animationsEnabled
+                    NumberAnimation {
+                        duration: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementMoveExit.duration 
+                            : Appearance.animation.elementMoveFast.duration
+                        easing.type: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementMoveExit.type 
+                            : Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementMoveExit.bezierCurve 
+                            : Appearance.animation.elementMoveFast.bezierCurve
                     }
-                ]
+                }
+                Behavior on scale {
+                    enabled: Appearance.animationsEnabled
+                    NumberAnimation {
+                        duration: GlobalStates.mediaControlsOpen 
+                            ? Appearance.animation.elementResize.duration 
+                            : Appearance.animation.elementMoveExit.duration
+                        easing.type: GlobalStates.mediaControlsOpen 
+                            ? Easing.OutBack 
+                            : Easing.InBack
+                        easing.overshoot: GlobalStates.mediaControlsOpen ? 1.2 : 1.0
+                    }
+                }
 
                 ColumnLayout {
                     id: playerColumnLayout
