@@ -1,12 +1,12 @@
 -- Global opacity settings (Values: 0.0 to 1.0)
-local opt_active_opacity = 1.0       -- Opacity of the focused window
-local opt_inactive_opacity = 1.0     -- Opacity of unfocused windows (1.0 = fully opaque)
-local opt_fullscreen_opacity = 1.1   -- Opacity of fullscreen windows
+local opt_active_opacity = 1.0 -- Opacity of the focused window
+local opt_inactive_opacity = 1.0 -- Opacity of unfocused windows (1.0 = fully opaque)
+local opt_fullscreen_opacity = 1.1 -- Opacity of fullscreen windows
 
 -- Mouse sensitivity settings (Values: -1.0 to 1.0)
-local mouse_sensitivity = -0.6        -- Speed of the mouse cursor (0.0 = default)
-local mouse_force_no_accel = false    -- Disable mouse acceleration (true/false)
-local mouse_accel_profile = "flat"    -- Acceleration profile ("flat" or "adaptive")
+local mouse_sensitivity = -0.3 -- Speed of the mouse cursor (0.0 = default)
+local mouse_force_no_accel = false -- Disable mouse acceleration (true/false)
+local mouse_accel_profile = "flat" -- Acceleration profile ("flat" or "adaptive")
 
 hl.config({
 	input = {
