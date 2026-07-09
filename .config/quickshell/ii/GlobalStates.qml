@@ -184,6 +184,28 @@ Singleton {
         }
     }
 
+    onSettingsOverlayOpenChanged: {
+        if (settingsOverlayOpen) {
+            overviewOpen = false
+            sidebarLeftOpen = false
+            sidebarRightOpen = false
+            controlPanelOpen = false
+            altSwitcherOpen = false
+            clipboardOpen = false
+            cheatsheetOpen = false
+            coverflowSelectorOpen = false
+            wallpaperSelectorOpen = false
+            mediaControlsOpen = false
+
+            searchOpen = false
+            waffleActionCenterOpen = false
+            waffleNotificationCenterOpen = false
+            waffleWidgetsOpen = false
+            waffleClipboardOpen = false
+            waffleTaskViewOpen = false
+        }
+    }
+
     property real screenZoom: 1
     onScreenZoomChanged: {
         // Niri doesn't have native zoom support like Hyprland's cursor:zoom_factor

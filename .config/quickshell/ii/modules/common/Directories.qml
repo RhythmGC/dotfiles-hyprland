@@ -54,6 +54,7 @@ Singleton {
         userAvatarPathRicersAndWeirdSystems2
     ]
     readonly property string userAvatarSourcePrimary: avatarSourceAt(0)
+    property string avatarCacheBuster: ""
     property string coverArt: `${Directories.cachePath}/media/coverart`
     property string tempImages: "/tmp/quickshell/media/images"
     property string booruPreviews: `${Directories.cachePath}/media/boorus`
@@ -103,11 +104,11 @@ Singleton {
             return ""
 
         const path = String(userAvatarPaths[index] ?? "").trim()
-        return path.length > 0 ? `file://${path}` : ""
+        return path.length > 0 ? `file://${path}${avatarCacheBuster}` : ""
     }
 
     function nextAvatarSource(currentSource: string): string {
-        const normalized = String(currentSource ?? "").replace(/^file:\/\//, "")
+        const normalized = String(currentSource ?? "").replace(/\?.*$/, "").replace(/^file:\/\//, "")
 
         for (let i = 0; i < userAvatarPaths.length; ++i) {
             if (String(userAvatarPaths[i] ?? "") === normalized)

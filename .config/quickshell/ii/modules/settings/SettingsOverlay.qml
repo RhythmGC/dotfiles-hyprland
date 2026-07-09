@@ -2,6 +2,7 @@ import qs
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Qt5Compat.GraphicalEffects as GE
 import Quickshell
 import Quickshell.Io
@@ -25,6 +26,7 @@ Scope {
 
     // Keep the overlay tree unloaded while closed; search can request preload on demand.
     property bool _panelLoaded: settingsOpen
+    property bool isAvatarFileDialogVisible: avatarFileDialog.visible
 
     // ── Search system (full, same as settings.qml) ──
     property string overlaySearchText: ""
@@ -540,7 +542,7 @@ Scope {
         sourceComponent: PanelWindow {
             id: settingsPanel
 
-            visible: GlobalStates.settingsOverlayOpen ?? false
+            visible: (GlobalStates.settingsOverlayOpen ?? false) && !root.isAvatarFileDialogVisible
 
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "quickshell:settingsOverlay"
@@ -708,6 +710,14 @@ Scope {
                             implicitWidth: 38
                             implicitHeight: 38
 
+                            MouseArea {
+                                id: avatarMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: avatarFileDialog.open()
+                            }
+
                             Rectangle {
                                 anchors.fill: parent
                                 radius: width / 2
@@ -759,6 +769,44 @@ Scope {
                                 text: "person"
                                 iconSize: 18
                                 color: Appearance.colors.colPrimary
+                            }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: "#80000000"
+                                visible: avatarMouseArea.containsMouse
+                                z: 10
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: "photo_camera"
+                                    iconSize: 16
+                                    color: "#ffffff"
+                                }
+                            }
+
+                            Rectangle {
+                                width: 14
+                                height: 14
+                                radius: 7
+                                color: Appearance.colors.colPrimary
+                                border.width: 1
+                                border.color: Appearance.colors.colOnPrimary ?? "#ffffff"
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                z: 11
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: "edit"
+                                    iconSize: 9
+                                    color: Appearance.colors.colOnPrimary ?? "#ffffff"
+                                }
+                            }
+
+                            StyledToolTip {
+                                text: Translation.tr("Change avatar")
                             }
                         }
 
@@ -2051,6 +2099,25 @@ Scope {
                     root.overlayCurrentPage = 0;
                 }
             }
+        }
+    }
+
+    FileDialog {
+        id: avatarFileDialog
+        title: Translation.tr("Choose avatar image")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [
+            Translation.tr("Images") + " (*.png *.jpg *.jpeg *.webp *.bmp *.avif)",
+            Translation.tr("All files") + " (*)"
+        ]
+        onAccepted: {
+            const rawPath = String(selectedFile);
+            const path = CF.FileUtils.trimFileProtocol(rawPath);
+            const facePath = Directories.homePath + "/.face";
+            const faceIconPath = Directories.homePath + "/.face.icon";
+            Quickshell.execDetached(["cp", path, facePath]);
+            Quickshell.execDetached(["cp", path, faceIconPath]);
+            Directories.avatarCacheBuster = "?t=" + Date.now();
         }
     }
 }

@@ -25,8 +25,8 @@ hl.exec_cmd("sleep 1 && dbus-update-activation-environment --systemd WAYLAND_DIS
 exec_once("easyeffects --hide-window --service-mode", "easyeffects")
 
 -- Clipboard: history
-exec_once("wl-paste --type text --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'", "\"[w]l-paste --type text\"", true)
-exec_once("wl-paste --type image --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'", "\"[w]l-paste --type image\"", true)
+exec_once("wl-paste --type text --watch bash -c 'cliphist store && ba cliphistService update'", "\"[w]l-paste --type text\"", true)
+exec_once("wl-paste --type image --watch bash -c 'cliphist store && ba cliphistService update'", "\"[w]l-paste --type image\"", true)
 
 -- Cursor
 hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
