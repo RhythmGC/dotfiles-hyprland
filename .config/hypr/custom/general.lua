@@ -13,6 +13,8 @@ hl.config({
 		accel_profile = mouse_accel_profile,
 		force_no_accel = mouse_force_no_accel,
 		sensitivity = mouse_sensitivity,
+		mouse_refocus = false,
+		follow_mouse = 2,
 	},
 	general = {
 		border_size = 2,
@@ -45,5 +47,8 @@ hl.config({
 	},
 	misc = {
 		focus_on_activate = false,
+	},
+	cursor = {
+		warp_on_change_workspace = 1,
 	},
 })
