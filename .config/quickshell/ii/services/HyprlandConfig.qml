@@ -17,7 +17,9 @@ Singleton {
     signal reloaded()
 
     readonly property string configuratorScriptPath: Quickshell.shellPath("scripts/hyprland/hyprconfigurator.py")
-    readonly property string shellOverridesPath: FileUtils.trimFileProtocol(`${Directories.config}/hypr/hyprland/shellOverrides/main.conf`)
+    // Hyprland 0.55+ loads Lua configuration. Keep shell-managed overrides in
+    // the Lua module required by ~/.config/hypr/hyprland.lua.
+    readonly property string shellOverridesPath: FileUtils.trimFileProtocol(`${Directories.config}/hypr/hyprland/shellOverrides/main.lua`)
 
     function set(key: string, value: var) {
         Quickshell.execDetached(["bash", "-c", //

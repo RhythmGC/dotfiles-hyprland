@@ -72,10 +72,21 @@ Scope {
 
                 readonly property HyprlandMonitor hlMonitor: CompositorService.isHyprland ? Hyprland.monitorFor(dockRoot.screen) : null
                 readonly property int activeWorkspaceId: (hlMonitor && hlMonitor.activeWorkspace) ? hlMonitor.activeWorkspace.id : 0
+                readonly property var hyprMonitorData: CompositorService.isHyprland
+                    ? (HyprlandData.monitors.find(m => m.name === dockRoot.screen?.name) ?? null)
+                    : null
+                readonly property bool hasActiveSpecialWorkspace: CompositorService.isHyprland
+                    && ((hyprMonitorData?.specialWorkspace?.id ?? 0) !== 0)
                 readonly property bool hasWindowsOnWorkspace: CompositorService.isHyprland ? (HyprlandData.windowList.some(w => w.workspace.id === activeWorkspaceId)) : false
                 readonly property bool isDesktopActive: CompositorService.isHyprland ? !hasWindowsOnWorkspace : !ToplevelManager.activeToplevel?.activated
 
-                property bool reveal: !GlobalStates.coverflowSelectorOpen && GlobalStates.shellEntryReady && (root.pinned || (Config.options?.dock?.hoverToReveal && dockMouseArea.containsMouse) || (dockApps?.requestDockShow || dockAppsVertical?.requestDockShow) || (Config.options?.dock?.showOnDesktop !== false && isDesktopActive))
+                property bool reveal: !hasActiveSpecialWorkspace
+                    && !GlobalStates.coverflowSelectorOpen
+                    && GlobalStates.shellEntryReady
+                    && (root.pinned
+                        || (Config.options?.dock?.hoverToReveal && dockMouseArea.containsMouse)
+                        || (dockApps?.requestDockShow || dockAppsVertical?.requestDockShow)
+                        || (Config.options?.dock?.showOnDesktop !== false && isDesktopActive))
 
                 readonly property real dockHeight: Config.options?.dock?.height ?? 70
 

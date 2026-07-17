@@ -1,7 +1,9 @@
 #!/usr/bin/env -S\_/bin/sh\_-c\_"source\_\$(eval\_echo\_\${INIR_VENV:-\$ILLOGICAL_IMPULSE_VIRTUAL_ENV})/bin/activate&&exec\_python\_-E\_"\$0"\_"\$@""
 import argparse
+import json
 import re
 import os
+import subprocess
 from os.path import expandvars as os_expandvars
 from typing import Dict, List
 
@@ -16,6 +18,11 @@ parser.add_argument(
     type=str,
     default="$HOME/.config/hypr/hyprland.conf",
     help="path to keybind file (sourcing isn't supported)",
+)
+parser.add_argument(
+    "--live",
+    action="store_true",
+    help="read active bindings from hyprctl (recommended for Lua configs)",
 )
 args = parser.parse_args()
 content_lines = []
@@ -233,8 +240,60 @@ def parse_keys(path: str) -> Dict[str, List[KeyBinding]]:
     return get_binds_recursive(Section([], [], ""), 0)
 
 
-if __name__ == "__main__":
-    import json
+MOD_MASKS = (
+    (1, "SHIFT"),
+    (4, "CTRL"),
+    (8, "ALT"),
+    (16, "MOD2"),
+    (32, "MOD3"),
+    (64, "SUPER"),
+    (128, "MOD5"),
+)
 
-    ParsedKeys = parse_keys(args.path)
+
+def parse_live_keys():
+    result = subprocess.run(
+        ["hyprctl", "binds", "-j"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    binds = json.loads(result.stdout)
+    sections = {}
+
+    for bind in binds:
+        description = (bind.get("description") or "").strip()
+        if not description:
+            continue
+
+        section_name, separator, label = description.partition(":")
+        if not separator:
+            section_name, label = "Other", description
+        section_name = section_name.strip() or "Other"
+        label = label.strip() or description
+
+        modmask = int(bind.get("modmask") or 0)
+        mods = [name for mask, name in MOD_MASKS if modmask & mask]
+        key = bind.get("key") or ""
+        if not key and bind.get("keycode"):
+            key = f"code:{bind['keycode']}"
+
+        keybind = KeyBinding(
+            mods,
+            key,
+            bind.get("dispatcher") or "",
+            bind.get("arg") or "",
+            label,
+        )
+        sections.setdefault(section_name, []).append(keybind)
+
+    children = [
+        Section([], keybinds, name)
+        for name, keybinds in sorted(sections.items())
+    ]
+    return Section(children, [], "")
+
+
+if __name__ == "__main__":
+    ParsedKeys = parse_live_keys() if args.live else parse_keys(args.path)
     print(json.dumps(ParsedKeys))

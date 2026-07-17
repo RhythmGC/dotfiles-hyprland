@@ -24,9 +24,8 @@ hl.exec_cmd("sleep 1 && dbus-update-activation-environment --systemd WAYLAND_DIS
 -- Audio
 exec_once("easyeffects --hide-window --service-mode", "easyeffects")
 
--- Clipboard: history
-exec_once("wl-paste --type text --watch bash -c 'cliphist store && ba cliphistService update'", "\"[w]l-paste --type text\"", true)
-exec_once("wl-paste --type image --watch bash -c 'cliphist store && ba cliphistService update'", "\"[w]l-paste --type image\"", true)
+-- Clipboard history is managed by cliphist-text.service and
+-- cliphist-image.service, installed by install/install-config.sh.
 
 -- Cursor
 hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")

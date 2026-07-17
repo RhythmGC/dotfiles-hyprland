@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DOTFILES="$HOME/dotfiles-hyprland"
+DOTFILES="$(cd "$SCRIPT_DIR/.." && pwd)"
 ITEMS_FILE="$SCRIPT_DIR/items.json"
 
 SRC_CONFIG="$HOME/.config"

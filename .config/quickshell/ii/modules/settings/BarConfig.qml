@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Services.SystemTray
 import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
@@ -21,6 +22,24 @@ ContentPage {
     readonly property bool isAutoHide: Config.options?.bar?.autoHide?.enable ?? false
     readonly property bool isBorderless: Config.options?.bar?.borderless ?? false
     readonly property bool showBackground: Config.options?.bar?.showBackground ?? true
+
+    function trayItemVisible(itemId) {
+        const items = Config.options?.bar?.tray?.pinnedItems ?? []
+        const listed = items.includes(itemId)
+        return (Config.options?.bar?.tray?.invertPinnedItems ?? true) ? !listed : listed
+    }
+
+    function setTrayItemVisible(itemId, visible) {
+        let items = Array.from(Config.options?.bar?.tray?.pinnedItems ?? [])
+        const invert = Config.options?.bar?.tray?.invertPinnedItems ?? true
+        const shouldBeListed = invert ? !visible : visible
+        const listed = items.includes(itemId)
+        if (shouldBeListed && !listed)
+            items.push(itemId)
+        else if (!shouldBeListed && listed)
+            items = items.filter(id => id !== itemId)
+        Config.setNestedValue("bar.tray.pinnedItems", items)
+    }
 
     // Global style detection
     readonly property string currentGlobalStyle: Config.options?.appearance?.globalStyle ?? "material"
@@ -1078,6 +1097,45 @@ ContentPage {
                 onCheckedChanged: Config.setNestedValue("bar.tray.showItemId", checked)
                 StyledToolTip {
                     text: Translation.tr("Useful for debugging tray issues")
+                }
+            }
+
+            SettingsDivider {}
+
+            ContentSubsection {
+                title: Translation.tr("Icons shown directly on the bar")
+                tooltip: Translation.tr("Turn an application off to move it into the expandable tray menu.")
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Repeater {
+                        model: SystemTray.items.values
+
+                        delegate: SettingsSwitch {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            buttonIcon: "keep"
+                            text: {
+                                const title = modelData?.title ?? ""
+                                return title.length > 0 ? title : (modelData?.id ?? Translation.tr("Unknown tray item"))
+                            }
+                            checked: root.trayItemVisible(modelData?.id ?? "")
+                            autoToggle: false
+                            onToggledByUser: checked => root.setTrayItemVisible(modelData?.id ?? "", checked)
+
+                            StyledToolTip {
+                                text: modelData?.id ?? ""
+                            }
+                        }
+                    }
+
+                    ConflictNote {
+                        visible: SystemTray.items.values.length === 0
+                        icon: "info"
+                        text: Translation.tr("No system tray applications are currently running")
+                    }
                 }
             }
 

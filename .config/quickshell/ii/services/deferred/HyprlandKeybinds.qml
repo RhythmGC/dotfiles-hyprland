@@ -11,21 +11,13 @@ import qs.services
 
 /**
  * A service that provides access to Hyprland keybinds.
- * Uses the `get_keybinds.py` script to parse comments in config files in a certain format and convert to JSON.
+ * Reads the live Hyprland bind registry so Lua-generated and user binds are
+ * represented exactly as they are in the running compositor.
  */
 Singleton {
     id: root
     property string keybindParserPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/hyprland/get_keybinds.py`)
-    property string defaultKeybindConfigPath: FileUtils.trimFileProtocol(`${Directories.config}/hypr/hyprland/keybinds.conf`)
-    property string userKeybindConfigPath: FileUtils.trimFileProtocol(`${Directories.config}/hypr/custom/keybinds.conf`)
-    property var defaultKeybinds: {"children": []}
-    property var userKeybinds: {"children": []}
-    property var keybinds: ({
-        children: [
-            ...(defaultKeybinds.children ?? []),
-            ...(userKeybinds.children ?? []),
-        ]
-    })
+    property var keybinds: ({"children": []})
 
     Connections {
         target: Hyprland
@@ -34,37 +26,20 @@ Singleton {
 
         function onRawEvent(event) {
             if (event.name == "configreloaded") {
-                getDefaultKeybinds.running = true
-                getUserKeybinds.running = true
+                getKeybinds.running = true
             }
         }
     }
 
     Process {
-        id: getDefaultKeybinds
+        id: getKeybinds
         running: false
-        command: [root.keybindParserPath, "--path", root.defaultKeybindConfigPath]
+        command: [root.keybindParserPath, "--live"]
         
         stdout: SplitParser {
             onRead: data => {
                 try {
-                    root.defaultKeybinds = JSON.parse(data)
-                } catch (e) {
-                    console.error("[CheatsheetKeybinds] Error parsing keybinds:", e)
-                }
-            }
-        }
-    }
-
-    Process {
-        id: getUserKeybinds
-        running: false
-        command: [root.keybindParserPath, "--path", root.userKeybindConfigPath]
-        
-        stdout: SplitParser {
-            onRead: data => {
-                try {
-                    root.userKeybinds = JSON.parse(data)
+                    root.keybinds = JSON.parse(data)
                 } catch (e) {
                     console.error("[CheatsheetKeybinds] Error parsing keybinds:", e)
                 }
@@ -78,8 +53,7 @@ Singleton {
         repeat: false
         onTriggered: {
             if (!CompositorService.isHyprland) return
-            getDefaultKeybinds.running = true
-            getUserKeybinds.running = true
+            getKeybinds.running = true
         }
     }
 
@@ -96,4 +70,3 @@ Singleton {
         if (CompositorService.isHyprland) initTimer.start()
     }
 }
-

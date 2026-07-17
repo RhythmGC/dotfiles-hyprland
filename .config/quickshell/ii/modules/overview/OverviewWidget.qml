@@ -76,6 +76,27 @@ Item {
     property int draggingFromWorkspace: -1
     property int draggingTargetWorkspace: -1
 
+    function workspaceAtPoint(pointX, pointY) {
+        const cellWidth = root.workspaceImplicitWidth + root.workspaceSpacing
+        const cellHeight = root.workspaceImplicitHeight + root.workspaceSpacing
+        if (cellWidth <= 0 || cellHeight <= 0 || pointX < 0 || pointY < 0)
+            return -1
+
+        const col = Math.floor(pointX / cellWidth)
+        const row = Math.floor(pointY / cellHeight)
+        if (col < 0 || col >= Config.options.overview.columns
+                || row < 0 || row >= Config.options.overview.rows)
+            return -1
+
+        // Treat the spacing between thumbnails as outside any workspace.
+        if ((pointX % cellWidth) > root.workspaceImplicitWidth
+                || (pointY % cellHeight) > root.workspaceImplicitHeight)
+            return -1
+
+        return root.workspaceGroup * root.workspacesShown
+                + row * Config.options.overview.columns + col + 1
+    }
+
     implicitWidth: overviewBackground.implicitWidth + Appearance.sizes.elevationMargin * 2
     implicitHeight: overviewBackground.implicitHeight + Appearance.sizes.elevationMargin * 2
 
@@ -306,12 +327,14 @@ Item {
                     repeat: false
                     running: false
                     onTriggered: {
-                        window.x = Math.round(xWithinWorkspaceWidget + xOffset)
-                        window.y = Math.round(yWithinWorkspaceWidget + yOffset)
+                        window.x = Qt.binding(() => window.initX)
+                        window.y = Qt.binding(() => window.initY)
                     }
                 }
 
                 z: Drag.active ? root.windowDraggingZ : (root.windowZ + windowData?.floating)
+                Drag.active: dragArea.drag.active
+                Drag.source: window
                 Drag.hotSpot.x: width / 2
                 Drag.hotSpot.y: height / 2
 
@@ -322,35 +345,62 @@ Item {
                     onEntered: hovered = true // For hover color change
                     onExited: hovered = false // For hover color change
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-                    drag.target: parent
+                    preventStealing: true
+                    drag.target: window
+                    drag.axis: Drag.XAndYAxis
+                    drag.smoothed: false
+                    property bool movedDuringPress: false
                     onPressed: (mouse) => {
                         root.draggingFromWorkspace = windowData?.workspace.id
                         window.pressed = true
-                        window.Drag.active = true
-                        window.Drag.source = window
+                        movedDuringPress = false
                         window.Drag.hotSpot.x = mouse.x
                         window.Drag.hotSpot.y = mouse.y
-                        // console.log(`[OverviewWindow] Dragging window ${windowData?.address} from position (${window.x}, ${window.y})`)
                     }
-                    onReleased: {
+                    onPositionChanged: (mouse) => {
+                        if (!drag.active)
+                            return
+                        movedDuringPress = true
+                        const point = mapToItem(windowSpace, mouse.x, mouse.y)
+                        root.draggingTargetWorkspace = root.workspaceAtPoint(
+                            point.x,
+                            point.y
+                        )
+                    }
+                    onReleased: (mouse) => {
                         if (!CompositorService.isHyprland)
                             return
-                        const targetWorkspace = root.draggingTargetWorkspace
+                        const point = mapToItem(windowSpace, mouse.x, mouse.y)
+                        const wasDrag = movedDuringPress
                         window.pressed = false
-                        window.Drag.active = false
+                        movedDuringPress = false
+                        if (!wasDrag) {
+                            root.draggingFromWorkspace = -1
+                            root.draggingTargetWorkspace = -1
+                            return
+                        }
+                        // DropArea can miss events when a dragged window is above
+                        // the workspace layer. Resolve the target from the final
+                        // pointer position as a reliable fallback.
+                        const positionTarget = root.workspaceAtPoint(
+                            point.x,
+                            point.y
+                        )
+                        const targetWorkspace = positionTarget !== -1
+                            ? positionTarget : root.draggingTargetWorkspace
                         root.draggingFromWorkspace = -1
+                        root.draggingTargetWorkspace = -1
                         if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
-                            Hyprland.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${window.windowData?.address}`)
+                            Hyprland.dispatch(
+                                `hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = 'address:${window.windowData?.address}' })`
+                            )
                             updateWindowPosition.restart()
                         }
                         else {
-                            if (!window.windowData.floating) {
-                                updateWindowPosition.restart()
-                                return
-                            }
-                            const percentageX = Math.round((window.x - xOffset) / root.workspaceImplicitWidth * 100)
-                            const percentageY = Math.round((window.y - yOffset) / root.workspaceImplicitHeight * 100)
-                            Hyprland.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${window.windowData?.address}`)
+                            // Restore the overview thumbnail when dropped outside
+                            // another workspace. Repositioning a real floating
+                            // window is deliberately not coupled to overview drag.
+                            updateWindowPosition.restart()
                         }
                     }
                     onClicked: (event) => {
@@ -358,10 +408,10 @@ Item {
 
                         if (event.button === Qt.LeftButton) {
                             GlobalStates.overviewOpen = false
-                            Hyprland.dispatch(`focuswindow address:${windowData.address}`)
+                            Hyprland.dispatch(`hl.dsp.focus({ window = 'address:${windowData.address}' })`)
                             event.accepted = true
                         } else if (event.button === Qt.MiddleButton) {
-                            Hyprland.dispatch(`closewindow address:${windowData.address}`)
+                            Hyprland.dispatch(`hl.dsp.window.close({ window = 'address:${windowData.address}' })`)
                             event.accepted = true
                         }
                     }

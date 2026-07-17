@@ -36,38 +36,36 @@ dotfiles/
 │   ├── starship.toml      # Universal Starship cross-shell prompt config
 │   └── vesktop/           # Vesktop settings & Vencord styling
 │
-├── install/               # Portable Bootstrapping & Setup (Safe for all systems)
-│   ├── install.sh         # Interactive package installer & dynamic config linker
-│   └── README.md          # English Installer Guide & System Prerequisites
+├── install/               # Arch Linux bootstrap and config installer
+│   └── install-config.sh  # Interactive package installer and config copier
 │
-└── working/               # Untracked Local Workspace (Ignored by Git)
-    ├── items.json         # Local list of linked config directories
-    ├── link.sh            # Local symlink deployment script
-    ├── resetLinks.sh      # Local symlink decoupling utility
-    ├── resetLinksWithBackup.sh # Advanced local configuration restorer/loop fixer
-    └── copyConfig.sh      # Syncs machine local configs back to dotfiles repo
+└── Scripts/
+    ├── items.json         # Config paths managed by the helper scripts
+    ├── link.sh            # Deploy configs as symlinks
+    ├── removeLinks.sh     # Remove links and back up physical configs
+    └── copyConfig.sh      # Sync local configs back to this repository
 ```
 
 ---
 
 ## Quick Start Guide
 
-Ready to install this desktop environment on a new machine? The portable `install/` module handles package installation and config linking automatically.
+Ready to install this desktop environment on a new machine? The `install/` module handles package installation and safely copies the selected configs automatically.
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/dotfiles.git ~/dotfiles
+git clone https://github.com/RhythmGC/dotfiles-hyprland.git ~/dotfiles-hyprland
 ```
 
 ### 2. Run the Installer
 
 ```bash
-cd ~/dotfiles
-./install/install.sh
+cd ~/dotfiles-hyprland
+./install/install-config.sh
 ```
 
-For custom AUR package instructions, system dependencies, and details on safety backups, read the [Comprehensive Installer Guide](file:///home/rhythmgc/dotfiles/install/README.md).
+The installer targets Arch-based distributions. Existing configuration entries are moved to a timestamped backup directory before the repository copies are installed.
 
 ---
 

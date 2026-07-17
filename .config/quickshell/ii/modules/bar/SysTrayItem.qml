@@ -55,6 +55,8 @@ MouseArea {
                 : (title.length > 0 ? title : "");
         if (tooltip.text.length === 0) return;
         if (tooltipDescription.length > 0) tooltip.text += " • " + tooltipDescription;
+        if ((Config.options?.bar?.tray?.showItemId ?? false) && item.id)
+            tooltip.text += "\n[" + item.id + "]";
     }
 
     // Listen for close signal from parent tray
