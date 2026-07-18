@@ -114,6 +114,7 @@ RippleButton {
                 
                 // Score
                 RowLayout {
+                    visible: post.score >= 0
                     spacing: 2
                     MaterialSymbol {
                         text: "arrow_upward"
@@ -129,6 +130,7 @@ RippleButton {
                 
                 // Comments
                 RowLayout {
+                    visible: post.numComments >= 0
                     spacing: 2
                     MaterialSymbol {
                         text: "chat_bubble"

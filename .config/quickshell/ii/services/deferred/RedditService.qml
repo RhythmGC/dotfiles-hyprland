@@ -7,7 +7,7 @@ import qs.services
 import "root:"
 
 /**
- * RedditService - Reddit public JSON API
+ * RedditService - Reddit public RSS feed
  * No auth required for public subreddits
  */
 Singleton {
@@ -58,8 +58,7 @@ Singleton {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {
                     try {
-                        const response = JSON.parse(xhr.responseText)
-                        callback(response.data?.children ?? [], null)
+                        callback(root._parseFeed(xhr.responseText), null)
                     } catch (e) {
                         callback(null, "Parse error: " + e.message)
                     }
@@ -101,7 +100,10 @@ Singleton {
         root.currentSort = s
         
         const limit = Config.options?.sidebar?.reddit?.limit ?? 25
-        const url = `https://www.reddit.com/r/${sub}/${s}.json?limit=${limit}&raw_json=1`
+        // Reddit now rejects anonymous .json requests with HTTP 403. Its Atom
+        // feeds remain available for public subreddits without OAuth.
+        const safeSub = encodeURIComponent(sub.replace(/^r\//, ""))
+        const url = `https://www.reddit.com/r/${safeSub}/${s}/.rss?limit=${limit}`
         
         root._makeRequest(url, (children, error) => {
             root.loading = false
@@ -110,11 +112,59 @@ Singleton {
                 return
             }
             
-            const normalized = children.map(child => root._normalizePost(child.data))
-            root._cache[cacheKey] = normalized
+            root._cache[cacheKey] = children
             root._cacheTimestamps[cacheKey] = Date.now()
-            root.posts = normalized
+            root.posts = children
         })
+    }
+
+    function _parseFeed(xml) {
+        const posts = []
+        const entries = xml.match(/<entry(?:\s[^>]*)?>[\s\S]*?<\/entry>/g) ?? []
+
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i]
+            const content = root._xmlTag(entry, "content")
+            const links = []
+            const linkRegex = /href=["']([^"']+)["']/g
+            let match
+            while ((match = linkRegex.exec(content)) !== null)
+                links.push(root._decodeHtml(match[1]))
+
+            const permalinkMatch = entry.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*\/?\s*>/)
+            const permalink = permalinkMatch ? root._decodeHtml(permalinkMatch[1]) : ""
+            const externalUrl = links.find(url => url.indexOf("/comments/") === -1 && url.indexOf("/user/") === -1) ?? permalink
+            const thumbnailMatch = entry.match(/<media:thumbnail\s[^>]*url=["']([^"']+)["']/)
+            const published = root._xmlTag(entry, "published") || root._xmlTag(entry, "updated")
+            const author = root._xmlTag(root._xmlTag(entry, "author"), "name").replace(/^\/u\//, "")
+
+            posts.push({
+                id: root._xmlTag(entry, "id").replace(/^t3_/, ""),
+                title: root._xmlTag(entry, "title"),
+                author: author,
+                subreddit: root.currentSubreddit,
+                // Atom feeds do not expose vote or comment counts.
+                score: -1,
+                numComments: -1,
+                created: Date.parse(published) / 1000,
+                url: externalUrl,
+                permalink: permalink,
+                thumbnail: thumbnailMatch ? root._decodeHtml(thumbnailMatch[1]) : "",
+                isVideo: false,
+                isNsfw: false,
+                isSelf: externalUrl === permalink,
+                selftext: "",
+                flair: "",
+                domain: ""
+            })
+        }
+        return posts
+    }
+
+    function _xmlTag(xml, tag) {
+        const match = xml.match(new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)</" + tag + ">"))
+        if (!match) return ""
+        return root._decodeHtml(match[1].replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, ""))
     }
     
     function _normalizePost(post) {
@@ -157,7 +207,7 @@ Singleton {
     
     function _decodeHtml(html) {
         if (!html) return ""
-        return html.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        return html.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
     }
     
     function formatScore(score) {
@@ -190,19 +240,25 @@ Singleton {
     }
     
     function _openUrlFocusBrowser(url) {
-        // Try to focus existing browser window first
-        if (typeof NiriService !== "undefined" && NiriService.windows) {
-            const browserPatterns = ["firefox", "chromium", "chrome", "brave", "zen", "librewolf", "vivaldi", "opera"]
-            const windows = NiriService.windows ?? []
-            for (let i = 0; i < windows.length; i++) {
-                const win = windows[i]
-                const appId = (win.app_id ?? "").toLowerCase()
-                if (browserPatterns.some(p => appId.includes(p))) {
-                    NiriService.focusWindow(win.id)
-                    break
+        // Release the sidebar's keyboard focus before handing the URL to the
+        // browser. Waiting one event-loop turn lets the panel close first.
+        GlobalStates.sidebarLeftOpen = false
+        Qt.callLater(() => {
+            // Try to focus an existing browser window first on Niri. On
+            // Hyprland, opening the URL activates the browser through xdg-open.
+            if (typeof NiriService !== "undefined" && NiriService.windows) {
+                const browserPatterns = ["firefox", "chromium", "chrome", "brave", "zen", "librewolf", "vivaldi", "opera"]
+                const windows = NiriService.windows ?? []
+                for (let i = 0; i < windows.length; i++) {
+                    const win = windows[i]
+                    const appId = (win.app_id ?? "").toLowerCase()
+                    if (browserPatterns.some(p => appId.includes(p))) {
+                        NiriService.focusWindow(win.id)
+                        break
+                    }
                 }
             }
-        }
-        Qt.openUrlExternally(url)
+            Qt.openUrlExternally(url)
+        })
     }
 }

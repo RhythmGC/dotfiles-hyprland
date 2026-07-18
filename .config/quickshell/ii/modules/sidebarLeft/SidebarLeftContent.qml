@@ -6,6 +6,7 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 import qs.modules.sidebarLeft.animeSchedule
 import qs.modules.sidebarLeft.reddit
+import qs.modules.sidebarLeft.vaults
 // DISABLED: webapps — requires quickshell-webengine rebuild, re-enable when ready
 // import qs.modules.sidebarLeft.plugins
 import QtQuick
@@ -70,6 +71,7 @@ Item {
         const result = []
         if (root.widgetsEnabled) result.push({ icon: "widgets", name: Translation.tr("Widgets") })
         if (root.aiChatEnabled) result.push({ icon: "neurology", name: Translation.tr("Intelligence") })
+        result.push({ icon: "encrypted", name: Translation.tr("Vaults") })
         if (root.translatorEnabled) result.push({ icon: "translate", name: Translation.tr("Translator") })
         if (root.animeEnabled && !root.animeCloset) result.push({ icon: "bookmark_heart", name: Translation.tr("Anime") })
         if (root.animeScheduleEnabled) result.push({ icon: "calendar_month", name: Translation.tr("Schedule") })
@@ -286,6 +288,7 @@ Item {
                                 switch (modelData.icon) {
                                     case "widgets": return widgetsComp
                                     case "neurology": return aiChatComp
+                                    case "encrypted": return vaultsComp
                                     case "translate": return translatorComp
                                     case "bookmark_heart": return animeComp
                                     case "calendar_month": return animeScheduleComp
@@ -317,6 +320,7 @@ Item {
 
         Component { id: widgetsComp; WidgetsView {} }
         Component { id: aiChatComp; AiChat {} }
+        Component { id: vaultsComp; VaultsView {} }
         Component { id: translatorComp; Translator {} }
         Component { id: animeComp; Anime {} }
         Component { id: animeScheduleComp; AnimeScheduleView {} }

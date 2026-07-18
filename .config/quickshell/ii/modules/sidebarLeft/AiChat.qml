@@ -323,7 +323,7 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                     top: parent.top
                     topMargin: 4
                 }
-                implicitWidth: statusRowLayout.implicitWidth + 10 * 2
+                width: Math.min(statusRowLayout.implicitWidth + 10 * 2, parent.width - 8)
                 implicitHeight: Math.max(statusRowLayout.implicitHeight, 38)
                 radius: Appearance.rounding.normal - root.padding
                 color: Appearance.angelEverywhere ? Appearance.angel.colGlassCard
@@ -331,10 +331,14 @@ Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
                     : Appearance.auroraEverywhere ? Appearance.aurora.colElevatedSurface : Appearance.colors.colLayer2
                 RowLayout {
                     id: statusRowLayout
-                    anchors.centerIn: parent
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
                     spacing: 10
 
-                    AiModelSelector {}
+                    AiModelSelector {
+                        Layout.fillWidth: true
+                    }
                     StatusSeparator {}
                     StatusItem {
                         icon: Ai.currentModelHasApiKey ? "key" : "key_off"

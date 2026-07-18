@@ -57,6 +57,7 @@ Item {
     RippleButton {
         id: pill
         anchors.left: parent.left
+        anchors.right: parent.right
         anchors.top: parent.top
         implicitHeight: 30
         implicitWidth: pillRow.implicitWidth + 20
@@ -67,7 +68,9 @@ Item {
 
         contentItem: RowLayout {
             id: pillRow
-            anchors.centerIn: parent
+            anchors.fill: parent
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
             spacing: 6
             AiModelIcon {
                 icon: root.currentModel?.icon ?? "spark-symbolic"
@@ -75,6 +78,7 @@ Item {
                 color: Appearance.colors.colOnLayer2
             }
             StyledText {
+                Layout.fillWidth: true
                 text: root.currentName
                 font.pixelSize: Appearance.font.pixelSize.small
                 font.weight: Font.Medium

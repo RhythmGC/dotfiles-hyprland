@@ -168,6 +168,7 @@ Singleton {
     property var messageByID: ({})
     property bool _pendingRequest: false
     readonly property var apiKeys: KeyringStorage.keyringData?.apiKeys ?? {}
+    readonly property var vaultEnvironment: KeyringStorage.keyringData?.environmentVariables ?? {}
     readonly property var apiKeysLoaded: KeyringStorage.loaded
     readonly property bool currentModelHasApiKey: {
         const model = models[currentModelId];
@@ -927,6 +928,7 @@ Singleton {
     Process {
         id: requester
         property list<string> baseCommand: ["/usr/bin/bash"]
+        property var injectedVaultKeys: []
         property AiMessageData message
         property ApiStrategy currentStrategy
 
@@ -962,9 +964,25 @@ Singleton {
             requester.currentStrategy = root.currentApiStrategy;
             requester.currentStrategy.reset(); // Reset strategy state
 
-            /* Put API key in environment variable */
+            /* Add user-managed Vault variables to this request process only. */
+            for (const oldName of requester.injectedVaultKeys)
+                delete requester.environment[oldName];
+            const vaultKeys = Object.keys(root.vaultEnvironment ?? {});
+            for (const name of vaultKeys) {
+                if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+                    const entry = root.vaultEnvironment[name];
+                    requester.environment[name] = String((typeof entry === "object" ? entry?.value : entry) ?? "");
+                }
+            }
+            requester.injectedVaultKeys = vaultKeys.filter(name => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
+
+            /* Put the model-specific API key in the conventional variable. */
             if (model?.requires_key) {
-                requester.environment[`${root.apiKeyEnvVarName}`] = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : ""
+                const modelKey = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : "";
+                if (modelKey.length > 0)
+                    requester.environment[`${root.apiKeyEnvVarName}`] = modelKey;
+                else if (!(root.apiKeyEnvVarName in root.vaultEnvironment))
+                    requester.environment[`${root.apiKeyEnvVarName}`] = "";
             }
 
             /* Build endpoint, request data */

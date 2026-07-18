@@ -62,6 +62,25 @@ Singleton {
         saveKeyringData();
     }
 
+    function removeNestedField(path) {
+        if (!root.keyringData || path.length === 0) return;
+        let obj = root.keyringData;
+        const parents = [obj];
+
+        for (let i = 0; i < path.length - 1; ++i) {
+            if (!obj[path[i]] || typeof obj[path[i]] !== "object") return;
+            obj = obj[path[i]];
+            parents.push(obj);
+        }
+
+        delete obj[path[path.length - 1]];
+        for (let i = path.length - 2; i >= 0; --i) {
+            parents[i][path[i]] = Object.assign({}, parents[i][path[i]]);
+        }
+        root.keyringData = Object.assign({}, root.keyringData);
+        saveKeyringData();
+    }
+
     function fetchKeyringData() {
         // console.log("[KeyringStorage] Fetching keyring data...");
         // console.log("[KeyringStorage] getData command:'" + getData.command.join("' '") + "'");
