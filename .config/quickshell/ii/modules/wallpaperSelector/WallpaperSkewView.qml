@@ -101,6 +101,8 @@ Item {
     onColorFilterChanged: {
         _flippedImageIndex = -1
         _rebuildAndSync()
+        if (colorFilter !== -1)
+            Qt.callLater(_analyzeUncachedColors)
     }
     onFavouriteFilterActiveChanged: {
         _flippedImageIndex = -1
@@ -109,6 +111,8 @@ Item {
     onSortModeChanged: {
         _flippedImageIndex = -1
         _rebuildAndSync()
+        if (sortMode === "color")
+            Qt.callLater(_analyzeUncachedColors)
     }
     onCurrentWallpaperPathChanged: {
         _initialized = false
@@ -274,7 +278,7 @@ Item {
     }
 
     // ─── Skew / layout parameters (matching skwd geometry) ───
-    readonly property real thumbnailDecodeScale: 1.2
+    readonly property real thumbnailDecodeScale: 1.0
     readonly property int baseSliceWidth: 135
     readonly property int baseExpandedCardWidth: 924
     readonly property int baseCardHeight: 520
@@ -307,6 +311,7 @@ Item {
         const h = Math.round(root.cardHeight * root.thumbnailDecodeScale * root._dpr)
         let s = Images.thumbnailSizeNameForDimensions(w, h)
         if (s === "normal" || s === "large") s = "x-large"
+        if (s === "xx-large") s = "x-large"
         return s
     }
     // ═══════════════════════════════════════════════════
@@ -508,11 +513,13 @@ Item {
                 console.warn("[SkewView] Failed to parse colors cache:", e)
             }
             root._colorsLoaded = true
-            root._analyzeUncachedColors()
+            if (root.sortMode === "color" || root.colorFilter !== -1)
+                root._analyzeUncachedColors()
         }
         onLoadFailed: {
             root._colorsLoaded = true
-            root._analyzeUncachedColors()
+            if (root.sortMode === "color" || root.colorFilter !== -1)
+                root._analyzeUncachedColors()
         }
     }
 
@@ -623,7 +630,11 @@ Item {
     // LIFECYCLE
     // ═══════════════════════════════════════════════════
     function updateThumbnails(): void {
-        for (let i = 0; i < Math.min(imageCount, 30); i++) {
+        if (!hasImages) return
+        const radius = 2
+        const first = Math.max(0, currentImageIndex - radius)
+        const last = Math.min(imageCount - 1, currentImageIndex + radius)
+        for (let i = first; i <= last; i++) {
             const fp = _imgFilePath(i)
             const fn = _imgFileName(i)
             if (fp && fp.length > 0) {
@@ -634,6 +645,8 @@ Item {
         }
     }
 
+    onCurrentImageIndexChanged: Qt.callLater(updateThumbnails)
+
     onTotalCountChanged: {
         _rebuildIndexMaps()
         if (totalCount > 0) {
@@ -643,7 +656,8 @@ Item {
             _initialized = false
             currentImageIndex = 0
         }
-        if (totalCount > 0 && _colorsLoaded)
+        if (totalCount > 0 && _colorsLoaded
+                && (sortMode === "color" || colorFilter !== -1))
             Qt.callLater(_analyzeUncachedColors)
     }
 
@@ -656,7 +670,8 @@ Item {
         updateThumbnails()
         contentShowTimer.restart()
         forceActiveFocus()
-        Qt.callLater(_analyzeUncachedColors)
+        if (sortMode === "color" || colorFilter !== -1)
+            Qt.callLater(_analyzeUncachedColors)
     }
 
     Connections {
@@ -666,7 +681,9 @@ Item {
             root._rebuildIndexMaps()
             root._initialized = false
             root._syncToCurrentWallpaper(true)
-            Qt.callLater(root._analyzeUncachedColors)
+            root.updateThumbnails()
+            if (root.sortMode === "color" || root.colorFilter !== -1)
+                Qt.callLater(root._analyzeUncachedColors)
         }
     }
 
@@ -831,7 +848,7 @@ Item {
         orientation: ListView.Horizontal
         spacing: root.sliceSpacing
         clip: false
-        cacheBuffer: root.expandedCardWidth * 4
+        cacheBuffer: root.sliceWidth * 2
         focus: false
 
         highlightRangeMode: ListView.StrictlyEnforceRange
@@ -1035,7 +1052,7 @@ Item {
                     asynchronous: true
                     retainWhileLoading: true
                     smooth: true
-                    mipmap: delegateItem.isCurrent
+                    mipmap: false
                     sourceSize.width: delegateItem._sourceW
                     sourceSize.height: delegateItem._sourceH
                 }
@@ -1060,7 +1077,7 @@ Item {
                     asynchronous: true
                     cache: true
                     smooth: true
-                    mipmap: delegateItem.isCurrent
+                    mipmap: false
                     sourceSize.width: delegateItem._sourceW
                     sourceSize.height: delegateItem._sourceH
                     source: {
@@ -1114,8 +1131,8 @@ Item {
 
                 // Parallelogram mask — CurveRenderer provides AA, no MSAA layers needed
                 layer.enabled: true
-                layer.smooth: delegateItem.isCurrent
-                layer.samples: delegateItem.isCurrent ? 4 : 0
+                layer.smooth: false
+                layer.samples: 0
                 layer.effect: MultiEffect {
                     maskEnabled: true
                     maskSource: ShaderEffectSource {

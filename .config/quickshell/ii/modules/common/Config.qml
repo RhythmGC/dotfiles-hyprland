@@ -1992,7 +1992,7 @@ Singleton {
                 property bool useSystemFileDialog: false
                 property string selectionTarget: "main"
                 property string targetMonitor: ""
-                property string style: "grid" // "grid" | "coverflow"
+                property string style: "coverflow" // "grid" | "coverflow"
                 property string coverflowView: "gallery" // "gallery" | "skew"
             }
 

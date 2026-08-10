@@ -9,7 +9,6 @@ import qs.modules.common.functions
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects as GE
 import Quickshell
 
 Item {
@@ -74,10 +73,9 @@ Item {
             : Translation.tr("Arrows, wheel or click to navigate")
 
     property string _lastThumbnailSizeName: "x-large"
-    readonly property string _filmstripThumbnailSizeName: Images.thumbnailSizeNameForDimensions(
-        Math.round((root.previewMode ? 108 : 132) * root._dpr * 1.2),
-        Math.round(root.filmstripHeight * root._dpr * 1.2)
-    )
+    // Filmstrip cards are small. Using x-large thumbnails here on HiDPI screens
+    // makes Qt decode a row of 512 px PNGs just to display ~132 px cards.
+    readonly property string _filmstripThumbnailSizeName: root._dpr > 1 ? "large" : "normal"
     property int currentIndex: 0
     property bool previewMode: false
     property bool showKeyboardGuide: true
@@ -111,12 +109,12 @@ Item {
     readonly property string activeColorSource: {
         if (!hasItems || activePath.length === 0 || activeIsDir)
             return ""
-        if (activeKind === "video" || activeKind === "gif") {
-            const thumbPath = Wallpapers.getExpectedThumbnailPath(activePath, _lastThumbnailSizeName)
-            if (thumbPath.length > 0)
-                return thumbPath.startsWith("file://") ? thumbPath : ("file://" + thumbPath)
-        }
-        return activePath.startsWith("file://") ? activePath : ("file://" + activePath)
+        // Quantizing the original wallpaper decodes multi-megapixel images just
+        // to rescale them to 10 px. Reuse the bounded hero thumbnail instead.
+        const thumbPath = Wallpapers.getExpectedThumbnailPath(activePath, _lastThumbnailSizeName)
+        if (thumbPath.length > 0)
+            return thumbPath.startsWith("file://") ? thumbPath : ("file://" + thumbPath)
+        return ""
     }
     readonly property string activeQuantizerSource: {
         const base = activeColorSource
@@ -188,20 +186,23 @@ Item {
     }
 
     function updateThumbnails() {
-        const width = Math.round(heroWidth * _dpr * 2)
-        const height = Math.round(heroHeight * _dpr * 2)
+        const width = Math.round(heroWidth * _dpr)
+        const height = Math.round(heroHeight * _dpr)
         let sizeName = Images.thumbnailSizeNameForDimensions(width, height)
-        if (sizeName === "normal" || sizeName === "large")
+        // 512 px is sufficient for the hero card and avoids decoding a directory
+        // full of 1024 px PNGs every time the selector is opened.
+        if (sizeName === "normal" || sizeName === "large" || sizeName === "xx-large")
             sizeName = "x-large"
         _lastThumbnailSizeName = sizeName
-        Wallpapers.generateThumbnail(_lastThumbnailSizeName)
         _prefetchAroundIndex(currentIndex)
     }
 
     function _prefetchAroundIndex(centerIndex) {
         if (!hasItems)
             return
-        const radius = previewMode ? 4 : 8
+        // The filmstrip already provides low-resolution neighbours. Generate and
+        // decode the 512 px hero only for the selected item.
+        const radius = 0
         for (let offset = 0; offset <= radius; offset++) {
             const leftIndex = centerIndex - offset
             const rightIndex = offset === 0 ? -1 : centerIndex + offset
@@ -252,7 +253,6 @@ Item {
         if (bounded === currentIndex) return
         currentIndex = bounded
         showKeyboardGuide = false
-        _prefetchAroundIndex(currentIndex)
         if (Appearance.animationsEnabled)
             focusPulseAnim.restart()
     }
@@ -501,16 +501,6 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: ColorUtils.applyAlpha(root.baseColor, root.previewMode ? 0.05 : 0.14)
-    }
-
-    GE.RadialGradient {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: ColorUtils.applyAlpha(root._accent, root.previewMode ? 0.09 : 0.14) }
-            GradientStop { position: 0.45; color: ColorUtils.applyAlpha(root._accent, 0.045) }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-        opacity: root.previewMode ? 0.25 : 0.48
     }
 
     Rectangle {
@@ -836,14 +826,7 @@ Item {
                 Item {
                     id: heroClipContent
                     anchors.fill: parent
-                    layer.enabled: true
-                    layer.effect: GE.OpacityMask {
-                        maskSource: Rectangle {
-                            width: heroClipContent.width
-                            height: heroClipContent.height
-                            radius: heroCard.radius
-                        }
-                    }
+                    clip: true
 
                     Rectangle {
                         anchors.fill: parent
@@ -875,7 +858,7 @@ Item {
                         asynchronous: true
                         retainWhileLoading: true
                         smooth: true
-                        mipmap: true
+                        mipmap: false
                         fillMode: Image.PreserveAspectCrop
                         clip: true
                         sourceSize.width: Math.round(heroCard.width * root._dpr)
@@ -895,7 +878,7 @@ Item {
                         asynchronous: true
                         retainWhileLoading: true
                         smooth: true
-                        mipmap: true
+                        mipmap: false
                         fillMode: Image.PreserveAspectCrop
                         clip: true
                         sourceSize.width: Math.round(heroCard.width * root._dpr)
@@ -1028,14 +1011,6 @@ Item {
                                         color: ColorUtils.contrastColor(root._accent)
                                         font.pixelSize: Appearance.font.pixelSize.small
                                         font.weight: Font.DemiBold
-                                        layer.enabled: true
-                                        layer.effect: GE.DropShadow {
-                                            verticalOffset: 1
-                                            horizontalOffset: 0
-                                            radius: 6
-                                            samples: 16
-                                            color: ColorUtils.applyAlpha(Appearance.colors.colScrim, 0.55)
-                                        }
                                     }
                                 }
                             }
@@ -1173,13 +1148,11 @@ Item {
     GlassBackground {
         id: filmstripPanel
         anchors {
-            left: parent.left
-            right: parent.right
+            horizontalCenter: parent.horizontalCenter
             bottom: toolbarArea.top
-            leftMargin: root.pageMargin
-            rightMargin: root.pageMargin
             bottomMargin: root.pageMargin
         }
+        width: Math.min(parent.width - root.pageMargin * 2, 1000)
         height: root.previewMode ? Math.max(86, root.filmstripHeight * 0.72) : Math.max(104, root.filmstripHeight * 0.88)
         visible: root.hasItems
         opacity: visible ? 1.0 : 0.0
@@ -1201,7 +1174,7 @@ Item {
             spacing: 10
             clip: true
             model: root.totalCount
-            cacheBuffer: 800
+            cacheBuffer: 0
             boundsBehavior: Flickable.StopAtBounds
             currentIndex: root.currentIndex
 
@@ -1245,14 +1218,7 @@ Item {
                     Item {
                         id: thumbClipContent
                         anchors.fill: parent
-                        layer.enabled: true
-                        layer.effect: GE.OpacityMask {
-                            maskSource: Rectangle {
-                                width: thumbClipContent.width
-                                height: thumbClipContent.height
-                                radius: root.panelRadius
-                            }
-                        }
+                        clip: true
 
                         Rectangle {
                             anchors.fill: parent
@@ -1328,13 +1294,6 @@ Item {
                             text: root._kindIcon(mediaKind, fileIsDir)
                             iconSize: Appearance.font.pixelSize.small
                             color: Appearance.colors.colOnLayer0
-                            layer.enabled: true
-                            layer.effect: GE.DropShadow {
-                                verticalOffset: 1
-                                horizontalOffset: 0
-                                radius: 4
-                                color: ColorUtils.applyAlpha(Appearance.colors.colScrim, 0.65)
-                            }
                         }
                     }
 

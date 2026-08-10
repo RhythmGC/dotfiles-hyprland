@@ -59,7 +59,7 @@ binds {
     Ctrl+Shift+S { spawn "inir" "region" "menu"; }
 
     // Wallpaper picker, settings, cheatsheet, panel family switch.
-    Ctrl+Alt+T { spawn "inir" "wallpaperSelector" "toggle"; }
+    Ctrl+Alt+T { spawn "inir" "coverflowSelector" "toggle"; }
     Mod+Comma { spawn "inir" "settings"; }
     Mod+Slash { spawn "inir" "cheatsheet" "toggle"; }
     Mod+Shift+W { spawn "inir" "panelFamily" "cycle"; }

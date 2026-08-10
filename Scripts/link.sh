@@ -70,6 +70,17 @@ while IFS= read -r item; do
   link_item "$item"
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
+# Quickshell still references this historical path internally. Keep baOS as
+# the canonical config and expose only a compatibility symlink.
+legacy_shell_config="$DST_CONFIG/illogical-impulse"
+if [ -L "$legacy_shell_config" ]; then
+  rm "$legacy_shell_config"
+elif [ -e "$legacy_shell_config" ]; then
+  backup_item "$legacy_shell_config" "illogical-impulse"
+fi
+ln -s "$DST_CONFIG/baOS" "$legacy_shell_config"
+echo "[linked] $legacy_shell_config -> $DST_CONFIG/baOS"
+
 echo
 echo "Finished creating symlinks."
 echo "Backup if any is located at: $BACKUP_DIR"

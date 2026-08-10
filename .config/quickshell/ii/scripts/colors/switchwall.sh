@@ -127,10 +127,10 @@ check_and_prompt_upscale() {
             img_height=$(identify -format "%h" "$img" 2>/dev/null)
         fi
         if [[ "$img_width" -lt "$min_width_desired" || "$img_height" -lt "$min_height_desired" ]]; then
-            action=$(notify-send "Upscale?" \
+            action=$(timeout 15s notify-send "Upscale?" \
                 "Image resolution (${img_width}x${img_height}) is lower than screen resolution (${min_width_desired}x${min_height_desired})" \
                 -A "open_upscayl=Open Upscayl"\
-                -a "Wallpaper switcher")
+                -a "Wallpaper switcher" || true)
             if [[ "$action" == "open_upscayl" ]]; then
                 if command -v upscayl &>/dev/null; then
                     nohup upscayl > /dev/null 2>&1 &
@@ -449,7 +449,9 @@ switch() {
             fi
         fi
 
-        check_and_prompt_upscale "$imgpath" &
+        # This task can wait for a notification action. Keep its file descriptors
+        # away from Quickshell's Process pipe so wallpaper application can finish.
+        check_and_prompt_upscale "$imgpath" >/dev/null 2>&1 &
         kill_existing_mpvpaper
 
         if is_video "$imgpath"; then

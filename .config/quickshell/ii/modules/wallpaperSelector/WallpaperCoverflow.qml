@@ -7,7 +7,6 @@ import qs.modules.common.widgets
 import qs.modules.common.functions
 import QtQuick
 import QtQuick.Effects
-import Qt5Compat.GraphicalEffects as GE
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -231,9 +230,11 @@ Scope {
                 // so the source is oversized by blurOverflow on every side.
                 readonly property int blurOverflow: 64
 
-                // Skew view manages its own scrim; disable the expensive
-                // fullscreen blur pipeline to avoid GPU/CPU spike.
-                readonly property bool blurActive: root._viewMode !== "skew"
+                // A fullscreen live blur is re-rendered whenever any Quickshell
+                // window updates (clock, audio visualizer, notifications, etc.).
+                // Keep the static scrim and avoid paying that cost while the
+                // wallpaper picker is open.
+                readonly property bool blurActive: false
 
                 Item {
                     id: blurSource
@@ -277,15 +278,6 @@ Scope {
                     opacity: 0.55
                 }
 
-                // Vignette: darken edges for depth
-                GE.RadialGradient {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 0.6; color: "transparent" }
-                        GradientStop { position: 1.0; color: ColorUtils.applyAlpha(Appearance.colors.colScrim, 0.4) }
-                    }
-                }
             }
 
             // ─── View: Gallery or Skew ───

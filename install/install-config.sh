@@ -293,6 +293,43 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     success "Copied: ~/.config/$item <- $local_src"
   done
 
+  # Keep the installed shell preferences on the low-CPU Coverflow path even
+  # when the source config came from an older checkout or omitted newer keys.
+  shell_preferences="$DST_CONFIG/baOS/config.json"
+  if [ -f "$shell_preferences" ]; then
+    preferences_tmp=$(mktemp "${shell_preferences}.tmp.XXXXXX")
+    if jq '
+      .wallpaperSelector = (.wallpaperSelector // {}) |
+      .wallpaperSelector.style = "coverflow" |
+      .wallpaperSelector.coverflowView = "gallery" |
+      .wallpaperSelector.useSystemFileDialog = false |
+      .wallpaperSelector.animatePreview = false
+    ' "$shell_preferences" > "$preferences_tmp"; then
+      chmod --reference="$shell_preferences" "$preferences_tmp"
+      mv "$preferences_tmp" "$shell_preferences"
+      success "Configured WallpaperCoverflow Gallery (low CPU default)."
+    else
+      rm -f "$preferences_tmp"
+      error "Could not update wallpaper selector settings in $shell_preferences"
+    fi
+  fi
+
+  # QML still reads the historical config path internally. Keep one narrow
+  # compatibility alias while baOS remains the canonical user config folder.
+  legacy_shell_config="$DST_CONFIG/illogical-impulse"
+  if [ -L "$legacy_shell_config" ]; then
+    rm "$legacy_shell_config"
+  elif [ -e "$legacy_shell_config" ]; then
+    if [ "$backup_created" = false ]; then
+      mkdir -p "$BACKUP_DIR"
+      backup_created=true
+    fi
+    mv "$legacy_shell_config" "$BACKUP_DIR/illogical-impulse"
+    success "Backed up legacy shell config: $legacy_shell_config"
+  fi
+  ln -s "$DST_CONFIG/baOS" "$legacy_shell_config"
+  success "Configured baOS compatibility alias for Quickshell."
+
   if [ "$backup_created" = true ]; then
     success "All existing configuration backups are stored at: $BACKUP_DIR"
   fi
@@ -321,13 +358,21 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     info "Sudoers rule for papirus-folders already exists — skipping."
   fi
 
-  # Set initial KDE theming and use Kitty for Dolphin's "Open Terminal" action
+  # Set initial KDE theming and use Kitty for Dolphin's external
+  # "Open Terminal" (Shift+F4) action.
   if command -v kwriteconfig6 > /dev/null 2>&1; then
     info "Configuring initial KDE settings (Papirus-Dark icons, Darkly colors, Kitty terminal)..."
     kwriteconfig6 --file kdeglobals --group Icons   --key Theme       Papirus-Dark 2>/dev/null || true
     kwriteconfig6 --file kdeglobals --group KDE     --key widgetStyle Darkly       2>/dev/null || true
     kwriteconfig6 --file kdeglobals --group General --key ColorScheme Darkly        2>/dev/null || true
-    kwriteconfig6 --file kdeglobals --group General --key TerminalApplication kitty 2>/dev/null || true
+    if command -v kitty >/dev/null 2>&1 && [ -x "$DOTFILES_DIR/install/setup-kitty-terminal.sh" ]; then
+      "$DOTFILES_DIR/install/setup-kitty-terminal.sh"
+    elif ! command -v kitty >/dev/null 2>&1; then
+      warn "Kitty is not installed; skipped Dolphin terminal preference."
+    else
+      kwriteconfig6 --file kdeglobals --group General --key TerminalApplication --notify kitty
+      kwriteconfig6 --file kdeglobals --group General --key TerminalService --notify kitty.desktop
+    fi
     success "KDE settings configured!"
   fi
 
@@ -480,6 +525,11 @@ SVCEOF
   cat << 'EOF' > "$HOME/.local/bin/ba"
 #!/usr/bin/env bash
 export INIR_CMD=ba
+runtime_env="$HOME/.config/quickshell/ii/scripts/quickshell-env.sh"
+if [ -r "$runtime_env" ]; then
+  # shellcheck source=/dev/null
+  source "$runtime_env"
+fi
 exec "$HOME/.config/quickshell/ii/scripts/ba" "$@"
 EOF
   chmod +x "$HOME/.local/bin/ba"

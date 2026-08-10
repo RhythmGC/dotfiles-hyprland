@@ -22,6 +22,7 @@ Item {
     readonly property real itemHeight: 78  // ~16:10 aspect
     readonly property bool showHeader: Config.options?.sidebar?.widgets?.quickWallpaper?.showHeader ?? true
     readonly property string wallpapersPath: Directories.wallpapersPath
+    readonly property var panelScreen: root.QsWindow.window?.screen ?? null
     
     property var wallpapersList: []
     
@@ -110,8 +111,8 @@ Item {
                     onClicked: {
                         if (root.wallpapersList.length === 0) return
                         const randomIndex = Math.floor(Math.random() * root.wallpapersList.length)
-                        const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
-                            ? WallpaperListener.getMonitorName(screen)
+                        const monName = (WallpaperListener.multiMonitorEnabled && root.panelScreen)
+                            ? WallpaperListener.getMonitorName(root.panelScreen)
                             : ""
                         Wallpapers.select(root.wallpapersList[randomIndex], Appearance.m3colors.darkmode, monName)
                     }
@@ -139,7 +140,7 @@ Item {
                         : Appearance.inirEverywhere ? Appearance.inir.colLayer2Active 
                         : Appearance.auroraEverywhere ? Appearance.aurora.colSubSurfaceActive 
                         : Appearance.colors.colLayer2Active
-                    onClicked: GlobalActions.runLauncher(["wallpaperSelector", "toggle"])
+                    onClicked: GlobalActions.runLauncher(["coverflowSelector", "open"])
                     contentItem: Item {
                         MaterialSymbol {
                             anchors.centerIn: parent
@@ -208,8 +209,8 @@ Item {
                         required property string modelData
                         readonly property string filePath: modelData
                         readonly property bool isCurrentWallpaper: {
-                            const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
-                                ? WallpaperListener.getMonitorName(screen)
+                            const monName = (WallpaperListener.multiMonitorEnabled && root.panelScreen)
+                                ? WallpaperListener.getMonitorName(root.panelScreen)
                                 : ""
                             return Wallpapers.isCurrentWallpaperPath(filePath, "main", monName)
                         }
@@ -299,8 +300,8 @@ Item {
                                 onClicked: {
                                     GlobalStates.superReleaseMightTrigger = false;
                                     GlobalStates.overviewOpen = false;
-                                    const monName = (WallpaperListener.multiMonitorEnabled && typeof screen !== "undefined" && screen)
-                                        ? WallpaperListener.getMonitorName(screen)
+                                    const monName = (WallpaperListener.multiMonitorEnabled && root.panelScreen)
+                                        ? WallpaperListener.getMonitorName(root.panelScreen)
                                         : ""
                                     Wallpapers.select(wallpaperDelegate.filePath, Appearance.m3colors.darkmode, monName)
                                 }

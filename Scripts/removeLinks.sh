@@ -46,6 +46,12 @@ while IFS= read -r item; do
   unlink_item "$item"
 done < <(jq -r '.[]' "$ITEMS_FILE")
 
+legacy_shell_config="$DST_CONFIG/illogical-impulse"
+if [ -L "$legacy_shell_config" ] && [ "$(readlink -f "$legacy_shell_config")" = "$(readlink -f "$DST_CONFIG/baOS")" ]; then
+  rm "$legacy_shell_config"
+  echo "[unlinked compatibility alias] $legacy_shell_config"
+fi
+
 echo
 echo "Finished removing/resetting configuration."
 if [ "$backup_created" = true ]; then

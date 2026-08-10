@@ -1623,8 +1623,8 @@ Scope {
                                     icon: "wallpaper",
                                     label: Translation.tr("Pick a wallpaper"),
                                     sub: Translation.tr("Browse and apply"),
-                                    target: "wallpaperSelector",
-                                    fn: "toggle"
+                                    target: "coverflowSelector",
+                                    fn: "open"
                                 },
                                 {
                                     icon: "notifications_active",

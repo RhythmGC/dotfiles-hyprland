@@ -271,23 +271,11 @@ Singleton {
         },
         {
             id: "change-wallpaper",
-            name: Translation.tr("Change Wallpaper (Grid)"),
-            description: Translation.tr("Open the grid wallpaper selector"),
-            icon: "wallpaper",
-            category: "appearance",
-            keywords: ["wallpaper", "background", "wall", "image", "grid"],
-            execute: () => {
-                root.runLauncher(["coverflowSelector", "close"])
-                root.runLauncher(["wallpaperSelector", "open"])
-            }
-        },
-        {
-            id: "wallpaper-coverflow",
-            name: Translation.tr("Change Wallpaper (Coverflow)"),
+            name: Translation.tr("Change Wallpaper"),
             description: Translation.tr("Open the coverflow wallpaper selector"),
             icon: "view_carousel",
             category: "appearance",
-            keywords: ["wallpaper", "background", "wall", "coverflow", "carousel"],
+            keywords: ["wallpaper", "background", "wall", "image", "coverflow", "carousel"],
             execute: () => {
                 root.runLauncher(["wallpaperSelector", "close"])
                 root.runLauncher(["coverflowSelector", "open"])

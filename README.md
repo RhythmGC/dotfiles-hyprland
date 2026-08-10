@@ -67,6 +67,16 @@ cd ~/dotfiles-hyprland
 
 The installer targets Arch-based distributions. Existing configuration entries are moved to a timestamped backup directory before the repository copies are installed.
 
+To reapply Kitty as KDE/Dolphin's external terminal without running the full
+installer:
+
+```bash
+./install/setup-kitty-terminal.sh
+```
+
+This affects Dolphin's **Open Terminal** action (`Shift+F4`). The embedded `F4`
+terminal panel is a KonsolePart feature and is separate from the default terminal.
+
 ---
 
 ## Visual Aesthetics & Styling

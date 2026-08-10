@@ -1897,11 +1897,12 @@
     "workspaceNames": {}
   },
   "wallpaperSelector": {
+    "animatePreview": false,
     "coverflowView": "gallery",
     "selectionTarget": "main",
-    "style": "grid",
+    "style": "coverflow",
     "targetMonitor": "",
-    "useSystemFileDialog": true
+    "useSystemFileDialog": false
   },
   "wallpapers": {
     "directory": "/home/rhythmgc/Wallpapers"

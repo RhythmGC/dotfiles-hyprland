@@ -1321,7 +1321,7 @@
     },
     "wallpaperSelector": {
         "selectionTarget": "main",
-        "style": "grid",
+        "style": "coverflow",
         "coverflowView": "gallery",
         "targetMonitor": "",
         "useSystemFileDialog": false,

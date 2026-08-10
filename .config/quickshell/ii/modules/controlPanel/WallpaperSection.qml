@@ -87,7 +87,7 @@ Rectangle {
                 colBackgroundHover: root.inirEverywhere ? Appearance.inir.colLayer2Hover 
                     : root.auroraEverywhere ? Appearance.aurora.colSubSurfaceHover
                     : Appearance.colors.colLayer2Hover
-                onClicked: GlobalActions.runLauncher(["wallpaperSelector", "toggle"])
+                onClicked: GlobalActions.runLauncher(["coverflowSelector", "open"])
                 contentItem: MaterialSymbol {
                     anchors.centerIn: parent
                     text: "folder_open"

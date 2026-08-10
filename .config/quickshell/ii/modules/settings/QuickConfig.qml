@@ -392,7 +392,7 @@ ContentPage {
                                 if (Config.options?.background?.multiMonitor?.enable && multiMonitorPanel.selectedMonitor) {
                                     Config.setNestedValue("wallpaperSelector.targetMonitor", multiMonitorPanel.selectedMonitor)
                                 }
-                                Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "wallpaperSelector", "toggle"]);
+                                Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "coverflowSelector", "open"]);
                             }
                             StyledToolTip {
                                 text: Translation.tr("Open the full wallpaper selector overlay")
@@ -1404,7 +1404,7 @@ ContentPage {
                                         if (mon) {
                                             Config.setNestedValue("wallpaperSelector.selectionTarget", "main")
                                             Config.setNestedValue("wallpaperSelector.targetMonitor", mon)
-                                            Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "wallpaperSelector", "toggle"])
+                                            Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "coverflowSelector", "open"])
                                         }
                                     }
                                 }
@@ -1474,7 +1474,7 @@ ContentPage {
                                     visible: multiMonitorPanel.backdropEnabled
                                     onClicked: {
                                         Config.setNestedValue("wallpaperSelector.selectionTarget", "backdrop")
-                                        Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "wallpaperSelector", "toggle"])
+                                        Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "coverflowSelector", "open"])
                                     }
                                     StyledToolTip {
                                         text: Translation.tr("Change the backdrop wallpaper (used for overview/blur)")

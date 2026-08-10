@@ -1135,7 +1135,7 @@ Scope {
                         action: () => { Quickshell.execDetached([Quickshell.shellPath("scripts/ba"), "settings"]) } },
                     { type: "separator" },
                     { text: Translation.tr("Change wallpaper"), iconName: "image", monochromeIcon: true,
-                        action: () => { GlobalActions.runLauncher(["wallpaperSelector", "toggle"]) } },
+                        action: () => { GlobalActions.runLauncher(["coverflowSelector", "open"]) } },
                     { text: Translation.tr("Edit widgets"), iconName: "edit", monochromeIcon: true,
                         action: () => { GlobalStates.widgetEditMode = !GlobalStates.widgetEditMode } },
                     { type: "separator" },

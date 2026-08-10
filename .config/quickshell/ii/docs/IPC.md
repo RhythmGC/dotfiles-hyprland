@@ -343,6 +343,10 @@ Wallpaper coverflow (3D card) picker.
 | `open` | Open coverflow selector |
 | `close` | Close coverflow selector |
 
+```kdl
+bind "Ctrl+Alt+T" { spawn "inir" "coverflowSelector" "toggle"; }
+```
+
 ---
 
 ### mediaControls
