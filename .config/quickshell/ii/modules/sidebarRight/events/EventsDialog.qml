@@ -39,6 +39,17 @@ WindowDialog {
     }
 
     function loadEvent(event: var): void {
+        // Calendar day selection uses a lightweight template to pre-fill the
+        // date. It is a new event, not an existing event to update.
+        if (!event || event._isNew === true) {
+            const requestedDate = event?.dateTime ? new Date(event.dateTime) : null
+            root.resetForm()
+            if (requestedDate && !isNaN(requestedDate.getTime())) {
+                root.eventDate = requestedDate
+            }
+            return
+        }
+
         root.editingEvent = event
         root.eventTitle = event.title || ""
         root.eventDescription = event.description || ""
@@ -62,7 +73,7 @@ WindowDialog {
         dateTime.setHours(hour, minute, 0, 0)
 
         if (root.isEditing) {
-            Events.updateEvent(root.editingEvent.id, {
+            return Events.updateEvent(root.editingEvent.id, {
                 title: root.eventTitle.trim(),
                 description: root.eventDescription.trim(),
                 dateTime: dateTime.toISOString(),
@@ -73,7 +84,7 @@ WindowDialog {
                 notified: false
             })
         } else {
-            Events.addEvent(
+            return Events.addEvent(
                 root.eventTitle.trim(),
                 root.eventDescription.trim(),
                 dateTime.toISOString(),
@@ -81,9 +92,8 @@ WindowDialog {
                 root.eventPriority,
                 root.reminderMinutes,
                 root.recurrence
-            )
+            ) !== null
         }
-        return true
     }
 
     WindowDialogTitle {

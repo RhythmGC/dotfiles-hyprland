@@ -131,3 +131,10 @@ if status is-login
     set -Ux GLFW_IM_MODULE ibus
 end
 export YDOTOOL_SOCKET=/run/user/1000/.ydotool_socket
+
+# pnpm
+set -gx PNPM_HOME "/home/rhythmgc/.local/share/pnpm"
+if not string match -q -- "$PNPM_HOME/bin" $PATH
+  set -gx PATH "$PNPM_HOME/bin" $PATH
+end
+# pnpm end

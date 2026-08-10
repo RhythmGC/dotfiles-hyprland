@@ -132,6 +132,16 @@ Item {
         GlobalStates.sidebarRightRequestedWidget = ""
     }
 
+    function initializeEventsDialog(): void {
+        if (!root.showEventsDialog || !compactEventsToggle.item) return
+
+        if (root.eventsDialogEditEvent) {
+            compactEventsToggle.item.loadEvent(root.eventsDialogEditEvent)
+        } else {
+            compactEventsToggle.item.resetForm()
+        }
+    }
+
     Component.onCompleted: {
         Notifications.ensureInitialized()
         handleRequestedWidget()
@@ -206,8 +216,8 @@ Item {
                                 if (eventsIdx !== -1) root.activeSection = eventsIdx
                             }
                             onOpenEventsDialog: (editEvent) => {
-                                const eventsIdx = root.sections.findIndex(s => s.id === "events")
-                                if (eventsIdx !== -1) root.activeSection = eventsIdx
+                                root.eventsDialogEditEvent = editEvent
+                                root.showEventsDialog = true
                             }
                         }
                     }
@@ -1784,18 +1794,13 @@ Item {
         shownPropertyString: "showEventsDialog"
         dialog: EventsDialog {}
         onShownChanged: {
-            if (shown && compactEventsToggle.item) {
-                if (root.eventsDialogEditEvent) {
-                    compactEventsToggle.item.loadEvent(root.eventsDialogEditEvent)
-                } else {
-                    compactEventsToggle.item.resetForm()
-                }
-            }
+            if (shown) root.initializeEventsDialog()
+            else root.eventsDialogEditEvent = null
         }
-        onActiveChanged: {
-            if (!active) {
-                root.eventsDialogEditEvent = null
-            }
+        // A Loader may create its item after shownChanged. Initialize again
+        // once the dialog exists so the first open gets the requested date.
+        onItemChanged: {
+            if (item && shown) root.initializeEventsDialog()
         }
     }
 

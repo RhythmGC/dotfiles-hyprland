@@ -321,13 +321,14 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     info "Sudoers rule for papirus-folders already exists — skipping."
   fi
 
-  # Set initial KDE theming: Papirus-Dark icon theme, Darkly widget style & color scheme
+  # Set initial KDE theming and use Kitty for Dolphin's "Open Terminal" action
   if command -v kwriteconfig6 > /dev/null 2>&1; then
-    info "Configuring initial KDE theming (Papirus-Dark icons, Darkly colors)..."
+    info "Configuring initial KDE settings (Papirus-Dark icons, Darkly colors, Kitty terminal)..."
     kwriteconfig6 --file kdeglobals --group Icons   --key Theme       Papirus-Dark 2>/dev/null || true
     kwriteconfig6 --file kdeglobals --group KDE     --key widgetStyle Darkly       2>/dev/null || true
     kwriteconfig6 --file kdeglobals --group General --key ColorScheme Darkly        2>/dev/null || true
-    success "KDE theming configured!"
+    kwriteconfig6 --file kdeglobals --group General --key TerminalApplication kitty 2>/dev/null || true
+    success "KDE settings configured!"
   fi
 
   # Apply initial wallpaper-based colors (generates Darkly.colors + recolors Papirus folders)

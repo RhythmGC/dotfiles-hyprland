@@ -210,6 +210,14 @@ Singleton {
         if (command.length === 0)
             return
 
+        // Old user configs may still point at KDE's kcm_bluetooth even when
+        // Bluedevil (the plugin providing it) is not installed. Prefer the
+        // standalone manager shipped by this configuration when available.
+        if (slotId === "bluetooth") {
+            ShellExec.execCmd("command -v blueman-manager >/dev/null 2>&1 && exec blueman-manager || " + command)
+            return
+        }
+
         // If the command is a single word (no args, no path), try desktop entry
         // lookup first — handles Flatpak apps that aren't in PATH but have
         // .desktop files with the correct Exec= line.

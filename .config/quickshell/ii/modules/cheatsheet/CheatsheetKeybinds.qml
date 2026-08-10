@@ -15,11 +15,19 @@ StyledFlickable {
     readonly property var keybinds: CompositorService.isNiri ? NiriKeybinds.keybinds : HyprlandKeybinds.keybinds
     readonly property var categories: keybinds?.children ?? []
     property string searchText: ""
+
+    // Hyprland's live parser stores a category's binds directly in `keybinds`.
+    // Keep supporting the older nested shape used by the static parser too.
+    function categoryKeybinds(category) {
+        if (!category) return []
+        if (category.keybinds?.length > 0) return category.keybinds
+        return category.children?.[0]?.keybinds ?? []
+    }
     
     readonly property var allKeybinds: {
         let result = []
         for (let cat of categories) {
-            const kbs = cat.children?.[0]?.keybinds ?? []
+            const kbs = root.categoryKeybinds(cat)
             for (let kb of kbs) {
                 let item = Object.assign({}, kb)
                 item.category = cat.name
@@ -171,7 +179,7 @@ StyledFlickable {
                 required property int index
                 readonly property var catData: root.categories[index]
                 readonly property string catName: catData?.name ?? ""
-                readonly property var catKeybinds: catData?.children?.[0]?.keybinds ?? []
+                readonly property var catKeybinds: root.categoryKeybinds(catData)
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: catColumn.implicitHeight + 8

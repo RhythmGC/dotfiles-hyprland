@@ -16,6 +16,19 @@ Item {
 
     // Internal
     property int monthShift: 0
+
+    function showDate(date: var): void {
+        if (!date || isNaN(date.getTime())) return
+
+        const today = new Date()
+        const targetShift = (date.getFullYear() - today.getFullYear()) * 12
+            + date.getMonth() - today.getMonth()
+        if (root.monthShift !== targetShift) root.monthShift = targetShift
+    }
+
+    onSelectedDateChanged: root.showDate(root.selectedDate)
+    Component.onCompleted: root.showDate(root.selectedDate)
+
     property var viewingDate: {
         const d = new Date()
         d.setMonth(d.getMonth() + root.monthShift)

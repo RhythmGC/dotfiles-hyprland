@@ -101,46 +101,10 @@ Scope {
             right: true
         }
 
-        // Scrim backdrop (matches Overview pattern)
-        Rectangle {
-            anchors.fill: parent
-            z: -1
-            color: ColorUtils.transparentize(Appearance.m3colors.m3background, 1 - 0.85)
-            opacity: root.cheatsheetOpen ? 1 : 0
-
-            Behavior on color {
-                enabled: Appearance.animationsEnabled
-                animation: ColorAnimation { duration: Appearance.animation.elementMoveFast.duration; easing.type: Appearance.animation.elementMoveFast.type; easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve }
-            }
-
-            Behavior on opacity {
-                enabled: Appearance.animationsEnabled
-                NumberAnimation {
-                    duration: root.cheatsheetOpen
-                        ? (Appearance.animation.elementMoveEnter.duration)
-                        : (Appearance.animation.elementMoveExit.duration)
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: root.cheatsheetOpen
-                        ? Appearance.animationCurves.emphasizedDecel
-                        : Appearance.animationCurves.emphasizedAccel
-                }
-            }
-        }
-
-        // Click outside to close
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton
-            onClicked: mouse => {
-                const localPos = mapToItem(cheatsheetBackground, mouse.x, mouse.y)
-                const outside = (localPos.x < 0 || localPos.x > cheatsheetBackground.width
-                        || localPos.y < 0 || localPos.y > cheatsheetBackground.height)
-                if (outside) {
-                    root.close()
-                } else {
-                    mouse.accepted = false
-                }
-            }
+        // Keep the full-output surface for centering, but only intercept input
+        // over the cheatsheet itself. The desktop remains visible and usable.
+        mask: Region {
+            item: cheatsheetBackground
         }
 
         StyledRectangularShadow {

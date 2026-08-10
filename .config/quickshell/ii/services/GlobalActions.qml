@@ -138,7 +138,7 @@ Singleton {
             category: "system",
             keywords: ["bt", "wireless", "devices"],
             execute: () => {
-                AppLauncher.launch("bluetooth")
+                GlobalStates.requestBluetoothDialog = true
             }
         },
         {

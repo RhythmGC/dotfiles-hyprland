@@ -115,13 +115,8 @@ Item {
         if (!cellData) return null
         const year = root.viewingDate.getFullYear()
         const month = root.viewingDate.getMonth()
-        let targetMonth = month
-        let targetYear = year
-        if (cellData.today === -1) {
-            if (month === 0) { targetMonth = 11; targetYear = year - 1 }
-            else targetMonth = month - 1
-        }
-        return new Date(targetYear, targetMonth, day)
+        const monthOffset = cellData.monthOffset ?? 0
+        return new Date(year, month + monthOffset, day)
     }
 
     function openDayDetail(date: var): void {

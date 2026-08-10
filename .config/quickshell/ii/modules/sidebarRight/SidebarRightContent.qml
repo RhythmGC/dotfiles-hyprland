@@ -67,6 +67,16 @@ Item {
         if (bottomWidgetGroup) bottomWidgetGroup.decrementTab()
     }
 
+    function initializeEventsDialog(): void {
+        if (!root.showEventsDialog || !eventsToggle.item) return
+
+        if (root.eventsDialogEditEvent) {
+            eventsToggle.item.loadEvent(root.eventsDialogEditEvent)
+        } else {
+            eventsToggle.item.resetForm()
+        }
+    }
+
     Connections {
         target: GlobalStates
         function onSidebarRightOpenChanged() {
@@ -376,18 +386,13 @@ Item {
         shownPropertyString: "showEventsDialog"
         dialog: EventsDialog {}
         onShownChanged: {
-            if (shown && eventsToggle.item) {
-                if (root.eventsDialogEditEvent) {
-                    eventsToggle.item.loadEvent(root.eventsDialogEditEvent);
-                } else {
-                    eventsToggle.item.resetForm();
-                }
-            }
+            if (shown) root.initializeEventsDialog()
+            else root.eventsDialogEditEvent = null
         }
-        onActiveChanged: {
-            if (!active) {
-                root.eventsDialogEditEvent = null;
-            }
+        // A Loader may create its item after shownChanged. Initialize again
+        // once the dialog exists so the first open also gets the requested date.
+        onItemChanged: {
+            if (item && shown) root.initializeEventsDialog()
         }
     }
 

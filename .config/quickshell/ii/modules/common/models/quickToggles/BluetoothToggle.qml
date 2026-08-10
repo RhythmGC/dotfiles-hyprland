@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
+import qs
 import qs.services
 import qs.modules.common
 import qs.modules.common.functions
@@ -22,6 +23,6 @@ QuickToggleModel {
     }
     hasMenu: true
     altAction: () => {
-        AppLauncher.launch("bluetooth")
+        GlobalStates.requestBluetoothDialog = true
     }
 }

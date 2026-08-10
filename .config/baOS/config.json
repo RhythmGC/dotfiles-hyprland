@@ -308,7 +308,7 @@
     }
   },
   "apps": {
-    "bluetooth": "kcmshell6 kcm_bluetooth",
+    "bluetooth": "blueman-manager",
     "browser": "zen-browser",
     "discord": "discord",
     "manageUser": "kcmshell6 kcm_users",

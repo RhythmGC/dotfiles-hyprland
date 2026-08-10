@@ -776,7 +776,7 @@ Singleton {
             }
 
             property JsonObject apps: JsonObject {
-                property string bluetooth: "kcmshell6 kcm_bluetooth"
+                property string bluetooth: "blueman-manager"
                 property string network: "kitty -1 fish -c nmtui"
                 property string networkEthernet: "kcmshell6 kcm_networkmanagement"
                 property string taskManager: "missioncenter"

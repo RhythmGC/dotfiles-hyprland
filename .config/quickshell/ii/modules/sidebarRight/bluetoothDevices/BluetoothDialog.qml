@@ -76,10 +76,12 @@ WindowDialog {
     WindowDialogSeparator {}
     WindowDialogButtonRow {
         DialogButton {
-            buttonText: Translation.tr("Details")
+            buttonText: Bluetooth.defaultAdapter?.discovering
+                ? Translation.tr("Stop scanning")
+                : Translation.tr("Scan")
             onClicked: {
-                AppLauncher.launch("bluetooth")
-                GlobalStates.sidebarRightOpen = false;
+                if (Bluetooth.defaultAdapter)
+                    Bluetooth.defaultAdapter.discovering = !Bluetooth.defaultAdapter.discovering
             }
         }
 

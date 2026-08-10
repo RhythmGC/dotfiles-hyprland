@@ -8,12 +8,3 @@ local kitty_inactive_opacity = 0.8    -- Opacity of Kitty when unfocused
 hl.window_rule({ match = { class = "^(kitty)$" }, opacity = kitty_active_opacity .. " " .. kitty_inactive_opacity })
 
 hl.window_rule({ match = { class = "^(steam_app).*" }, tile = true })
-
-hl.on("window.active", function(w)
-    if w ~= nil and w.class ~= nil and string.match(w.class, "^steam_app_") then
-        hl.exec_cmd("bash ~/.config/hypr/custom/scripts/game_focus_fix.sh &")
-    end
-end)
-
-
-
