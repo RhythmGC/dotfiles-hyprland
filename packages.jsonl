@@ -45,6 +45,10 @@
 {"name":"wireplumber","category":"desktop","source":"pacman"}
 {"name":"gnome-keyring","category":"desktop","source":"pacman"}
 {"name":"easyeffects","category":"desktop","source":"pacman"}
+{"name":"cava","category":"desktop","source":"pacman"}
+{"name":"lsp-plugins","category":"desktop","source":"pacman"}
+{"name":"calf","category":"desktop","source":"pacman"}
+{"name":"zam-plugins","category":"desktop","source":"pacman"}
 {"name":"matugen-bin","category":"desktop","source":"yay"}
 {"name":"vesktop-bin","category":"vesktop","source":"yay"}
 {"name":"grim","category":"desktop","source":"pacman"}

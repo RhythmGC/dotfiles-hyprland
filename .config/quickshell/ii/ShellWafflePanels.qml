@@ -1,4 +1,5 @@
 import qs.modules.bootGreeting
+import qs.modules.idleOverlay
 import qs.modules.cheatsheet
 import qs.modules.lock
 import qs.modules.onScreenKeyboard
@@ -70,6 +71,7 @@ Item {
 
     // Shared modules that work with waffle (all deferred — user-triggered)
     DeferredPanelLoader { identifier: "iiBootGreeting"; component: BootGreeting {} }
+    DeferredPanelLoader { identifier: "iiIdleOverlay"; component: IdleOverlay {} }
     DeferredPanelLoader { identifier: "iiCheatsheet"; component: Cheatsheet {} }
     DeferredPanelLoader { identifier: "iiOnScreenKeyboard"; component: OnScreenKeyboard {} }
     DeferredPanelLoader { identifier: "iiOverlay"; component: Overlay {} }

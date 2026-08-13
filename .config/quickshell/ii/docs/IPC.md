@@ -58,6 +58,24 @@ bind "Super+G" { spawn "inir" "overlay" "toggle"; }
 
 ---
 
+### idle
+
+Ambient IDLE dashboard. It opens automatically after the configured inactivity timeout and keeps keyboard input away from the application underneath.
+
+| Function | Description |
+|----------|-------------|
+| `open` | Show the IDLE overlay |
+| `close` | Hide the IDLE overlay |
+| `toggle` | Open/close the IDLE overlay |
+
+The built-in Hyprland shortcut is `Super+Shift+I`. Once open, press `Enter` to return.
+
+```kdl
+bind "Super+Shift+I" { spawn "inir" "idle" "toggle"; }
+```
+
+---
+
 ### clipboard
 
 Clipboard history panel. Because Ctrl+V only remembers one thing, and that's not enough for power users.

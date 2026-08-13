@@ -1376,6 +1376,11 @@
         }
     },
     "idle": {
+        "idleModeEnabled": true,
+        "idleModeTimeout": 180,
+        "showMedia": true,
+        "showSystemMonitor": true,
+        "showWeather": true,
         "screenOffTimeout": 300,
         "lockTimeout": 600,
         "suspendTimeout": 0,
@@ -1681,6 +1686,7 @@
         "iiBar",
         "iiBackground",
         "iiBackdrop",
+        "iiIdleOverlay",
         "iiCheatsheet",
         "iiControlPanel",
         "iiDock",

@@ -12,12 +12,16 @@ Singleton {
     id: root
 
     property bool inhibit: false
+    readonly property bool idleModeEnabled: Config.options?.idle?.idleModeEnabled ?? true
+    readonly property int idleModeTimeout: Config.options?.idle?.idleModeTimeout ?? 180
     readonly property int screenOffTimeout: Config.options?.idle?.screenOffTimeout ?? 300
     readonly property int lockTimeout: Config.options?.idle?.lockTimeout ?? 600
     readonly property int suspendTimeout: Config.options?.idle?.suspendTimeout ?? 0
     readonly property string launcherPath: Quickshell.shellPath("scripts/inir")
 
     onScreenOffTimeoutChanged: _restartSwayidle()
+    onIdleModeEnabledChanged: _restartSwayidle()
+    onIdleModeTimeoutChanged: _restartSwayidle()
     onLockTimeoutChanged: _restartSwayidle()
     onSuspendTimeoutChanged: _restartSwayidle()
     onInhibitChanged: _restartSwayidle()
@@ -52,6 +56,12 @@ Singleton {
 
         const cmd = ["/usr/bin/swayidle", "-w"]
         const lockBeforeSleep = Config.options?.idle?.lockBeforeSleep !== false
+
+        // Keep the ambient idle dashboard independent from the lock timeout. There
+        // is deliberately no resume action: only Enter dismisses the overlay.
+        if (idleModeEnabled && idleModeTimeout > 0) {
+            cmd.push("timeout", idleModeTimeout.toString(), `'${StringUtils.shellSingleQuoteEscape(root.launcherPath)}' idle open`)
+        }
 
         if (screenOffTimeout > 0 && CompositorService.isNiri) {
             cmd.push("timeout", screenOffTimeout.toString(), "/usr/bin/niri msg action power-off-monitors", "resume", "/usr/bin/niri msg action power-on-monitors")

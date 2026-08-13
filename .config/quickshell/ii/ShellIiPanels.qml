@@ -1,6 +1,7 @@
 import qs.modules.background
 import qs.modules.bar
 import qs.modules.bootGreeting
+import qs.modules.idleOverlay
 import qs.modules.cheatsheet
 import qs.modules.controlPanel
 import qs.modules.dock
@@ -66,6 +67,7 @@ Item {
 
     // === Deferred panels (user-triggered or non-critical at boot) ===
     DeferredPanelLoader { identifier: "iiBootGreeting"; component: BootGreeting {} }
+    DeferredPanelLoader { identifier: "iiIdleOverlay"; component: IdleOverlay {} }
     DeferredPanelLoader { identifier: "iiCheatsheet"; component: Cheatsheet {} }
     DeferredPanelLoader { identifier: "iiControlPanel"; component: ControlPanel {} }
     DeferredPanelLoader { identifier: "iiLock"; component: Lock {} }

@@ -2,8 +2,8 @@
 # Auto-generated from QML IpcHandler declarations + docs/IPC.md metadata.
 # Do not edit manually.
 # Regenerate: python3 scripts/lib/generate-ipc-registry.py
-# IPC.md hash: 0fcb5c3ba72f0099
-# Targets: 51
+# IPC.md hash: e123edb26d995c4f
+# Targets: 53
 
 declare -gA IPC_TARGET_DESC=(
   [ai]="AI chat service. Multi-provider (Gemini, OpenAI, Mistral) with tool support."
@@ -22,6 +22,7 @@ declare -gA IPC_TARGET_DESC=(
   [customWidgets]="Custom widget management. Create, list, reload, and remove user-installed widgets from \`~/.config/inir/widgets/\`."
   [gamemode]="Performance mode for gaming. Auto-detects fullscreen apps and disables animations/effects. Can also be toggled manually for those stubborn games that don't go fullscreen properly."
   [globalActions]="Command palette / action registry. Search and execute shell actions from scripts or keybinds."
+  [idle]="Ambient IDLE dashboard. It opens automatically after the configured inactivity timeout and keeps keyboard input away from the application underneath."
   [keyboard]="Keyboard layout switching (Niri only). Cycles through configured keyboard layouts and queries layout info."
   [lock]="Lock screen. For when you need to pretend you're working."
   [mediaControls]="Floating media controls panel."
@@ -38,6 +39,7 @@ declare -gA IPC_TARGET_DESC=(
   [panelFamily]="Switch between panel styles. ii supports two visual styles: Material ii (default) and Waffle (Windows 11-like)."
   [recordingOsd]="Screen recording floating pill OSD. Shows elapsed time and stop button during active recording."
   [region]="Region selection tools. Screenshots, OCR, recording. Draw a box, get stuff done."
+  [screenTranslator]=""
   [search]="Waffle start menu / search."
   [session]="Power menu. Logout, suspend, reboot, shutdown. The \"I'm done for today\" buttons."
   [settings]="Open or toggle the settings window. GUI config so you don't have to edit JSON by hand."
@@ -76,6 +78,7 @@ declare -gA IPC_TARGET_FAMILY=(
   [customWidgets]="waffle"
   [gamemode]="shared"
   [globalActions]="shared"
+  [idle]="shared"
   [keyboard]="shared"
   [lock]="shared"
   [mediaControls]="shared"
@@ -92,6 +95,7 @@ declare -gA IPC_TARGET_FAMILY=(
   [panelFamily]="shared"
   [recordingOsd]="waffle"
   [region]="shared"
+  [screenTranslator]="shared"
   [search]="waffle"
   [session]="shared"
   [settings]="shared"
@@ -130,6 +134,7 @@ declare -gA IPC_TARGET_FUNCTIONS=(
   [customWidgets]="reload list create remove"
   [gamemode]="toggle activate deactivate status"
   [globalActions]="run runWithArgs list search open"
+  [idle]="open close toggle"
   [keyboard]="switchLayout switchLayoutPrevious getCurrentLayout getLayouts"
   [lock]="activate deactivate status focus"
   [mediaControls]="toggle close open"
@@ -146,6 +151,7 @@ declare -gA IPC_TARGET_FUNCTIONS=(
   [panelFamily]="cycle set"
   [recordingOsd]="toggle show hide"
   [region]="screenshot search googleLens ocr record recordWithSound menu"
+  [screenTranslator]="translate"
   [search]="toggle close open"
   [session]="toggle close open"
   [settings]="open toggle"
@@ -219,6 +225,9 @@ declare -gA IPC_FUNCTION_DESC=(
   ["globalActions:list"]="List all actions, optionally filtered by category"
   ["globalActions:search"]="Fuzzy search actions by name/description/keywords"
   ["globalActions:open"]="Open the overview in action mode"
+  ["idle:open"]="Show the IDLE overlay"
+  ["idle:close"]="Hide the IDLE overlay"
+  ["idle:toggle"]="Open/close the IDLE overlay"
   ["keyboard:switchLayout"]="Switch to next keyboard layout"
   ["keyboard:switchLayoutPrevious"]="Switch to previous keyboard layout"
   ["keyboard:getCurrentLayout"]="Get the current layout name"
@@ -271,7 +280,8 @@ declare -gA IPC_FUNCTION_DESC=(
   ["region:ocr"]="OCR text recognition"
   ["region:record"]="Record region (no audio)"
   ["region:recordWithSound"]="Record region with audio"
-  ["region:menu"]="Open the unified snip menu (pick action/scope inline)"
+  ["region:menu"]=""
+  ["screenTranslator:translate"]=""
   ["search:toggle"]="Open/close start menu"
   ["search:close"]="Close start menu"
   ["search:open"]="Open start menu"
@@ -363,9 +373,11 @@ bind "Alt+Shift+Tab" { spawn "inir" "altSwitcher" "previous"; }'
   [cheatsheet]='bind "Super+Slash" { spawn "inir" "cheatsheet" "toggle"; }'
   [clipboard]='bind "Super+V" { spawn "inir" "clipboard" "toggle"; }'
   [closeConfirm]='bind "Mod+Q" repeat=false { spawn "inir" "close-window"; }'
+  [coverflowSelector]='bind "Ctrl+Alt+T" { spawn "inir" "coverflowSelector" "toggle"; }'
   [gamemode]='bind "Super+F12" { spawn "inir" "gamemode" "toggle"; }'
   [globalActions]='bind "Super+Slash" { spawn "inir" "globalActions" "open"; }
 bind "Super+M" { spawn "inir" "globalActions" "run" "toggle-mute"; }'
+  [idle]='bind "Super+Shift+I" { spawn "inir" "idle" "toggle"; }'
   [keyboard]='bind "Mod+Alt+K" { spawn "inir" "keyboard" "switchLayout"; }'
   [lock]='bind "Super+Alt+L" allow-when-locked=true { spawn "inir" "lock" "activate"; }'
   [mpris]='bind "Ctrl+Mod+Space" { spawn "inir" "mpris" "playPause"; }
@@ -376,8 +388,7 @@ bind "Mod+Alt+P" { spawn "inir" "mpris" "previous"; }'
   [panelFamily]='bind "Mod+Shift+W" { spawn "inir" "panelFamily" "cycle"; }'
   [region]='bind "Super+Shift+S" { spawn "inir" "region" "screenshot"; }
 bind "Super+Shift+X" { spawn "inir" "region" "ocr"; }
-bind "Super+Shift+A" { spawn "inir" "region" "search"; }
-bind "Ctrl+Shift+S" { spawn "inir" "region" "menu"; }'
+bind "Super+Shift+A" { spawn "inir" "region" "search"; }'
   [session]='bind "Super+Shift+E" { spawn "inir" "session" "toggle"; }'
   [settings]='bind "Super+Comma" { spawn "inir" "settings"; }'
   [voiceSearch]='bind "Super+Shift+V" { spawn "inir" "voiceSearch" "toggle"; }'
@@ -385,8 +396,8 @@ bind "Ctrl+Shift+S" { spawn "inir" "region" "menu"; }'
   [ytmusic]='bind "Mod+M+Space" { spawn "inir" "ytmusic" "playPause"; }'
 )
 
-IPC_ALL_TARGETS=(ai altSwitcher appCatalog audio background bar brightness cheatsheet clipboard cliphistService closeConfirm controlPanel coverflowSelector customWidgets gamemode globalActions keyboard lock mediaControls memory minimize mpris notifications osd osdVolume osk overlay overview packageSearch panelFamily recordingOsd region search session settings settingsNav shellUpdate sidebarLeft sidebarRight taskview tiling voiceSearch wactionCenter waffleAltSwitcher wallpaperSelector wbar widgetpower wnotificationCenter wwidgets ytmusic zoom)
-IPC_SHARED_TARGETS=(ai altSwitcher appCatalog audio bar brightness cheatsheet clipboard cliphistService closeConfirm controlPanel coverflowSelector gamemode globalActions keyboard lock mediaControls memory minimize mpris notifications osdVolume osk overview packageSearch panelFamily region session settings settingsNav shellUpdate sidebarLeft sidebarRight tiling voiceSearch wallpaperSelector ytmusic zoom)
+IPC_ALL_TARGETS=(ai altSwitcher appCatalog audio background bar brightness cheatsheet clipboard cliphistService closeConfirm controlPanel coverflowSelector customWidgets gamemode globalActions idle keyboard lock mediaControls memory minimize mpris notifications osd osdVolume osk overlay overview packageSearch panelFamily recordingOsd region screenTranslator search session settings settingsNav shellUpdate sidebarLeft sidebarRight taskview tiling voiceSearch wactionCenter waffleAltSwitcher wallpaperSelector wbar widgetpower wnotificationCenter wwidgets ytmusic zoom)
+IPC_SHARED_TARGETS=(ai altSwitcher appCatalog audio bar brightness cheatsheet clipboard cliphistService closeConfirm controlPanel coverflowSelector gamemode globalActions idle keyboard lock mediaControls memory minimize mpris notifications osdVolume osk overview packageSearch panelFamily region screenTranslator session settings settingsNav shellUpdate sidebarLeft sidebarRight tiling voiceSearch wallpaperSelector ytmusic zoom)
 IPC_II_TARGETS=(overlay)
 IPC_WAFFLE_TARGETS=(background customWidgets osd recordingOsd search taskview wactionCenter waffleAltSwitcher wbar widgetpower wnotificationCenter wwidgets)
 
@@ -404,6 +415,7 @@ declare -gA IPC_KEBAB_ALIASES=(
   [package-search]=packageSearch
   [panel-family]=panelFamily
   [recording-osd]=recordingOsd
+  [screen-translator]=screenTranslator
   [settings-nav]=settingsNav
   [shell-update]=shellUpdate
   [sidebar-left]=sidebarLeft

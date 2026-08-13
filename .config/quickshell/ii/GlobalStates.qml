@@ -18,6 +18,8 @@ Singleton {
     // Boot greeting lifecycle — singleton preserves across hot-reload so greeting shows once per session
     property bool bootGreetingOpen: false
     property bool bootGreetingDone: false
+    // Ambient dashboard shown after inactivity or via the idleToggle shortcut.
+    property bool idleOverlayOpen: false
     property bool barOpen: true
     property bool crosshairOpen: false
     property bool sidebarLeftOpen: false
@@ -101,6 +103,13 @@ Singleton {
     property bool waffleAltSwitcherOpen: false
     property bool waffleClipboardOpen: false
     property bool waffleTaskViewOpen: false
+
+    onScreenLockedChanged: {
+        // The lock screen is authoritative and must never compete with the idle layer
+        // for exclusive keyboard focus.
+        if (screenLocked)
+            idleOverlayOpen = false
+    }
 
     // Panel family transition animation state
     property bool familyTransitionActive: false

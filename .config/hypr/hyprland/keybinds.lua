@@ -31,6 +31,7 @@ hl.bind("SUPER + N", hl.dsp.global("quickshell:sidebarRightToggle"), { descripti
 hl.bind("SUPER + Slash", hl.dsp.global("quickshell:cheatsheetToggle"), { description = "Shell: Toggle cheatsheet" })
 hl.bind("SUPER + K", hl.dsp.global("quickshell:oskToggle"), { description = "Shell: Toggle on-screen keyboard" })
 hl.bind("SUPER + M", hl.dsp.global("quickshell:mediaControlsToggle"), { description = "Shell: Toggle media controls" })
+hl.bind("SUPER + SHIFT + I", hl.dsp.global("quickshell:idleToggle"), { description = "Shell: Toggle IDLE mode" })
 hl.bind("SUPER + G", hl.dsp.global("quickshell:overlayToggle"), { description = "Shell: Toggle widget overlay" })
 hl.bind("CTRL + ALT + Delete", hl.dsp.global("quickshell:sessionToggle"), { description = "Shell: Toggle session menu" })
 hl.bind("SUPER + J", hl.dsp.global("quickshell:barToggle"), { description = "Shell: Toggle bar" })
@@ -300,6 +301,20 @@ for i = 1, 4 do
     local prefix = { "-1", "+1", "r-5", "r+5" }
     hl.bind("CTRL + SUPER + " .. key[i], hl.dsp.focus({ workspace = prefix[i] }))
 end
+
+--##! IDLE input guard
+-- Active only while the Quickshell IDLE overlay is visible. Unlisted compositor
+-- binds (workspace/window/app actions) are unavailable; QML handles Enter and
+-- swallows all ordinary keys.
+hl.define_submap("idle", function()
+    hl.bind("SUPER + SHIFT + N", hl.dsp.exec_cmd(mediaNextCommand), { locked = true })
+    hl.bind("SUPER + SHIFT + B", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+    hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+    hl.bind("XF86AudioNext", hl.dsp.exec_cmd(mediaNextCommand), { locked = true })
+    hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+    hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+    hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+end)
 
 --##! Virtual machines
 hl.define_submap("virtual-machine", function()

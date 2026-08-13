@@ -253,6 +253,25 @@ WSettingsPage {
     WSettingsCard {
         title: Translation.tr("Idle & Sleep")
         icon: "weather-moon"
+
+        WSettingsSwitch {
+            label: Translation.tr("Ambient IDLE overlay")
+            icon: "weather-moon"
+            description: Translation.tr("Show an ambient dashboard after inactivity")
+            checked: Config.options?.idle?.idleModeEnabled ?? true
+            onCheckedChanged: Config.setNestedValue("idle.idleModeEnabled", checked)
+        }
+
+        WSettingsSpinBox {
+            label: Translation.tr("IDLE overlay timeout")
+            icon: "timer"
+            description: Translation.tr("Show ambient mode after inactivity (0 = never)")
+            suffix: "s"
+            from: 0; to: 3600; stepSize: 30
+            value: Config.options?.idle?.idleModeTimeout ?? 180
+            enabled: Config.options?.idle?.idleModeEnabled ?? true
+            onValueChanged: Config.setNestedValue("idle.idleModeTimeout", value)
+        }
         
         WSettingsSpinBox {
             label: Translation.tr("Screen off timeout")
@@ -290,6 +309,27 @@ WSettingsPage {
             description: Translation.tr("Lock screen before suspending")
             checked: Config.options?.idle?.lockBeforeSleep ?? true
             onCheckedChanged: Config.setNestedValue("idle.lockBeforeSleep", checked)
+        }
+
+        WSettingsSwitch {
+            label: Translation.tr("Media in IDLE overlay")
+            icon: "music-note-2"
+            checked: Config.options?.idle?.showMedia ?? true
+            onCheckedChanged: Config.setNestedValue("idle.showMedia", checked)
+        }
+
+        WSettingsSwitch {
+            label: Translation.tr("System monitor in IDLE overlay")
+            icon: "pulse"
+            checked: Config.options?.idle?.showSystemMonitor ?? true
+            onCheckedChanged: Config.setNestedValue("idle.showSystemMonitor", checked)
+        }
+
+        WSettingsSwitch {
+            label: Translation.tr("Weather in IDLE overlay")
+            icon: "weather-sunny"
+            checked: Config.options?.idle?.showWeather ?? true
+            onCheckedChanged: Config.setNestedValue("idle.showWeather", checked)
         }
     }
     

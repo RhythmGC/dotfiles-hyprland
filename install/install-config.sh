@@ -141,7 +141,7 @@ ask "Install Shell & Prompt? (fish, starship) (Y/n): "
 read -r sel_shell
 ask "Install Editors? (neovim) (Y/n): "
 read -r sel_editor
-ask "Install Desktop Environment & WM? (hyprland, kitty, quickshell, etc.) (Y/n): "
+ask "Install Desktop Environment, WM & Audio? (hyprland, quickshell, EasyEffects + plugins, etc.) (Y/n): "
 read -r sel_desktop
 
 if command -v vesktop >/dev/null 2>&1; then
@@ -205,6 +205,26 @@ else
     curl -fsSL https://bun.sh/install | bash
     curl -fsSL https://get.pnpm.io/install.sh | sh -
     success "Extra utilities installation complete!"
+  fi
+fi
+
+# EasyEffects exposes additional effects when these LV2-capable plugin suites
+# are installed. They are desktop packages in packages.jsonl, so selecting the
+# desktop category installs and verifies the complete audio-effects stack.
+if [[ ! "$sel_desktop" =~ ^[Nn]$ ]]; then
+  easyeffects_plugin_pkgs=(lsp-plugins calf zam-plugins)
+  missing_easyeffects_plugins=()
+
+  for pkg in "${easyeffects_plugin_pkgs[@]}"; do
+    if ! is_pkg_installed "$pkg"; then
+      missing_easyeffects_plugins+=("$pkg")
+    fi
+  done
+
+  if [ ${#missing_easyeffects_plugins[@]} -eq 0 ]; then
+    success "EasyEffects plugin support is installed: ${easyeffects_plugin_pkgs[*]}"
+  else
+    warn "EasyEffects plugin support is incomplete; missing: ${missing_easyeffects_plugins[*]}"
   fi
 fi
 

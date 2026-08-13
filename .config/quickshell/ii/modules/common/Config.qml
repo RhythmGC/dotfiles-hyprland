@@ -394,7 +394,7 @@ Singleton {
             id: configOptionsJsonAdapter
 
             // Panel system
-            property list<string> enabledPanels: ["iiBar", "iiBackground", "iiBackdrop", "iiCheatsheet", "iiControlPanel", "iiDock", "iiLock", "iiMediaControls", "iiNotificationPopup", "iiOnScreenDisplay", "iiOnScreenKeyboard", "iiOverlay", "iiOverview", "iiPolkit", "iiRegionSelector", "iiScreenCorners", "iiSessionScreen", "iiSidebarLeft", "iiSidebarRight", "iiTilingOverlay", "iiVerticalBar", "iiWallpaperSelector", "iiCoverflowSelector", "iiClipboard", "iiShellUpdate"]
+            property list<string> enabledPanels: ["iiBar", "iiBackground", "iiBackdrop", "iiIdleOverlay", "iiCheatsheet", "iiControlPanel", "iiDock", "iiLock", "iiMediaControls", "iiNotificationPopup", "iiOnScreenDisplay", "iiOnScreenKeyboard", "iiOverlay", "iiOverview", "iiPolkit", "iiRegionSelector", "iiScreenCorners", "iiSessionScreen", "iiSidebarLeft", "iiSidebarRight", "iiTilingOverlay", "iiVerticalBar", "iiWallpaperSelector", "iiCoverflowSelector", "iiClipboard", "iiShellUpdate"]
             property list<string> knownPanels: [] // Tracks panels the user has seen; used to distinguish "user disabled" from "new in update"
             property string panelFamily: "ii" // "ii" or "waffle"
             property bool familyTransitionAnimation: true // Show animated overlay when switching families
@@ -709,6 +709,11 @@ Singleton {
             }
 
             property JsonObject idle: JsonObject {
+                property bool idleModeEnabled: true
+                property int idleModeTimeout: 180 // seconds, 0 = disabled
+                property bool showMedia: true
+                property bool showSystemMonitor: true
+                property bool showWeather: true
                 property int screenOffTimeout: 300 // seconds, 0 = disabled
                 property int lockTimeout: 600 // seconds, 0 = disabled
                 property int suspendTimeout: 0 // seconds, 0 = disabled

@@ -18,6 +18,30 @@ ContentPage {
         title: Translation.tr("Idle & Sleep")
 
         SettingsGroup {
+            SettingsSwitch {
+                buttonIcon: "bedtime"
+                text: Translation.tr("Ambient IDLE overlay")
+                checked: Config.options?.idle?.idleModeEnabled ?? true
+                onCheckedChanged: Config.setNestedValue("idle.idleModeEnabled", checked)
+                StyledToolTip {
+                    text: Translation.tr("Show the clock, media and system monitor after inactivity")
+                }
+            }
+
+            ConfigSpinBox {
+                icon: "timer"
+                text: Translation.tr("IDLE overlay") + ` (${value > 0 ? Math.floor(value/60) + "m " + (value%60) + "s" : Translation.tr("disabled")})`
+                value: Config.options?.idle?.idleModeTimeout ?? 180
+                from: 0
+                to: 3600
+                stepSize: 30
+                enabled: Config.options?.idle?.idleModeEnabled ?? true
+                onValueChanged: Config.setNestedValue("idle.idleModeTimeout", value)
+                StyledToolTip {
+                    text: Translation.tr("Show ambient mode after this many seconds of inactivity (0 = never)")
+                }
+            }
+
             ConfigSpinBox {
                 icon: "monitor"
                 text: Translation.tr("Screen off") + ` (${value > 0 ? Math.floor(value/60) + "m " + (value%60) + "s" : Translation.tr("disabled")})`
@@ -77,6 +101,27 @@ ContentPage {
                 StyledToolTip {
                     text: Translation.tr("Temporarily prevent screen from turning off and system from sleeping")
                 }
+            }
+
+            SettingsSwitch {
+                buttonIcon: "music_note"
+                text: Translation.tr("Media in IDLE overlay")
+                checked: Config.options?.idle?.showMedia ?? true
+                onCheckedChanged: Config.setNestedValue("idle.showMedia", checked)
+            }
+
+            SettingsSwitch {
+                buttonIcon: "monitoring"
+                text: Translation.tr("System monitor in IDLE overlay")
+                checked: Config.options?.idle?.showSystemMonitor ?? true
+                onCheckedChanged: Config.setNestedValue("idle.showSystemMonitor", checked)
+            }
+
+            SettingsSwitch {
+                buttonIcon: "partly_cloudy_day"
+                text: Translation.tr("Weather in IDLE overlay")
+                checked: Config.options?.idle?.showWeather ?? true
+                onCheckedChanged: Config.setNestedValue("idle.showWeather", checked)
             }
         }
     }
