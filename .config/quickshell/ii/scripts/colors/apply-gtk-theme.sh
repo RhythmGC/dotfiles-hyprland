@@ -369,6 +369,10 @@ ForegroundVisited=${PRIMARY}
 [General]
 ColorScheme=Darkly
 AccentColor=$(hex_to_rgb "$PRIMARY")
+# Keep Dolphin's external terminal preference when this generated file replaces
+# kdeglobals during wallpaper/theme changes.
+TerminalApplication=kitty
+TerminalService=kitty.desktop
 ${font_name:+fixed=${mono_name:-$font_name},${mono_size:-$font_size},-1,5,50,0,0,0,0,0}
 ${font_name:+font=${font_name},${font_size},-1,5,50,0,0,0,0,0}
 ${font_name:+menuFont=${font_name},${font_size},-1,5,50,0,0,0,0,0}
