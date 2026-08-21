@@ -3,6 +3,7 @@
 {"name":"curl","category":"core","source":"pacman"}
 {"name":"wget","category":"core","source":"pacman"}
 {"name":"fastfetch","category":"core","source":"pacman"}
+{"name":"imagemagick","category":"core","source":"pacman"}
 {"name":"fd","category":"core","source":"pacman"}
 {"name":"ripgrep","category":"core","source":"pacman"}
 {"name":"unzip","category":"core","source":"pacman"}
