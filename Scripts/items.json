@@ -12,5 +12,6 @@
   "starship.toml",
   "vesktop/settings",
   "matugen",
+  "xdg-desktop-portal",
   "baOS/config.json"
 ]

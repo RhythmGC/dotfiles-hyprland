@@ -3,9 +3,11 @@ hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 
+-- Keep Vietnamese regional settings, but render weekday/month names in English.
+hl.env("LC_TIME", "en_US.UTF-8")
+
 hl.on("hyprland.start", function ()
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP")
-    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP")
+    hl.exec_cmd("$HOME/.config/hypr/hyprland/scripts/sync-xdg-desktop-portals.sh")
 end)
 
 -- NVIDIA Explicit Sync crash workarounds (prevents eglDupNativeFenceFDANDROID crash on Aquamarine)

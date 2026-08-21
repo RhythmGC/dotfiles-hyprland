@@ -34,44 +34,79 @@
 .nautilus-window placessidebar list,
 placessidebar,
 placessidebar list {
-    background-color: {{colors.app_sidebar_bg.default.hex}} !important;
-    color: {{colors.app_foreground.default.hex}} !important;
-    border-right: none !important;
+    background-color: {{colors.app_sidebar_bg.default.hex}};
+    color: {{colors.app_foreground.default.hex}};
+    border-right: none;
 }
 
 placessidebar row {
-    background-color: transparent !important;
-    color: {{colors.app_foreground.default.hex}} !important;
+    background-color: transparent;
+    color: {{colors.app_foreground.default.hex}};
 }
 
 placessidebar row:hover {
-    background-color: {{colors.app_surface_hover.default.hex}} !important;
+    background-color: {{colors.app_surface_hover.default.hex}};
 }
 
 placessidebar row:selected,
 placessidebar row:selected:hover {
-    background-color: {{colors.app_selection.default.hex}} !important;
-    color: {{colors.app_on_selection.default.hex}} !important;
+    background-color: {{colors.app_selection.default.hex}};
+    color: {{colors.app_on_selection.default.hex}};
 }
 
 .nautilus-window headerbar {
-    background-color: {{colors.app_headerbar_bg.default.hex}} !important;
-    color: {{colors.app_foreground.default.hex}} !important;
+    background-color: {{colors.app_headerbar_bg.default.hex}};
+    color: {{colors.app_foreground.default.hex}};
 }
 
 .nautilus-window .view {
-    background-color: {{colors.app_view_bg.default.hex}} !important;
-    color: {{colors.app_foreground.default.hex}} !important;
+    background-color: {{colors.app_view_bg.default.hex}};
+    color: {{colors.app_foreground.default.hex}};
+}
+
+/* GTK3 portal file chooser */
+filechooser,
+filechooser > box,
+filechooser actionbar,
+filechooser .view,
+filechooser treeview,
+filechooser treeview.view {
+    background-color: {{colors.app_view_bg.default.hex}};
+    color: {{colors.app_foreground.default.hex}};
+}
+
+filechooser treeview.view:selected,
+filechooser treeview.view:selected:focus {
+    background-color: {{colors.app_selection.default.hex}};
+    color: {{colors.app_on_selection.default.hex}};
+}
+
+filechooser treeview header button,
+filechooser actionbar button {
+    background-image: none;
+    background-color: {{colors.app_card_bg.default.hex}};
+    color: {{colors.app_foreground.default.hex}};
+}
+
+filechooser treeview header button:hover,
+filechooser actionbar button:hover {
+    background-color: {{colors.app_surface_hover.default.hex}};
+}
+
+filechooser label,
+filechooser check,
+filechooser entry {
+    color: {{colors.app_foreground.default.hex}};
 }
 
 placessidebar image {
-    color: {{colors.app_foreground.default.hex}} !important;
+    color: {{colors.app_foreground.default.hex}};
 }
 
 placessidebar row:selected image {
-    color: {{colors.app_on_selection.default.hex}} !important;
+    color: {{colors.app_on_selection.default.hex}};
 }
 
 separator.sidebar {
-    background-color: transparent !important;
+    background-color: transparent;
 }

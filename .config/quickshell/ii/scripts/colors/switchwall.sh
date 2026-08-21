@@ -35,14 +35,26 @@ _config_locked_write() {
 
 pre_process() {
     local mode_flag="$1"
+    local gtk_theme=""
+
+    gtk_theme_available() {
+        local candidate="$1"
+        [[ -f "/usr/share/themes/${candidate}/gtk-3.0/gtk.css" \
+            || -f "$HOME/.local/share/themes/${candidate}/gtk-3.0/gtk.css" \
+            || -f "$HOME/.themes/${candidate}/gtk-3.0/gtk.css" ]]
+    }
 
     # Set GNOME color-scheme if mode_flag is dark or light
     if [[ "$mode_flag" == "dark" ]]; then
+        gtk_theme="adw-gtk3-dark"
+        gtk_theme_available "$gtk_theme" || gtk_theme="Adwaita-dark"
         gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-        gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
+        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme"
     elif [[ "$mode_flag" == "light" ]]; then
+        gtk_theme="adw-gtk3"
+        gtk_theme_available "$gtk_theme" || gtk_theme="Adwaita"
         gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
-        gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3'
+        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme"
     fi
 
     if [ ! -d "$CACHE_DIR"/user/generated ]; then

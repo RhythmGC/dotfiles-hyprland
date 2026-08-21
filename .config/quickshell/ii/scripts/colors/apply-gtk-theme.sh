@@ -756,6 +756,48 @@ placessidebar image {
 
 .view {
     background-color: ${BG};
+    color: ${FG};
+}
+
+/* GTK3 portal file chooser. Keep foreground and surfaces paired even when the
+ * configured base theme is temporarily unavailable. */
+filechooser,
+filechooser > box,
+filechooser actionbar {
+    background-color: ${BG};
+    color: ${FG};
+}
+
+filechooser .view,
+filechooser treeview,
+filechooser treeview.view {
+    background-color: ${BG};
+    color: ${FG};
+}
+
+filechooser treeview.view:selected,
+filechooser treeview.view:selected:focus {
+    background-color: ${ROW_ACTIVE_BG};
+    color: ${ROW_SELECTED_FG};
+}
+
+filechooser treeview header button,
+filechooser actionbar button {
+    background-image: none;
+    background-color: ${APP_CARD_BG};
+    color: ${FG};
+}
+
+filechooser treeview header button:hover,
+filechooser actionbar button:hover {
+    background-color: ${ROW_HOVER_BG};
+    color: ${FG};
+}
+
+filechooser label,
+filechooser check,
+filechooser entry {
+    color: ${FG};
 }
 
 separator.sidebar {
@@ -937,32 +979,84 @@ icon_theme=${CURRENT_QT5_ICON_THEME}
 style=${CURRENT_QT5_STYLE}
 EOF
 
-# Sync icon theme and cursor to GTK settings.ini files
-# These are static files that become stale when user changes icon theme at runtime
+# Keep GTK's settings backend and static settings.ini files aligned with the
+# generated Quickshell palette. xdg-desktop-portal-gtk reads the former for the
+# Settings portal and the latter when constructing its GTK file chooser.
+max_channel=$((0x${BG:1:2}))
+min_channel=$max_channel
+for channel in "${BG:3:2}" "${BG:5:2}"; do
+    channel_value=$((0x$channel))
+    (( channel_value > max_channel )) && max_channel=$channel_value
+    (( channel_value < min_channel )) && min_channel=$channel_value
+done
+
+if (( max_channel + min_channel < 255 )); then
+    GTK_COLOR_SCHEME="prefer-dark"
+    GTK_PREFER_DARK=1
+    GTK_THEME_NAME="adw-gtk3-dark"
+    GTK_THEME_FALLBACK="Adwaita-dark"
+else
+    GTK_COLOR_SCHEME="prefer-light"
+    GTK_PREFER_DARK=0
+    GTK_THEME_NAME="adw-gtk3"
+    GTK_THEME_FALLBACK="Adwaita"
+fi
+
+gtk_theme_available() {
+    local candidate="$1"
+    [[ -f "/usr/share/themes/${candidate}/gtk-3.0/gtk.css" \
+        || -f "$HOME/.local/share/themes/${candidate}/gtk-3.0/gtk.css" \
+        || -f "$HOME/.themes/${candidate}/gtk-3.0/gtk.css" ]]
+}
+
+gtk_theme_available "$GTK_THEME_NAME" || GTK_THEME_NAME="$GTK_THEME_FALLBACK"
+
+if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface color-scheme "$GTK_COLOR_SCHEME" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME" 2>/dev/null || true
+fi
+
+set_gtk_ini_value() {
+    local settings_file="$1"
+    local key="$2"
+    local value="$3"
+
+    if grep -q "^${key}=" "$settings_file"; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$settings_file"
+    else
+        printf '%s=%s\n' "$key" "$value" >> "$settings_file"
+    fi
+}
+
 sync_gtk_settings_ini() {
     local settings_file="$1"
-    [[ ! -f "$settings_file" ]] && return
+    mkdir -p "$(dirname "$settings_file")"
+    if [[ ! -f "$settings_file" ]]; then
+        printf '[Settings]\n' > "$settings_file"
+    elif ! grep -q '^\[Settings\]' "$settings_file"; then
+        sed -i '1i[Settings]' "$settings_file"
+    fi
 
-    local current_icon
+    local current_icon=""
     current_icon=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")
-    [[ -z "$current_icon" ]] && return
-
-    local current_cursor
+    local current_cursor=""
     current_cursor=$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | tr -d "'")
 
-    # Update icon theme in place
-    if grep -q '^gtk-icon-theme-name=' "$settings_file"; then
-        sed -i "s/^gtk-icon-theme-name=.*/gtk-icon-theme-name=${current_icon}/" "$settings_file"
-    fi
-
-    # Update cursor theme in place (if present and we have a value)
-    if [[ -n "$current_cursor" ]] && grep -q '^gtk-cursor-theme-name=' "$settings_file"; then
-        sed -i "s/^gtk-cursor-theme-name=.*/gtk-cursor-theme-name=${current_cursor}/" "$settings_file"
-    fi
+    set_gtk_ini_value "$settings_file" gtk-theme-name "$GTK_THEME_NAME"
+    set_gtk_ini_value "$settings_file" gtk-application-prefer-dark-theme "$GTK_PREFER_DARK"
+    [[ -n "$current_icon" ]] && set_gtk_ini_value "$settings_file" gtk-icon-theme-name "$current_icon"
+    [[ -n "$current_cursor" ]] && set_gtk_ini_value "$settings_file" gtk-cursor-theme-name "$current_cursor"
 }
 
 sync_gtk_settings_ini "$HOME/.config/gtk-3.0/settings.ini"
 sync_gtk_settings_ini "$HOME/.config/gtk-4.0/settings.ini"
+
+# GTK does not reload a rewritten user CSS file in an already-running portal
+# backend. Restart only that backend; the broker and Hyprland screencast portal
+# stay up, and D-Bus activates GTK again on the next file chooser request.
+if systemctl --user is-active --quiet xdg-desktop-portal-gtk.service 2>/dev/null; then
+    systemctl --user restart xdg-desktop-portal-gtk.service 2>/dev/null || true
+fi
 
 # Restart Nautilus so it picks up new GTK CSS
 nautilus -q 2>/dev/null &

@@ -19,7 +19,7 @@ hl.exec_cmd("$HOME/.config/hypr/custom/scripts/__restore_video_wallpaper.sh")
 exec_once("gnome-keyring-daemon --start --components=secrets", "gnome-keyring-daemon")
 exec_once("hypridle", "hypridle")
 hl.exec_cmd("dbus-update-activation-environment --all")
-hl.exec_cmd("sleep 1 && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart xdg-desktop-portal")
+hl.exec_cmd("sleep 1 && $HOME/.config/hypr/hyprland/scripts/sync-xdg-desktop-portals.sh")
 
 -- Audio
 exec_once("easyeffects --hide-window --service-mode", "easyeffects")

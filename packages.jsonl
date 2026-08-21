@@ -20,6 +20,7 @@
 {"name":"hypridle","category":"desktop","source":"pacman"}
 {"name":"xdg-desktop-portal","category":"desktop","source":"pacman"}
 {"name":"xdg-desktop-portal-gtk","category":"desktop","source":"pacman"}
+{"name":"adw-gtk-theme","category":"desktop","source":"pacman"}
 {"name":"kitty","category":"desktop","source":"pacman"}
 {"name":"rofi","category":"desktop","source":"pacman"}
 {"name":"waybar","category":"desktop","source":"pacman"}
