@@ -44,32 +44,29 @@ Item {
     signal closeAllTrayMenus()
 
     property bool smartTray: Config.options.bar.tray.filterPassive
+    property bool automaticVisibility: Config.options?.bar?.tray?.automaticVisibility ?? false
+    property int autoVisibleCount: Math.max(1, Config.options?.bar?.tray?.autoVisibleCount ?? 3)
     
     // Filter out invalid items (null or missing id)
     function isValidItem(item) {
         return item && item.id;
     }
     
-    property list<var> itemsInUserList: SystemTray.items.values.filter(i => {
+    property list<var> eligibleItems: SystemTray.items.values.filter(i => {
         if (!isValidItem(i)) return false;
         const id = (i.id || "").toLowerCase();
         const title = (i.title || "").toLowerCase();
         const isSpotify = id.indexOf("spotify") !== -1 || title.indexOf("spotify") !== -1;
-        return (Config.options?.bar?.tray?.pinnedItems ?? []).includes(i.id)
-                && (!smartTray || i.status !== Status.Passive || isSpotify);
+        return !smartTray || i.status !== Status.Passive || isSpotify;
     })
-    property list<var> itemsNotInUserList: SystemTray.items.values.filter(i => {
-        if (!isValidItem(i)) return false;
-        const id = (i.id || "").toLowerCase();
-        const title = (i.title || "").toLowerCase();
-        const isSpotify = id.indexOf("spotify") !== -1 || title.indexOf("spotify") !== -1;
-        return !(Config.options?.bar?.tray?.pinnedItems ?? []).includes(i.id)
-                && (!smartTray || i.status !== Status.Passive || isSpotify);
-    })
+    property list<var> itemsInUserList: eligibleItems.filter(i => (Config.options?.bar?.tray?.pinnedItems ?? []).includes(i.id))
+    property list<var> itemsNotInUserList: eligibleItems.filter(i => !(Config.options?.bar?.tray?.pinnedItems ?? []).includes(i.id))
 
     property bool invertPins: Config.options?.bar?.tray?.invertPinnedItems ?? false
-    property list<var> pinnedItems: invertPins ? itemsNotInUserList : itemsInUserList
-    property list<var> unpinnedItems: invertPins ? itemsInUserList : itemsNotInUserList
+    property list<var> manuallyPinnedItems: invertPins ? itemsNotInUserList : itemsInUserList
+    property list<var> manuallyUnpinnedItems: invertPins ? itemsInUserList : itemsNotInUserList
+    property list<var> pinnedItems: automaticVisibility ? eligibleItems.slice(0, autoVisibleCount) : manuallyPinnedItems
+    property list<var> unpinnedItems: automaticVisibility ? eligibleItems.slice(autoVisibleCount) : manuallyUnpinnedItems
     onUnpinnedItemsChanged: {
         if (unpinnedItems.length == 0) root.closeOverflowMenu();
     }

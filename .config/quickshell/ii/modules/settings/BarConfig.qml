@@ -22,6 +22,7 @@ ContentPage {
     readonly property bool isAutoHide: Config.options?.bar?.autoHide?.enable ?? false
     readonly property bool isBorderless: Config.options?.bar?.borderless ?? false
     readonly property bool showBackground: Config.options?.bar?.showBackground ?? true
+    readonly property bool trayAutomaticVisibility: Config.options?.bar?.tray?.automaticVisibility ?? false
 
     function trayItemVisible(itemId) {
         const items = Config.options?.bar?.tray?.pinnedItems ?? []
@@ -1070,14 +1071,39 @@ ContentPage {
         title: Translation.tr("System Tray")
 
         SettingsGroup {
-            SettingsSwitch {
-                buttonIcon: "keep"
-                text: Translation.tr("Pin icons by default")
-                checked: Config.options?.bar?.tray?.invertPinnedItems ?? true
-                onCheckedChanged: Config.setNestedValue("bar.tray.invertPinnedItems", checked)
-                StyledToolTip {
-                    text: Translation.tr("New tray icons are visible by default instead of hidden")
+            ContentSubsection {
+                title: Translation.tr("Tray icon behavior")
+                tooltip: Translation.tr("Auto limits the number of icons shown directly on the bar and moves the rest into the expandable menu.")
+
+                ConfigSelectionArray {
+                    currentValue: root.trayAutomaticVisibility
+                        ? "auto"
+                        : ((Config.options?.bar?.tray?.invertPinnedItems ?? true) ? "show" : "hide")
+                    options: [
+                        { displayName: Translation.tr("Auto"), icon: "auto_awesome", value: "auto" },
+                        { displayName: Translation.tr("Show"), icon: "visibility", value: "show" },
+                        { displayName: Translation.tr("Hide"), icon: "visibility_off", value: "hide" }
+                    ]
+                    onSelected: newValue => {
+                        if (newValue === "auto") {
+                            Config.setNestedValue("bar.tray.automaticVisibility", true)
+                            return
+                        }
+                        Config.setNestedValue("bar.tray.invertPinnedItems", newValue === "show")
+                        Config.setNestedValue("bar.tray.automaticVisibility", false)
+                    }
                 }
+            }
+
+            ConfigSpinBox {
+                visible: root.trayAutomaticVisibility
+                icon: "filter_3"
+                text: Translation.tr("Visible icon limit")
+                value: Config.options?.bar?.tray?.autoVisibleCount ?? 3
+                from: 1
+                to: 12
+                stepSize: 1
+                onValueChanged: Config.setNestedValue("bar.tray.autoVisibleCount", value)
             }
 
             SettingsSwitch {
@@ -1105,6 +1131,8 @@ ContentPage {
             ContentSubsection {
                 title: Translation.tr("Icons shown directly on the bar")
                 tooltip: Translation.tr("Turn an application off to move it into the expandable tray menu.")
+                enabled: !root.trayAutomaticVisibility
+                opacity: enabled ? 1 : 0.5
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -1137,6 +1165,12 @@ ContentPage {
                         text: Translation.tr("No system tray applications are currently running")
                     }
                 }
+            }
+
+            ConflictNote {
+                visible: root.trayAutomaticVisibility
+                icon: "auto_awesome"
+                text: Translation.tr("Auto mode shows up to the visible icon limit; use Show or Hide to choose applications manually.")
             }
 
             ConflictNote {

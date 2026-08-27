@@ -1263,6 +1263,8 @@ Singleton {
                     property bool showNotepad: true
                 }
                 property JsonObject tray: JsonObject {
+                    property bool automaticVisibility: false
+                    property int autoVisibleCount: 3
                     property bool monochromeIcons: true
                     property bool showItemId: false
                     property bool invertPinnedItems: true // Makes the below a whitelist for the tray and blacklist for the pinned area

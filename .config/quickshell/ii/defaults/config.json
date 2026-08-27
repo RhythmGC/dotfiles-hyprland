@@ -711,6 +711,8 @@
         "rightScrollAction": "volume",
         "topLeftIcon": "distro",
         "tray": {
+            "automaticVisibility": false,
+            "autoVisibleCount": 3,
             "filterPassive": true,
             "invertPinnedItems": true,
             "monochromeIcons": true,
