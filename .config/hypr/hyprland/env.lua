@@ -11,6 +11,8 @@ hl.env("XDG_DATA_DIRS", home_dir .. "/.local/share/flatpak/exports/share:/var/li
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_QPA_PLATFORMTHEME", "kde")
 hl.env("XDG_MENU_PREFIX", "plasma-")
+hl.env("XCURSOR_THEME", "Kanami")
+hl.env("XCURSOR_SIZE", "24")
 
 -- Virtual environment
 hl.env("ILLOGICAL_IMPULSE_VIRTUAL_ENV", home_dir .. "/.local/state/quickshell/.venv")

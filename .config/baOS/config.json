@@ -193,8 +193,7 @@
         "dockIconTheme": "",
         "extraBackgroundTint": true,
         "fakeScreenRounding": 2,
-        "favoriteThemes": [
-        ],
+        "favoriteThemes": [],
         "globalStyle": "aurora",
         "globalStyleCornerStyles": {
             "angel": 1,
@@ -588,8 +587,7 @@
                 "pauseWhenWindowsPresent": false,
                 "showPausedEffect": true
             },
-            "screenList": [
-            ],
+            "screenList": [],
             "systemMonitor": {
                 "backgroundOpacity": 0.06,
                 "barCount": 32,
@@ -795,8 +793,7 @@
             "tempWarningThreshold": 80
         },
         "rightScrollAction": "volume",
-        "screenList": [
-        ],
+        "screenList": [],
         "showBackground": true,
         "showScrollHints": true,
         "topLeftIcon": "spark",
@@ -891,8 +888,7 @@
         "externalSync": {
             "enable": false,
             "refreshMinutes": 15,
-            "sources": [
-            ]
+            "sources": []
         },
         "showUpcoming": true,
         "upcomingDays": 3
@@ -935,8 +931,7 @@
         "hoverRegionHeight": 2,
         "hoverToReveal": true,
         "iconSize": 35,
-        "ignoredAppRegexes": [
-        ],
+        "ignoredAppRegexes": [],
         "keepPreviewOnClick": false,
         "maxIndicatorDots": 5,
         "minimizeUnfocused": false,
@@ -947,8 +942,7 @@
         ],
         "pinnedOnStartup": false,
         "position": "bottom",
-        "screenList": [
-        ],
+        "screenList": [],
         "separatePinnedFromRunning": true,
         "showAllWindowDots": true,
         "showBackground": true,
@@ -1164,8 +1158,7 @@
     "media": {
         "filterDuplicatePlayers": true,
         "popupMode": "dock",
-        "screenList": [
-        ]
+        "screenList": []
     },
     "modules": {
         "altSwitcher": true,
@@ -1205,8 +1198,7 @@
         "maxPopupLifetime": 30000,
         "position": "topRight",
         "scaleOnHover": false,
-        "screenList": [
-        ],
+        "screenList": [],
         "silent": false,
         "timeout": 7000,
         "timeoutCritical": 0,
@@ -1216,8 +1208,7 @@
     },
     "osd": {
         "mediaEnabled": true,
-        "screenList": [
-        ],
+        "screenList": [],
         "timeout": 1000
     },
     "osk": {
@@ -1292,7 +1283,7 @@
         "weeb": 1
     },
     "powerProfiles": {
-        "preferredProfile": "performance",
+        "preferredProfile": "power-saver",
         "restoreOnStart": true
     },
     "regionSelector": {
@@ -1629,8 +1620,7 @@
                 "highlightLocal": true,
                 "showDate": true,
                 "showSeconds": false,
-                "timezones": [
-                ],
+                "timezones": [],
                 "use24Hour": true
             }
         },
@@ -1639,36 +1629,28 @@
             "autoConnect": true,
             "browser": "firefox",
             "cache": {
-                "albums": [
-                ],
-                "liked": [
-                ],
-                "playlists": [
-                ]
+                "albums": [],
+                "liked": [],
+                "playlists": []
             },
             "connected": false,
             "cookiesPath": "",
             "enable": true,
             "hideSyncBanner": false,
             "lastLikedSync": "",
-            "liked": [
-            ],
-            "playlists": [
-            ],
+            "liked": [],
+            "playlists": [],
             "profile": {
                 "avatar": "",
                 "name": "",
                 "url": ""
             },
-            "queue": [
-            ],
-            "recentSearches": [
-            ],
+            "queue": [],
+            "recentSearches": [],
             "repeatMode": 0,
             "resolvedBrowserArg": "",
             "resume": {
-                "activePlaylist": [
-                ],
+                "activePlaylist": [],
                 "activePlaylistSource": "",
                 "artist": "",
                 "currentIndex": -1,
@@ -1711,8 +1693,7 @@
         "filterPassive": true,
         "invertPinnedItems": true,
         "monochromeIcons": true,
-        "pinnedItems": [
-        ],
+        "pinnedItems": [],
         "showItemId": false
     },
     "updates": {
@@ -1857,8 +1838,7 @@
             "notifications": {
                 "showUnreadCount": true
             },
-            "screenList": [
-            ],
+            "screenList": [],
             "searchIconSize": 24,
             "tintTrayIcons": false
         },
@@ -1927,8 +1907,7 @@
             "showWeather": true,
             "weatherHideLocation": false
         },
-        "workspaceNames": {
-        }
+        "workspaceNames": {}
     },
     "wallpaperSelector": {
         "coverflowView": "gallery",

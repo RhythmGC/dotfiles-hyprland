@@ -1,7 +1,8 @@
 [General]
 ColorScheme=Darkly
 XftHintStyle=hintslight
-TerminalApplication=kitty -1
+TerminalApplication=kitty
+TerminalService=kitty.desktop
 XftSubPixel=none
 fixed=JetBrainsMono Nerd Font,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 font=Google Sans Flex,11,-1,5,500,0,0,0,0,0,0,0,0,0,0,1,Medium

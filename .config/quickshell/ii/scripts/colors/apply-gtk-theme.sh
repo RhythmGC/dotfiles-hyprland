@@ -678,6 +678,14 @@ if command -v papirus-folders &>/dev/null && [[ -d /usr/share/icons/Papirus-Dark
     fi
 fi
 
+# plasma-apply-colorscheme may rewrite the [General] group after the generated
+# kdeglobals file is installed. Restore Dolphin/KIO's terminal preference only
+# after every color-scheme application has finished.
+if [[ "$enable_qt_apps" != "false" ]] && command -v kwriteconfig6 &>/dev/null; then
+    kwriteconfig6 --file kdeglobals --group General --key TerminalApplication --notify kitty 2>/dev/null || true
+    kwriteconfig6 --file kdeglobals --group General --key TerminalService --notify kitty.desktop 2>/dev/null || true
+fi
+
 # Generate Pywalfox colors for Firefox theming
 mkdir -p "$XDG_STATE_HOME/quickshell/user/generated"
 generate_pywalfox > "$XDG_STATE_HOME/quickshell/user/generated/pywalfox-colors.json"

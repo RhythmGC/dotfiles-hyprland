@@ -8,3 +8,13 @@ local kitty_inactive_opacity = 0.8    -- Opacity of Kitty when unfocused
 hl.window_rule({ match = { class = "^(kitty)$" }, opacity = kitty_active_opacity .. " " .. kitty_inactive_opacity })
 
 hl.window_rule({ match = { class = "^(steam_app).*" }, tile = true })
+
+-- Keep the Arknights game rendering when its workspace is not visible.
+-- Matching initial_title excludes the launcher, whose class is identical.
+hl.window_rule({
+	match = {
+		class = "^steam_app_3417883729$",
+		initial_title = "^Arknights$",
+	},
+	render_unfocused = true,
+})

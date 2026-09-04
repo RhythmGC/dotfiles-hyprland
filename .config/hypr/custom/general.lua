@@ -47,6 +47,7 @@ hl.config({
 	},
 	misc = {
 		focus_on_activate = false,
+		render_unfocused_fps = 60,
 	},
 	cursor = {
 		warp_on_change_workspace = 1,

@@ -28,4 +28,4 @@ exec_once("easyeffects --hide-window --service-mode", "easyeffects")
 -- cliphist-image.service, installed by install/install-config.sh.
 
 -- Cursor
-hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
+hl.exec_cmd("hyprctl setcursor Kanami 24")
