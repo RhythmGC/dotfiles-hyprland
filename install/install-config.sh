@@ -334,21 +334,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
     fi
   fi
 
-  # QML still reads the historical config path internally. Keep one narrow
-  # compatibility alias while baOS remains the canonical user config folder.
-  legacy_shell_config="$DST_CONFIG/illogical-impulse"
-  if [ -L "$legacy_shell_config" ]; then
-    rm "$legacy_shell_config"
-  elif [ -e "$legacy_shell_config" ]; then
-    if [ "$backup_created" = false ]; then
-      mkdir -p "$BACKUP_DIR"
-      backup_created=true
-    fi
-    mv "$legacy_shell_config" "$BACKUP_DIR/illogical-impulse"
-    success "Backed up legacy shell config: $legacy_shell_config"
-  fi
-  ln -s "$DST_CONFIG/baOS" "$legacy_shell_config"
-  success "Configured baOS compatibility alias for Quickshell."
+  # BlueArchive reads baOS directly; no compatibility symlink is needed.
 
   if [ "$backup_created" = true ]; then
     success "All existing configuration backups are stored at: $BACKUP_DIR"
@@ -397,7 +383,7 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
   fi
 
   # Apply initial wallpaper-based colors (generates Darkly.colors + recolors Papirus folders)
-  theme_script="$DST_CONFIG/quickshell/ii/scripts/colors/apply-gtk-theme.sh"
+  theme_script="$DST_CONFIG/quickshell/ba/scripts/colors/apply-gtk-theme.sh"
   if [ -f "$theme_script" ]; then
     info "Applying initial wallpaper-based theme colors..."
     bash "$theme_script" 2>/dev/null || true
@@ -406,11 +392,11 @@ if [[ ! "$setup_config" =~ ^[Nn]$ ]]; then
 
   # Initialize Quickshell virtual environment and Python dependencies
   venv_dir="$HOME/.local/state/quickshell/.venv"
-  req_file="$DST_CONFIG/quickshell/ii/sdata/uv/requirements.txt"
+  req_file="$DST_CONFIG/quickshell/ba/sdata/uv/requirements.txt"
   if [ -f "$req_file" ] && command -v uv > /dev/null 2>&1; then
     info "Setting up Quickshell Python virtual environment and dependencies..."
     mkdir -p "$(dirname "$venv_dir")"
-    uv venv --prompt ii-venv "$venv_dir"
+    uv venv --prompt ba-venv "$venv_dir"
     uv pip install --python "$venv_dir" -r "$req_file"
     success "Quickshell virtual environment and Python dependencies initialized successfully!"
   fi
@@ -441,7 +427,7 @@ Description=Clipboard history manager (text) - cliphist
 After=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/bash -c 'wl-paste --type text --watch bash -c "cliphist store && qs -c ii ipc call cliphistService update"'
+ExecStart=/usr/bin/bash -c 'wl-paste --type text --watch bash -c "cliphist store && qs -c ba ipc call cliphistService update"'
 Restart=on-failure
 RestartSec=2s
 
@@ -455,7 +441,7 @@ Description=Clipboard history manager (image) - cliphist
 After=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/bash -c 'wl-paste --type image --watch bash -c "cliphist store && qs -c ii ipc call cliphistService update"'
+ExecStart=/usr/bin/bash -c 'wl-paste --type image --watch bash -c "cliphist store && qs -c ba ipc call cliphistService update"'
 Restart=on-failure
 RestartSec=2s
 
@@ -544,13 +530,13 @@ SVCEOF
   
   cat << 'EOF' > "$HOME/.local/bin/ba"
 #!/usr/bin/env bash
-export INIR_CMD=ba
-runtime_env="$HOME/.config/quickshell/ii/scripts/quickshell-env.sh"
+export BA_CMD=ba
+runtime_env="$HOME/.config/quickshell/ba/scripts/quickshell-env.sh"
 if [ -r "$runtime_env" ]; then
   # shellcheck source=/dev/null
   source "$runtime_env"
 fi
-exec "$HOME/.config/quickshell/ii/scripts/ba" "$@"
+exec "$HOME/.config/quickshell/ba/scripts/ba" "$@"
 EOF
   chmod +x "$HOME/.local/bin/ba"
 

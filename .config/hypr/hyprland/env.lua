@@ -15,4 +15,4 @@ hl.env("XCURSOR_THEME", "Kanami")
 hl.env("XCURSOR_SIZE", "24")
 
 -- Virtual environment
-hl.env("ILLOGICAL_IMPULSE_VIRTUAL_ENV", home_dir .. "/.local/state/quickshell/.venv")
+hl.env("BA_VENV_COMPAT", home_dir .. "/.local/state/quickshell/.venv")

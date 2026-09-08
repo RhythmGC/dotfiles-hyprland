@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=BlueArchive Settings
+Comment=Open BlueArchive settings
+Exec=ba settings
+Icon=ba
+Terminal=false
+Categories=Settings;

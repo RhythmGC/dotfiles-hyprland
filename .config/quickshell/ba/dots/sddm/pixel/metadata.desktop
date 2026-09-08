@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name=ba-pixel
+Description=BlueArchive SDDM login screen — Material You dynamic colors
+Author=BlueArchive Project
+Type=sddm-theme
+Version=1.0
+Website=https://github.com/RhythmGC/dotfiles-hyprland
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=ba-pixel
+Theme-API=2.0
+QtVersion=6

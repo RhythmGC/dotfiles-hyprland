@@ -1,0 +1,27 @@
+post_install() {
+  cat <<'EOF'
+BlueArchive has been installed.
+
+Recommended next steps:
+  - Start the shell manually with: ba run
+  - Or enable the user service with:
+      systemctl --user enable --now ba.service
+
+Package-managed installs keep user config in:
+  ~/.config/baOS/config.json
+
+The packaged runtime lives in:
+  /usr/share/quickshell/ba
+EOF
+}
+
+post_upgrade() {
+  cat <<'EOF'
+BlueArchive has been upgraded.
+
+Recommended next steps:
+  - Restart the shell with: ba restart
+  - Package-managed installs use pacman for updates.
+  - Runtime migrations, when needed, are applied by BlueArchive's packaged lifecycle.
+EOF
+}

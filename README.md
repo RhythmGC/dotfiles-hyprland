@@ -1,4 +1,4 @@
-# RhythmGC's Dotfiles
+# BlueArchive — RhythmGC's Dotfiles
 
 Welcome to my personal, premium **Arch Linux** dotfiles repository. This setup is crafted for maximum productivity, sleek aesthetics, and visual comfort, featuring a fluid tiling window manager, modern shells, highly optimized editors, and material-you styling.
 
@@ -16,7 +16,7 @@ This repository centralizes and tracks configurations for the following stack:
 | **Code Editor** | [Neovim](https://neovim.io/) | Premium, lightweight modal editor optimized for speed and coding. |
 | **Widget & Panel** | [Quickshell](https://quickshell.uxam.org/) | Advanced, highly custom desktop widgets and bar layout using QML. |
 | **Theme Manager** | [Matugen](https://github.com/InSyncWithYou/matugen) | Material-you color palette generator from wallpaper assets. |
-| **Desktop Theme** | Illogical-Impulse | Personalized theme integration engine including KDE & GTK colors. |
+| **Desktop Theme** | BlueArchive | Personalized theme integration engine including KDE & GTK colors. |
 | **Discord Client** | [Vesktop](https://github.com/Vencord/Vesktop) | Wayland-native Discord wrapper with Vencord plugin integration. |
 
 ---
@@ -29,7 +29,7 @@ dotfiles/
 │   ├── fastfetch/         # Fastfetch system info layout
 │   ├── fish/              # Fish shell configuration files & aliases
 │   ├── hypr/              # Hyprland window rules, binds, and variables
-│   ├── illogical-impulse/ # Illogical-impulse theme system configuration
+│   ├── baOS/              # BlueArchive user settings
 │   ├── kitty/             # Kitty terminal configuration & styling
 │   ├── nvim/              # Neovim code editor configurations
 │   ├── quickshell/        # Custom widgets, status bars, and applet QMLs
@@ -67,6 +67,24 @@ cd ~/dotfiles-hyprland
 
 The installer targets Arch-based distributions. Existing configuration entries are moved to a timestamped backup directory before the repository copies are installed.
 
+For an existing desktop, preview and activate the renamed runtime with:
+
+```bash
+python3 install/activate-bluearchive.py
+python3 install/activate-bluearchive.py --apply
+```
+
+Activation backs up existing files under `~/.local/state/ba/migration-backups/`,
+preserves user settings, installs the `ba` launcher and Fish completions, and
+restarts the shell using its current launch method. The runtime is `~/.config/quickshell/ba`, the shell ID is
+`ba`, and settings live in `~/.config/baOS/config.json`. In an already open Fish
+terminal, run `source ~/.config/fish/config.fish` to refresh its aliases.
+
+Useful commands: `ba help`, `ba path`, `ba status`, `ba restart`,
+`ba audio --help`, `ba theme list-targets`, and `ba completions fish`.
+The Neovim `ba` colorscheme is bundled locally and follows generated wallpaper
+colors. Old names remain only in migration inputs and historical/license records.
+
 To reapply Kitty as KDE/Dolphin's external terminal without running the full
 installer:
 
@@ -85,7 +103,7 @@ This system utilizes **Matugen** to read colors from your active desktop wallpap
 
 - Hyprland borders and active frame shadows.
 - Custom QML quickshell panel widgets (battery, CPU, memory, clock, calendar, todo applet, etc.).
-- GTK and KDE applications via custom Material-You CSS scripts in `illogical-impulse`.
+- GTK and KDE applications via custom Material-You CSS scripts in `baOS`.
 
 ---
 
@@ -93,6 +111,6 @@ This system utilizes **Matugen** to read colors from your active desktop wallpap
 
 All configurations and scripts are open-source. Feel free to fork, modify, and integrate elements of these dotfiles into your own setup.
 
-This dotfiles setup is currently based on [End-4's dots-hyprland](https://github.com/end-4/dots-hyprland) and [iNiR](https://github.com/snowarch/iNiR). If you find this setup useful, consider visiting the original repository and giving End-4 and Snowarch a star.
+BlueArchive is maintained by **RhythmGC**. Original third-party licenses and historical credits are preserved in the shell and bundled assets.
 
 *Elevate your Linux desktop experience!*

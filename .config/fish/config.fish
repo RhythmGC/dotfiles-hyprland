@@ -47,8 +47,8 @@ if status is-interactive
     alias clẻa clear
     alias clảe clear
     alias pamcan pacman
-    alias q 'qs -c ii'
-    alias ba 'env INIR_CMD=ba ~/.config/quickshell/ii/scripts/ba'
+    alias q 'qs -c ba'
+    alias ba 'env BA_CMD=ba ~/.config/quickshell/ba/scripts/ba'
     alias stfu 'shutdown now'
     function n
         if test (count $argv) -eq 0

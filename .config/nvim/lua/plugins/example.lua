@@ -9,7 +9,7 @@ if true then return {} end
 -- * disable/enabled LazyVim plugins
 -- * override the configuration of LazyVim plugins
 return {
-  -- add gruvbox (commented out to allow dynamic inir theme)
+  -- add gruvbox (commented out to allow dynamic ba theme)
   -- { "ellisonleao/gruvbox.nvim" },
 
   -- Configure LazyVim to load gruvbox

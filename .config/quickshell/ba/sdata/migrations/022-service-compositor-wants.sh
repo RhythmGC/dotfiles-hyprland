@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+MIGRATION_ID="022-service-compositor-wants"
+MIGRATION_TITLE="Wire ba.service to compositor instead of graphical-session.target"
+MIGRATION_DESCRIPTION="Moves the ba.service wants link from graphical-session.target.wants/ to the detected compositor service (e.g. niri.service.wants/). Prevents ba from starting under KDE, GNOME, or other DEs."
+MIGRATION_TARGET_FILE="~/.config/systemd/user/*.wants/ba.service"
+MIGRATION_REQUIRED=true
+
+_systemd_user_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+
+_detect_compositor_for_migration() {
+  # Same logic as detect_compositor_service in scripts/ba.
+  # Never falls back to graphical-session.target — that's the whole
+  # point of this migration.
+  if command -v systemctl >/dev/null 2>&1; then
+    if systemctl --user cat niri.service &>/dev/null; then
+      printf 'niri.service\n'
+      return 0
+    fi
+    if systemctl --user cat 'wayland-wm@Hyprland.service' &>/dev/null; then
+      printf 'wayland-wm@Hyprland.service\n'
+      return 0
+    fi
+  fi
+  return 1
+}
+
+migration_check() {
+  # Needs migration if a graphical-session.target.wants link exists.
+  local old_link="${_systemd_user_dir}/graphical-session.target.wants/ba.service"
+
+  # No old link — nothing to migrate
+  [[ -e "$old_link" || -L "$old_link" ]] || return 1
+
+  # Old link exists — needs migration (remove it regardless of compositor detection)
+  return 0
+}
+
+migration_preview() {
+  local target
+  if target="$(_detect_compositor_for_migration)"; then
+    echo -e "${STY_RED}- graphical-session.target.wants/ba.service${STY_RST}"
+    echo -e "${STY_GREEN}+ ${target}.wants/ba.service${STY_RST}"
+  else
+    echo -e "${STY_RED}- graphical-session.target.wants/ba.service${STY_RST}"
+    echo -e "${STY_YELLOW}  (no compositor detected — link will be removed but not rewired)${STY_RST}"
+  fi
+  echo ""
+  echo "This prevents BlueArchive from starting under KDE, GNOME, or other desktop environments."
+}
+
+migration_apply() {
+  local old_link="${_systemd_user_dir}/graphical-session.target.wants/ba.service"
+  local service_file="${_systemd_user_dir}/ba.service"
+
+  # Always remove the stale graphical-session.target link
+  rm -f "$old_link"
+
+  # Create a compositor-specific link if we can detect one
+  local target
+  if target="$(_detect_compositor_for_migration)" && [[ -f "$service_file" ]]; then
+    local new_wants_dir="${_systemd_user_dir}/${target}.wants"
+    mkdir -p "$new_wants_dir"
+    ln -sf "$service_file" "$new_wants_dir/ba.service"
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+  fi
+}
